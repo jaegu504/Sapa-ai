@@ -45,3 +45,20 @@ export interface ImportResult {
   updatedCount: number;
   totalProcessed?: number;
 }
+
+export interface DigestResult {
+  totalOverdue: number;
+  contacts: Contact[];
+  digestSummary: string;
+  date: string;
+}
+
+export interface AlarmItem {
+  contactId: string;
+  contactName: string;
+  phoneNumber: string;
+  scheduledDate: string;
+  topic: string;
+  message: string;
+}
+
