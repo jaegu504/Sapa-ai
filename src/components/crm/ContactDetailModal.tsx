@@ -53,7 +53,10 @@ export function ContactDetailModal({
   // Build 3-Metric Strip items
   let statusDisplay = '';
   if (status.isOverdue) {
-    statusDisplay = `Terlambat ${status.daysOverdue} hari`;
+    statusDisplay =
+      status.daysOverdue > 0
+        ? `Terlambat ${status.daysOverdue} hari`
+        : 'Jatuh tempo hari ini';
   } else {
     const targetDateStr = contact.nextSpecificFollowUp || status.suggestedDate;
     if (targetDateStr) {

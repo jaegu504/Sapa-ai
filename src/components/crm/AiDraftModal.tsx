@@ -22,6 +22,8 @@ export function AiDraftModal({
   const [loading, setLoading] = useState<boolean>(false);
   const [autoMarkDone, setAutoMarkDone] = useState<boolean>(false);
 
+  const contactId = contact?.id;
+
   useEffect(() => {
     if (!isOpen || !contact) return;
 
@@ -44,7 +46,7 @@ export function AiDraftModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, contact, apiKey]);
+  }, [isOpen, contactId, apiKey]);
 
   if (!isOpen || !contact) return null;
 
@@ -62,6 +64,7 @@ export function AiDraftModal({
 
   const handleOpenWhatsApp = () => {
     const url = buildWhatsAppUrl(contact.phoneNumber, draftText);
+    if (!url) return;
     window.open(url, '_blank');
     if (autoMarkDone && onLogChatCompleted) {
       onLogChatCompleted(contact);
