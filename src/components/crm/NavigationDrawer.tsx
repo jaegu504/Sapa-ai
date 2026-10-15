@@ -89,7 +89,11 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     reader.onload = async (evt) => {
       const content = evt.target?.result as string;
       if (content) {
-        await onImportBackup(content);
+        try {
+          await onImportBackup(content);
+        } catch (err) {
+          console.error('Error importing backup JSON:', err);
+        }
       }
     };
     reader.readAsText(file);
@@ -326,7 +330,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <button
                 type="button"
                 onClick={onExportBackup}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#2F54EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-[#2F54EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Ekspor Backup JSON</span>
@@ -335,7 +339,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors"
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>Impor Backup JSON</span>

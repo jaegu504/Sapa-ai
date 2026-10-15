@@ -344,7 +344,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   .join('')
                   .toUpperCase() || 'GS';
               const badgeText =
-                contact.associations[0] || (contact.isProfessional ? 'Profesional' : 'Relasi');
+                contact.associations?.[0] || (contact.isProfessional ? 'Profesional' : 'Relasi');
 
               return (
                 <div
