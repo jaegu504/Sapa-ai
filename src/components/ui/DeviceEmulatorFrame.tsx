@@ -29,6 +29,8 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
   };
 
   const [clockTime, setClockTime] = useState<string>(mockTime || '09:41');
+  const [scale, setScale] = useState<number>(0.9);
+  const [deviceWidth, setDeviceWidth] = useState<number>(375); // standard Android phone width
 
   useEffect(() => {
     if (mockTime) {
@@ -87,62 +89,126 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
 
   return (
     <div
-      className={`min-h-screen bg-slate-950 py-6 px-2 sm:px-4 flex flex-col items-center justify-center relative selection:bg-[#2F54EB] selection:text-white ${className}`}
+      className={`min-h-screen bg-slate-950 py-4 px-2 flex flex-col items-center justify-start relative selection:bg-[#2F54EB] selection:text-white ${className}`}
       data-testid="emulator-mode-container"
     >
-      {/* Mode Toggle Controls */}
-      <div className="mb-4 z-50 flex items-center bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-full p-1 shadow-lg gap-1">
-        <button
-          type="button"
-          data-testid="toggle-emulator-mode"
-          onClick={() => handleSetMode(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#2F54EB] text-white shadow-xs cursor-pointer"
-        >
-          <Smartphone className="w-3.5 h-3.5" />
-          <span>📱 Mode Emulator HP</span>
-        </button>
-        <button
-          type="button"
-          data-testid="toggle-desktop-mode"
-          onClick={() => handleSetMode(false)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          <Monitor className="w-3.5 h-3.5" />
-          <span>💻 Mode Desktop</span>
-        </button>
+      {/* Mode & Scale Controls Bar */}
+      <div className="mb-3 z-50 flex flex-wrap items-center justify-center bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-full p-1.5 shadow-xl gap-2">
+        {/* Toggle Mode */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            data-testid="toggle-emulator-mode"
+            onClick={() => handleSetMode(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#2F54EB] text-white shadow-xs cursor-pointer"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>📱 Mode Emulator HP</span>
+          </button>
+          <button
+            type="button"
+            data-testid="toggle-desktop-mode"
+            onClick={() => handleSetMode(false)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            <span>💻 Mode Desktop</span>
+          </button>
+        </div>
+
+        {/* Separator */}
+        <div className="w-px h-4 bg-slate-700 hidden sm:block" />
+
+        {/* Device Width Selector */}
+        <div className="flex items-center gap-1 text-[11px] text-slate-400">
+          <span className="text-slate-500 hidden sm:inline">Ukuran:</span>
+          <button
+            type="button"
+            onClick={() => setDeviceWidth(360)}
+            className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+              deviceWidth === 360
+                ? 'bg-slate-800 text-white font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Android (360px)
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeviceWidth(390)}
+            className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+              deviceWidth === 390
+                ? 'bg-slate-800 text-white font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Plus (390px)
+          </button>
+        </div>
+
+        {/* Zoom Scale Selector */}
+        <div className="flex items-center gap-1 text-[11px] text-slate-400">
+          <span className="text-slate-500 hidden sm:inline">Zoom:</span>
+          {[0.8, 0.9, 1.0].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setScale(s)}
+              className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+                scale === s
+                  ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40 font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {Math.round(s * 100)}%
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Realistic Smartphone Mockup Bezel */}
+      {/* Scalable Container */}
       <div
-        data-testid="device-emulator-frame"
-        className="rounded-[48px] border-4 border-slate-800 bg-slate-900 p-2.5 shadow-2xl relative max-w-[415px] w-full mx-auto"
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
+          transition: 'transform 0.2s ease',
+        }}
+        className="w-full flex justify-center pb-8"
       >
-        {/* Content Viewport */}
+        {/* Realistic Smartphone Mockup Bezel */}
         <div
-          data-testid="device-emulator-viewport"
-          className="rounded-[38px] overflow-hidden bg-[#F8F9FA] relative flex flex-col h-[780px] max-w-[395px] w-full mx-auto [transform:translateZ(0)]"
+          data-testid="device-emulator-frame"
+          style={{ width: `${deviceWidth + 24}px` }}
+          className="rounded-[48px] border-4 border-slate-800 bg-slate-900 p-2.5 shadow-2xl relative mx-auto shrink-0"
         >
-          {/* Status Bar */}
-          <div className="flex items-center justify-between px-6 pt-3 pb-1 text-slate-800 text-xs font-semibold select-none bg-white/90 backdrop-blur-xs shrink-0 z-20 border-b border-slate-100/50">
-            <span className="font-mono tracking-tight text-xs font-bold">{clockTime}</span>
-            <div className="w-24 h-5 bg-black rounded-full flex items-center justify-end px-2 gap-1.5 shadow-inner">
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700/60" />
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-950/80" />
+          {/* Content Viewport */}
+          <div
+            data-testid="device-emulator-viewport"
+            style={{ width: `${deviceWidth}px`, height: '740px' }}
+            className="rounded-[38px] overflow-hidden bg-[#F8F9FA] relative flex flex-col mx-auto [transform:translateZ(0)] text-slate-800"
+          >
+            {/* Status Bar */}
+            <div className="flex items-center justify-between px-5 pt-3 pb-1.5 text-slate-800 text-xs font-semibold select-none bg-white/95 backdrop-blur-xs shrink-0 z-20 border-b border-slate-100/50">
+              <span className="font-mono tracking-tight text-xs font-bold">{clockTime}</span>
+              <div className="w-20 h-4.5 bg-black rounded-full flex items-center justify-end px-2 gap-1 shadow-inner">
+                <div className="w-2 h-2 rounded-full bg-slate-900 border border-slate-700/60" />
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-950/80" />
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-800">
+                <Signal className="w-3.5 h-3.5" />
+                <Wifi className="w-3.5 h-3.5" />
+                <Battery className="w-4 h-4" />
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 text-slate-800">
-              <Signal className="w-3.5 h-3.5" />
-              <Wifi className="w-3.5 h-3.5" />
-              <Battery className="w-4 h-4" />
+
+            {/* App Scrollable Content */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col text-sm no-scrollbar">
+              {children}
             </div>
-          </div>
 
-          {/* App Scrollable Content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
-            {children}
+            {/* Home Indicator Bar */}
+            <div className="w-28 h-1 bg-slate-300 rounded-full mx-auto my-1.5 shrink-0 select-none" />
           </div>
-
-          {/* Home Indicator Bar */}
-          <div className="w-32 h-1 bg-slate-300 rounded-full mx-auto my-1 shrink-0 select-none" />
         </div>
       </div>
     </div>

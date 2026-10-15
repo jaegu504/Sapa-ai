@@ -31,7 +31,7 @@ export const CircularQuickAction: React.FC<CircularQuickActionProps> = ({
           onClick={onClick}
           disabled={disabled}
           aria-label={label}
-          className={`rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center transition-all ${
+          className={`rounded-full w-11 h-11 sm:w-13 sm:h-13 flex items-center justify-center transition-all ${
             disabled
               ? 'opacity-50 cursor-not-allowed'
               : 'hover:scale-105 active:scale-95 cursor-pointer'
@@ -40,12 +40,12 @@ export const CircularQuickAction: React.FC<CircularQuickActionProps> = ({
           {icon}
         </button>
         {badge !== undefined && badge !== null && badge !== '' && (
-          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-sm pointer-events-none">
+          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 shadow-sm pointer-events-none">
             {badge}
           </span>
         )}
       </div>
-      <span className="text-xs font-medium text-slate-700 text-center max-w-[72px] truncate">
+      <span className="text-[10px] sm:text-xs font-medium text-slate-700 text-center max-w-[68px] sm:max-w-[72px] truncate leading-tight">
         {label}
       </span>
     </div>

@@ -146,34 +146,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [contacts, now]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-5 space-y-3.5 sm:space-y-5">
       {/* Header bar */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           {onOpenMenu && (
             <button
               type="button"
               aria-label="Buka Menu Analitik"
               onClick={onOpenMenu}
-              className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors flex items-center justify-center shrink-0 cursor-pointer"
             >
-              <Menu className="w-5 h-5 text-slate-700" />
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
             </button>
           )}
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-base sm:text-2xl font-bold sm:font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
               <span>{greeting}, Sahabat!</span>
-              <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 fill-amber-400" />
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            <p className="text-[11px] sm:text-sm text-slate-500 mt-0.5">
               Kelola silaturahmi & hubungan bermakna ({contacts.length} total relasi)
             </p>
           </div>
         </div>
 
         {/* Total Badge */}
-        <div className="inline-flex items-center gap-1.5 self-start sm:self-auto bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-full text-xs font-semibold">
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+        <div className="inline-flex items-center gap-1.5 self-start sm:self-auto bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold">
+          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600 animate-pulse" />
           <span>{contacts.length} Relasi Aktif</span>
         </div>
       </header>
@@ -188,12 +188,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           onHealthClick={() => setOverdueOnly(false)}
         />
         {overdueOnly && (
-          <div className="mt-2 flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5 text-xs text-rose-700">
-            <span>Menampilkan hanya kontak yang perlu disapa</span>
+          <div className="mt-2 flex items-center justify-between bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1 text-xs text-rose-700">
+            <span className="text-[11px]">Hanya kontak yang perlu disapa</span>
             <button
               type="button"
               onClick={() => setOverdueOnly(false)}
-              className="font-semibold underline hover:text-rose-900 ml-2"
+              className="font-semibold underline hover:text-rose-900 ml-2 text-[11px]"
             >
               Reset filter
             </button>
@@ -204,18 +204,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* CircularQuickActions */}
       <section
         aria-label="Aksi Cepat"
-        className="flex items-center justify-between sm:justify-start sm:gap-6 bg-white border border-slate-100 rounded-2xl p-4 shadow-xs overflow-x-auto"
+        className="flex items-center justify-between sm:justify-start sm:gap-6 bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-xs overflow-x-auto"
       >
         <CircularQuickAction
           label="Impor HP"
-          icon={<Download size={22} />}
+          icon={<Download size={20} />}
           onClick={() => onImportClick?.()}
           variant="primary"
         />
 
         <CircularQuickAction
           label="Sapa WA"
-          icon={<MessageCircle size={22} />}
+          icon={<MessageCircle size={20} />}
           badge={overdueCount > 0 ? overdueCount : undefined}
           onClick={() => {
             if (firstOverdueContact && onQuickWhatsApp) {
@@ -229,14 +229,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <CircularQuickAction
           label="Tambah Kontak"
-          icon={<UserPlus size={22} />}
+          icon={<UserPlus size={20} />}
           onClick={() => onAddContactClick?.()}
           variant="secondary"
         />
 
         <CircularQuickAction
           label="Log Chat"
-          icon={<CheckCircle size={22} />}
+          icon={<CheckCircle size={20} />}
           onClick={() => {
             if (contacts.length > 0 && onLogChat) {
               onLogChat(contacts[0]);
@@ -247,8 +247,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </section>
 
       {/* Search Input & View Mode Controls */}
-      <section className="space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <section className="space-y-2 sm:space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -257,53 +257,53 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari nama, topik, telepon, atau asosiasi..."
-              className="w-full pl-10 pr-10 py-2.5 rounded-full border border-slate-200 bg-white text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2F54EB] focus:border-transparent transition-all shadow-xs"
+              className="w-full pl-9 pr-9 py-2 rounded-full border border-slate-200 bg-white text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2F54EB] focus:border-transparent transition-all shadow-xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 aria-label="Hapus pencarian"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center self-end sm:self-auto bg-slate-100 p-1 rounded-full border border-slate-200 shrink-0">
+          <div className="flex items-center self-end sm:self-auto bg-slate-100 p-0.5 sm:p-1 rounded-full border border-slate-200 shrink-0">
             <button
               type="button"
               aria-label="Mode Kartu"
               onClick={() => setViewMode('cards')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all ${
                 viewMode === 'cards'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
+              <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Kartu</span>
             </button>
             <button
               type="button"
               aria-label="Mode Tabel Notion"
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all ${
                 viewMode === 'table'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Table className="w-3.5 h-3.5" />
+              <Table className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Tabel Notion</span>
             </button>
           </div>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
           {CATEGORIES.map((cat) => (
             <FilterPill
               key={cat}
@@ -320,20 +320,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {topDueContacts.length > 0 && !searchQuery.trim() && activeFilter === 'Semua' && !overdueOnly && (
         <section
           aria-label="Rekomendasi Sapaan Hari Ini"
-          className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-white border border-blue-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3"
+          className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-white border border-blue-200/80 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xs space-y-2.5 sm:space-y-3"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <div className="flex items-center gap-2">
-              <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+              <span className="text-xs sm:text-base font-bold sm:font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
                 <span>✨ Rekomendasi Sapaan Hari Ini</span>
               </span>
             </div>
-            <span className="text-xs text-blue-700 font-medium">
+            <span className="text-[11px] sm:text-xs text-blue-700 font-medium">
               Ada {dueOrOverdueContacts.length} relasi yang perlu disapa hari ini
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             {topDueContacts.map((contact) => {
               const initials =
                 contact.name
