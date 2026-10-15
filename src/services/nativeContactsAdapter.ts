@@ -1,4 +1,13 @@
+import { Capacitor } from '@capacitor/core';
+import { Contacts } from '@capacitor-community/contacts';
 import type { RawPhoneContact } from '../types/crm';
+
+export type ContactsPermissionStatus = 'granted' | 'denied' | 'prompt' | 'unsupported';
+
+export interface DeviceContactsResult {
+  contacts: RawPhoneContact[];
+  permissionStatus: ContactsPermissionStatus;
+}
 
 export interface RawContactInput {
   name?: string;
@@ -99,47 +108,113 @@ export const mockSampleDeviceContacts: RawPhoneContact[] = [
   },
 ];
 
-/**
- * Detects runtime environment and retrieves device contacts:
- * 1) If Capacitor Contacts available, queries native contacts.
- * 2) Else if Web Contacts API available, selects contacts via navigator.contacts.select.
- * 3) Else returns sample/demo contacts for desktop browser testing.
- */
-export async function getDeviceContacts(): Promise<RawPhoneContact[]> {
-  // 1. Capacitor Contacts plugin (Android/iOS hybrid app)
+function isNativePlatform(): boolean {
   if (
     typeof window !== 'undefined' &&
-    ((window as any).Capacitor?.Plugins?.Contacts || (window as any).Contacts)
+    typeof (window as any).Capacitor?.isNativePlatform === 'function'
   ) {
+    return (window as any).Capacitor.isNativePlatform();
+  }
+  return (
+    Capacitor.isNativePlatform() ||
+    Boolean(
+      typeof window !== 'undefined' &&
+        ((window as any).Capacitor?.Plugins?.Contacts || (window as any).Contacts)
+    )
+  );
+}
+
+function getContactsPlugin(): any {
+  if (typeof window !== 'undefined') {
+    const custom = (window as any).Capacitor?.Plugins?.Contacts || (window as any).Contacts;
+    if (custom) {
+      return custom;
+    }
+  }
+  return Contacts;
+}
+
+function parseContactsPayload(contactsArray: any[]): RawPhoneContact[] {
+  const rawList: RawContactInput[] = [];
+  for (const c of contactsArray) {
+    if (!c) continue;
+    const name =
+      c.displayName ||
+      c.name?.display ||
+      c.name?.givenName ||
+      (c.name?.given ? [c.name.given, c.name.family].filter(Boolean).join(' ') : '') ||
+      (typeof c.name === 'string' ? c.name : '') ||
+      '';
+
+    let phone = '';
+    if (Array.isArray(c.phones) && c.phones.length > 0) {
+      const validPhoneObj = c.phones.find((p: any) => p && (p.number || typeof p === 'string'));
+      phone = validPhoneObj
+        ? validPhoneObj.number || (typeof validPhoneObj === 'string' ? validPhoneObj : '')
+        : '';
+    } else if (Array.isArray(c.phoneNumbers) && c.phoneNumbers.length > 0) {
+      phone = c.phoneNumbers[0]?.number || c.phoneNumbers[0]?.value || '';
+    } else if (typeof c.phoneNumber === 'string') {
+      phone = c.phoneNumber;
+    }
+
+    rawList.push({ name, phoneNumber: phone });
+  }
+  return filterValidContacts(rawList);
+}
+
+/**
+ * Detects runtime environment and retrieves device contacts with permission status:
+ * 1) If Capacitor Contacts available (native Android / iOS):
+ *    - Checks permission via plugin.checkPermissions().
+ *    - If not 'granted', requests permission via plugin.requestPermissions().
+ *    - If user denies permission, returns { contacts: [], permissionStatus: 'denied' }.
+ *    - If granted, calls plugin.getContacts({ projection: { name: true, phones: true } }).
+ * 2) Else if Web Contacts API available:
+ *    - Queries navigator.contacts.select(['name', 'tel'], { multiple: true }).
+ *    - If user cancels (AbortError), returns { contacts: [], permissionStatus: 'denied' }.
+ * 3) Else (Desktop browser / unsupported):
+ *    - Returns mockSampleDeviceContacts with permissionStatus: 'unsupported'.
+ */
+export async function getDeviceContactsWithStatus(): Promise<DeviceContactsResult> {
+  // 1. Capacitor Contacts plugin (Android / iOS hybrid app)
+  if (isNativePlatform()) {
     try {
-      const contactsPlugin =
-        (window as any).Capacitor?.Plugins?.Contacts || (window as any).Contacts;
-      if (typeof contactsPlugin.getContacts === 'function') {
-        const result = await contactsPlugin.getContacts({
-          projection: { name: true, phones: true },
-        });
-        const rawList: RawContactInput[] = [];
-        const contactsArray = result?.contacts || (Array.isArray(result) ? result : []);
-        for (const c of contactsArray) {
-          const name =
-            c.displayName ||
-            c.name?.display ||
-            c.name?.givenName ||
-            (typeof c.name === 'string' ? c.name : '') ||
-            '';
-          const phone =
-            c.phones?.[0]?.number ||
-            c.phoneNumbers?.[0]?.number ||
-            c.phoneNumbers?.[0]?.value ||
-            c.phoneNumber ||
-            (typeof c.phones?.[0] === 'string' ? c.phones[0] : '') ||
-            '';
-          rawList.push({ name, phoneNumber: phone });
+      const contactsPlugin = getContactsPlugin();
+      if (contactsPlugin) {
+        let contactGranted = true;
+
+        if (typeof contactsPlugin.checkPermissions === 'function') {
+          const checkRes = await contactsPlugin.checkPermissions();
+          let status = checkRes?.contacts;
+
+          if (status !== 'granted') {
+            if (typeof contactsPlugin.requestPermissions === 'function') {
+              const reqRes = await contactsPlugin.requestPermissions();
+              status = reqRes?.contacts;
+            }
+          }
+
+          contactGranted = status === 'granted';
         }
-        return filterValidContacts(rawList);
+
+        if (!contactGranted) {
+          return { contacts: [], permissionStatus: 'denied' };
+        }
+
+        if (typeof contactsPlugin.getContacts === 'function') {
+          const result = await contactsPlugin.getContacts({
+            projection: { name: true, phones: true },
+          });
+          const contactsArray = result?.contacts || (Array.isArray(result) ? result : []);
+          return {
+            contacts: parseContactsPayload(contactsArray),
+            permissionStatus: 'granted',
+          };
+        }
       }
     } catch {
-      // Fallback
+      return { contacts: [], permissionStatus: 'denied' };
     }
   }
 
@@ -162,15 +237,30 @@ export async function getDeviceContacts(): Promise<RawPhoneContact[]> {
           rawList.push({ name, phoneNumber: phone });
         }
       }
-      return filterValidContacts(rawList);
+      return {
+        contacts: filterValidContacts(rawList),
+        permissionStatus: 'granted',
+      };
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        return [];
+        return { contacts: [], permissionStatus: 'denied' };
       }
       throw err;
     }
   }
 
   // 3. Desktop browser fallback / demo contacts
-  return [...mockSampleDeviceContacts];
+  return {
+    contacts: [...mockSampleDeviceContacts],
+    permissionStatus: 'unsupported',
+  };
 }
+
+/**
+ * Backward-compatible helper returning contacts list directly.
+ */
+export async function getDeviceContacts(): Promise<RawPhoneContact[]> {
+  const result = await getDeviceContactsWithStatus();
+  return result.contacts;
+}
+
