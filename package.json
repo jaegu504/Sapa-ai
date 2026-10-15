@@ -11,9 +11,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@capacitor-community/contacts": "^8.0.0",
     "@capacitor/android": "^8.5.3",
     "@capacitor/cli": "^7.6.9",
     "@capacitor/core": "^8.5.3",
+    "@capacitor/local-notifications": "^8.3.1",
     "clsx": "^2.1.1",
     "dexie": "^4.0.9",
     "lucide-react": "^0.453.0",
