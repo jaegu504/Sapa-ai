@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ContactDetailModal } from '../../src/components/crm/ContactDetailModal';
 import { Contact } from '../../src/types/crm';
@@ -109,19 +109,217 @@ describe('ContactDetailModal', () => {
 
     // Section 1: Ketemu di mana & bagaimana
     expect(screen.getByText(/Ketemu di mana & bagaimana/i)).toBeDefined();
-    expect(screen.getByText('Daurah fiqih di Pesantren Luhur')).toBeDefined();
+    expect(screen.getByDisplayValue('Daurah fiqih di Pesantren Luhur')).toBeDefined();
 
     // Section 2: Pembaruan Terakhir
     expect(screen.getByText(/Pembaruan Terakhir/i)).toBeDefined();
-    expect(screen.getByText('Mendapat amanah baru di lembaga tahfidz')).toBeDefined();
+    expect(screen.getByDisplayValue('Mendapat amanah baru di lembaga tahfidz')).toBeDefined();
 
     // Section 3: Topik Follow Up Selanjutnya
     expect(screen.getByText(/Topik Follow Up Selanjutnya/i)).toBeDefined();
-    expect(screen.getByText('Kajian rutin bulanan & silaturahmi')).toBeDefined();
+    expect(screen.getByDisplayValue('Kajian rutin bulanan & silaturahmi')).toBeDefined();
 
     // Section 4: Jadwal Follow Up Khusus
     expect(screen.getByText(/Jadwal Follow Up Khusus/i)).toBeDefined();
-    expect(screen.getByText('2026-10-25')).toBeDefined();
+    expect(screen.getByDisplayValue('2026-10-25')).toBeDefined();
+  });
+
+  it('triggers onUpdateContact when possibleFollowUpTopic textarea is edited', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+      />
+    );
+
+    const topicInput = screen.getByLabelText(/Topik Follow Up Selanjutnya/i);
+    fireEvent.change(topicInput, { target: { value: 'Kajian hadits Arba’in' } });
+
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      possibleFollowUpTopic: 'Kajian hadits Arba’in',
+    });
+  });
+
+  it('displays visual save feedback when updating contact', async () => {
+    let resolveUpdate: () => void = () => {};
+    const handleUpdate = vi.fn().mockImplementation(() => new Promise<void>((res) => {
+      resolveUpdate = res;
+    }));
+
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+      />
+    );
+
+    const topicInput = screen.getByLabelText(/Topik Follow Up Selanjutnya/i);
+    fireEvent.change(topicInput, { target: { value: 'Kajian fiqih' } });
+
+    // While saving
+    expect(screen.getByText(/Menyimpan.../i)).toBeDefined();
+
+    // Resolve save
+    resolveUpdate();
+    await waitFor(() => {
+      expect(screen.getByText(/Tersimpan/i)).toBeDefined();
+    });
+  });
+
+  it('triggers onUpdateContact when lastUpdateNotes textarea is edited', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+      />
+    );
+
+    const notesInput = screen.getByLabelText(/Pembaruan Terakhir/i);
+    fireEvent.change(notesInput, { target: { value: 'Sudah mutaba’ah hafalan juz 30' } });
+
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      lastUpdateNotes: 'Sudah mutaba’ah hafalan juz 30',
+    });
+  });
+
+  it('triggers onUpdateContact when metContext textarea is edited', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+      />
+    );
+
+    const metInput = screen.getByLabelText(/Ketemu di mana & bagaimana/i);
+    fireEvent.change(metInput, { target: { value: 'Halaqah tafsir di Masjid Sunda Kelapa' } });
+
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      metContext: 'Halaqah tafsir di Masjid Sunda Kelapa',
+    });
+  });
+
+  it('triggers onUpdateContact when nextSpecificFollowUp date input is changed directly', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+        now={new Date('2026-10-10')}
+      />
+    );
+
+    const dateInput = screen.getByLabelText(/Jadwal Follow Up Khusus/i);
+    fireEvent.change(dateInput, { target: { value: '2026-10-28' } });
+
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: '2026-10-28',
+    });
+  });
+
+  it('computes date and calls onUpdateContact when quick follow-up chip "+3 Hari" is clicked', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+        now={new Date('2026-10-10')}
+      />
+    );
+
+    const chip3Days = screen.getByRole('button', { name: /\+3 Hari/i });
+    fireEvent.click(chip3Days);
+
+    // 2026-10-10 + 3 days = 2026-10-13
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: '2026-10-13',
+    });
+  });
+
+  it('computes date and calls onUpdateContact for all quick schedule chips', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+        now={new Date('2026-10-10')}
+      />
+    );
+
+    // Besok (+1 hr) -> 2026-10-11
+    const chipBesok = screen.getByRole('button', { name: /Besok/i });
+    fireEvent.click(chipBesok);
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: '2026-10-11',
+    });
+
+    // +1 Minggu -> 2026-10-17
+    const chip1Week = screen.getByRole('button', { name: /\+1 Minggu/i });
+    fireEvent.click(chip1Week);
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: '2026-10-17',
+    });
+
+    // +2 Minggu -> 2026-10-24
+    const chip2Weeks = screen.getByRole('button', { name: /\+2 Minggu/i });
+    fireEvent.click(chip2Weeks);
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: '2026-10-24',
+    });
+
+    // Bulan Depan -> 2026-11-09 (+30 days)
+    const chipMonth = screen.getByRole('button', { name: /Bulan Depan/i });
+    fireEvent.click(chipMonth);
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: '2026-11-09',
+    });
+
+    // Hapus Jadwal -> null
+    const chipClear = screen.getByRole('button', { name: /Hapus Jadwal/i });
+    fireEvent.click(chipClear);
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      nextSpecificFollowUp: null,
+    });
+  });
+
+  it('triggers onUpdateContact when lastContactedDate and followUpCycleDays are edited', () => {
+    const handleUpdate = vi.fn();
+    render(
+      <ContactDetailModal
+        contact={baseContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={handleUpdate}
+      />
+    );
+
+    const lastContactedInput = screen.getByLabelText(/Tanggal Terakhir Sapa/i);
+    fireEvent.change(lastContactedInput, { target: { value: '2026-10-05' } });
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      lastContactedDate: '2026-10-05',
+    });
+
+    const cycleInput = screen.getByLabelText(/Siklus Follow Up/i);
+    fireEvent.change(cycleInput, { target: { value: '30' } });
+    expect(handleUpdate).toHaveBeenCalledWith(baseContact.id, {
+      followUpCycleDays: 30,
+    });
   });
 
   it('triggers onOpenAiDraft when Sapa via WhatsApp button is clicked', () => {
