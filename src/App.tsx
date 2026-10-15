@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  LayoutDashboard,
   Users,
   Calendar as CalendarIcon,
   Settings as SettingsIcon,
@@ -9,24 +8,32 @@ import {
   Key,
   Database,
   Sparkles,
-  Clock,
   CheckCircle2,
   Trash2,
-  MessageCircle,
-  AlertTriangle,
   RefreshCw,
   Search,
   Menu,
+  Radio,
+  Smartphone,
 } from 'lucide-react';
 import { crmDb } from './db/crmDatabase';
-import type { Contact, InteractionLog } from './types/crm';
+import type { Contact, InteractionLog, InteractionType } from './types/crm';
 import { markChatCompleted } from './services/contactService';
-import { getUpcomingAlarms, getDailyDigestItems } from './services/notificationService';
-import { DashboardView } from './components/crm/DashboardView';
+import {
+  initNotificationService,
+  scheduleDailyMorningDigest,
+  scheduleTargetedFollowUpAlarm,
+  getUpcomingAlarms,
+} from './services/notificationService';
+import { calculateContactStatus } from './utils/status';
+import { KinshipDashboardView } from './components/kinship/KinshipDashboardView';
+import { KinshipContactDossierModal } from './components/kinship/KinshipContactDossierModal';
+import { KinshipLogInteractionModal } from './components/kinship/KinshipLogInteractionModal';
+import { KinshipNotificationsView } from './components/kinship/KinshipNotificationsView';
+import { KinshipPhonebookSyncView } from './components/kinship/KinshipPhonebookSyncView';
+import { CadenceBadge } from './components/kinship/CadenceBadge';
 import { NotionTableView } from './components/crm/NotionTableView';
-import { ContactDetailModal } from './components/crm/ContactDetailModal';
 import { AiDraftModal } from './components/crm/AiDraftModal';
-import { ContactImportModal } from './components/crm/ContactImportModal';
 import { EditContactModal } from './components/crm/EditContactModal';
 import { NavigationDrawer } from './components/crm/NavigationDrawer';
 import { DeviceEmulatorFrame } from './components/ui/DeviceEmulatorFrame';
@@ -99,9 +106,40 @@ const SEED_CONTACTS: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>[] = [
   },
 ];
 
+function getInitials(name: string): string {
+  if (!name || !name.trim()) return '??';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
+function getAssociationBadgeClass(assoc?: string): string {
+  switch (assoc?.toLowerCase()) {
+    case 'ihvan':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'hoca':
+      return 'bg-purple-50 text-purple-700 border-purple-200';
+    case 'keluarga':
+      return 'bg-amber-50 text-amber-700 border-amber-200';
+    case 'zahiri':
+      return 'bg-sky-50 text-sky-700 border-sky-200';
+    case 'teman':
+      return 'bg-teal-50 text-teal-700 border-teal-200';
+    case 'profesional':
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    default:
+      return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+}
+
 export const App: React.FC = () => {
-  // Navigation State: 'home' | 'contacts' | 'calendar' | 'settings'
-  const [activeTab, setActiveTab] = useState<string>('home');
+  // Navigation State: 'radar' | 'contacts' | 'notifications' | 'settings' (supports legacy 'home' & 'calendar')
+  const [activeTab, setActiveTab] = useState<string>('radar');
+
+  // Contacts view mode toggle in Tab 2: 'cards' | 'table'
+  const [contactsViewMode, setContactsViewMode] = useState<'cards' | 'table'>('cards');
 
   // Database Entities State
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -114,12 +152,13 @@ export const App: React.FC = () => {
 
   // Modals State
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [logEncounterContact, setLogEncounterContact] = useState<Contact | null>(null);
   const [draftContact, setDraftContact] = useState<Contact | null>(null);
-  const [isImportOpen, setIsImportOpen] = useState<boolean>(false);
+  const [isSyncOpen, setIsSyncOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
-  // Notion Table View search state when on 'contacts' tab
+  // Contacts search state
   const [contactsSearch, setContactsSearch] = useState<string>('');
 
   // Toast Notification State
@@ -187,22 +226,34 @@ export const App: React.FC = () => {
     refreshData();
   }, [refreshData]);
 
+  // Initialize notification service on mount
+  useEffect(() => {
+    initNotificationService().catch((err) => {
+      console.error('Failed to initialize notification service:', err);
+    });
+  }, []);
+
+  // Register daily morning digest whenever contacts change
+  useEffect(() => {
+    if (contacts.length > 0) {
+      scheduleDailyMorningDigest(contacts).catch((err) => {
+        console.error('Failed to schedule daily morning digest:', err);
+      });
+    }
+  }, [contacts]);
+
   // Computed notifications for badge
   const upcomingAlarms = useMemo(() => {
     return getUpcomingAlarms(contacts, 48);
   }, [contacts]);
 
-  const dailyDigest = useMemo(() => {
-    return getDailyDigestItems(contacts);
-  }, [contacts]);
-
   // Tab definitions with dynamic badge
   const navTabs: NavTabItem[] = useMemo(
     () => [
-      { id: 'home', label: 'Beranda', icon: <LayoutDashboard size={20} /> },
+      { id: 'radar', label: 'Radar', icon: <Radio size={20} /> },
       { id: 'contacts', label: 'Kontak', icon: <Users size={20} /> },
       {
-        id: 'calendar',
+        id: 'notifications',
         label: 'Jadwal',
         icon: <CalendarIcon size={20} />,
         badge: upcomingAlarms.length > 0 ? upcomingAlarms.length : undefined,
@@ -232,6 +283,10 @@ export const App: React.FC = () => {
           ...contactData,
           updatedAt: nowIso,
         });
+        const updated = await crmDb.contacts.get(editingContact.id);
+        if (updated) {
+          await scheduleTargetedFollowUpAlarm(updated);
+        }
         showToast(`Kontak ${contactData.name || editingContact.name} diperbarui`, 'success');
       } else {
         const newContact: Contact = {
@@ -256,6 +311,7 @@ export const App: React.FC = () => {
           updatedAt: nowIso,
         };
         await crmDb.contacts.add(newContact);
+        await scheduleTargetedFollowUpAlarm(newContact);
         showToast(`Kontak ${newContact.name} berhasil ditambahkan`, 'success');
       }
       await refreshData();
@@ -285,6 +341,10 @@ export const App: React.FC = () => {
   const handleLogChat = async (contact: Contact, notes?: string) => {
     try {
       await markChatCompleted(contact.id, notes || 'Selesai berinteraksi via WhatsApp');
+      const updated = await crmDb.contacts.get(contact.id);
+      if (updated) {
+        await scheduleTargetedFollowUpAlarm(updated);
+      }
       await refreshData();
       showToast(`Silaturahmi dengan ${contact.name} dicatat!`, 'success');
     } catch (err) {
@@ -293,7 +353,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Handle direct inline update for ContactDetailModal
+  // Handle direct inline update for Contact Dossier
   const handleUpdateContact = async (contactId: string, updates: Partial<Contact>) => {
     try {
       const nowIso = new Date().toISOString();
@@ -301,6 +361,10 @@ export const App: React.FC = () => {
         ...updates,
         updatedAt: nowIso,
       });
+      const updated = await crmDb.contacts.get(contactId);
+      if (updated) {
+        await scheduleTargetedFollowUpAlarm(updated);
+      }
       await refreshData();
       setSelectedContact((prev) => {
         if (prev && prev.id === contactId) {
@@ -316,6 +380,94 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to update contact inline', err);
       showToast('Gagal memperbarui kontak', 'error');
+    }
+  };
+
+  // Handle saving an encounter from KinshipLogInteractionModal
+  const handleSaveEncounter = async (encounter: {
+    contactId: string;
+    type: InteractionType;
+    date: string;
+    location?: string;
+    talkingPoints?: string;
+    newFacts?: string[];
+    resetCadence?: boolean;
+  }) => {
+    try {
+      const nowIso = new Date().toISOString();
+      const interactionId =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `int_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      // Prepare notes string combining location, talkingPoints, and newFacts
+      const noteParts: string[] = [];
+      if (encounter.location) noteParts.push(`Lokasi: ${encounter.location}`);
+      if (encounter.talkingPoints) noteParts.push(encounter.talkingPoints);
+      if (encounter.newFacts && encounter.newFacts.length > 0) {
+        noteParts.push(`Fakta baru: ${encounter.newFacts.join(', ')}`);
+      }
+      const combinedNotes = noteParts.join(' • ');
+
+      // Save interaction log into Dexie
+      await crmDb.interactions.add({
+        id: interactionId,
+        contactId: encounter.contactId,
+        date: encounter.date || nowIso.split('T')[0],
+        type: encounter.type,
+        notes: combinedNotes,
+        createdAt: nowIso,
+      });
+
+      // Update contact's lastContactedDate & lastUpdateNotes
+      const contact = contacts.find((c) => c.id === encounter.contactId);
+      if (contact) {
+        const contactUpdates: Partial<Contact> = {
+          lastContactedDate: encounter.date || nowIso.split('T')[0],
+          updatedAt: nowIso,
+        };
+        if (encounter.talkingPoints) {
+          contactUpdates.lastUpdateNotes = encounter.talkingPoints;
+        }
+        await crmDb.contacts.update(contact.id, contactUpdates);
+        const updatedContact = { ...contact, ...contactUpdates };
+        await scheduleTargetedFollowUpAlarm(updatedContact);
+      }
+
+      await refreshData();
+      setLogEncounterContact(null);
+      showToast('Interaksi berhasil dicatat!', 'success');
+    } catch (err) {
+      console.error('Failed to save encounter', err);
+      showToast('Gagal mencatat interaksi', 'error');
+    }
+  };
+
+  // Handle snoozing follow-up alarm for a contact
+  const handleSnoozeContact = async (contact: Contact, days: number) => {
+    try {
+      const target = new Date();
+      target.setDate(target.getDate() + days);
+      const targetDateStr = target.toISOString().split('T')[0];
+      const nowIso = new Date().toISOString();
+
+      await crmDb.contacts.update(contact.id, {
+        nextSpecificFollowUp: targetDateStr,
+        updatedAt: nowIso,
+      });
+
+      const updatedContact = {
+        ...contact,
+        nextSpecificFollowUp: targetDateStr,
+        updatedAt: nowIso,
+      };
+
+      await scheduleTargetedFollowUpAlarm(updatedContact);
+      await refreshData();
+      showToast(`Pengingat ${contact.name} ditunda +${days} hari (${targetDateStr})`, 'success');
+    } catch (err) {
+      console.error('Failed to snooze contact', err);
+      showToast('Gagal menunda pengingat', 'error');
     }
   };
 
@@ -393,11 +545,11 @@ export const App: React.FC = () => {
   const handleDrawerSelectFilter = (filterType: 'all' | 'overdue' | 'week' | 'never_contacted') => {
     setIsDrawerOpen(false);
     if (filterType === 'all') {
-      setActiveTab('home');
+      setActiveTab('radar');
     } else if (filterType === 'overdue') {
-      setActiveTab('home');
+      setActiveTab('radar');
     } else if (filterType === 'week') {
-      setActiveTab('calendar');
+      setActiveTab('notifications');
     } else if (filterType === 'never_contacted') {
       setActiveTab('contacts');
     }
@@ -460,8 +612,8 @@ export const App: React.FC = () => {
     }
   };
 
-  // Filtered contacts for 'contacts' tab (Notion table)
-  const filteredNotionContacts = useMemo(() => {
+  // Filtered contacts for 'contacts' tab
+  const filteredContacts = useMemo(() => {
     const q = contactsSearch.trim().toLowerCase();
     if (!q) return contacts;
     return contacts.filter((c) => {
@@ -474,9 +626,14 @@ export const App: React.FC = () => {
     });
   }, [contacts, contactsSearch]);
 
+  const activeInteractionsForSelected = useMemo(() => {
+    if (!selectedContact) return [];
+    return interactions.filter((i) => i.contactId === selectedContact.id);
+  }, [interactions, selectedContact]);
+
   return (
     <DeviceEmulatorFrame>
-      <div className="min-h-screen bg-surface flex flex-col font-sans pb-20 selection:bg-[#2F54EB] selection:text-white">
+      <div className="min-h-screen bg-[#f8f9ff] flex flex-col font-sans pb-24 selection:bg-[#2F54EB] selection:text-white">
         {/* Top Application Navbar */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -489,12 +646,12 @@ export const App: React.FC = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="w-8 h-8 rounded-xl bg-[#2F54EB] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                GS
+              <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                KS
               </div>
               <div>
                 <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
-                  GrowSphere
+                  Kinship
                 </span>
                 <span className="hidden sm:inline-block text-xs text-slate-400 ml-2 font-medium">
                   Personal Relationship CRM
@@ -506,7 +663,7 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsImportOpen(true)}
+                onClick={() => setIsSyncOpen(true)}
                 aria-label="Impor Kontak Telepon"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
               >
@@ -517,7 +674,7 @@ export const App: React.FC = () => {
                 type="button"
                 onClick={handleOpenAddContact}
                 aria-label="Tambah Kontak Baru"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-[#2F54EB] hover:bg-blue-700 shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition-all"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tambah Kontak</span>
@@ -530,393 +687,462 @@ export const App: React.FC = () => {
         <main className="flex-1 w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 gap-3">
-              <RefreshCw className="w-8 h-8 animate-spin text-[#2F54EB]" />
-              <p className="text-sm font-medium">Memuat data relasi CRM...</p>
+              <RefreshCw className="w-8 h-8 animate-spin text-slate-600" />
+              <p className="text-sm font-medium">Memuat data relasi Kinship CRM...</p>
             </div>
           ) : (
             <>
-              {/* TAB 1: HOME / DASHBOARD */}
-              {(activeTab === 'home' || activeTab === 'dashboard') && (
-                <DashboardView
+              {/* TAB 1: RADAR / HOME (KinshipDashboardView) */}
+              {(activeTab === 'radar' || activeTab === 'home' || activeTab === 'dashboard') && (
+                <KinshipDashboardView
                   contacts={contacts}
-                  onImportClick={() => setIsImportOpen(true)}
-                  onAddContactClick={handleOpenAddContact}
                   onSelectContact={(c) => setSelectedContact(c)}
-                  onQuickWhatsApp={(c) => setDraftContact(c)}
+                  onOpenSync={() => setIsSyncOpen(true)}
+                  onOpenNotifications={() => setActiveTab('notifications')}
+                  onOpenAiDraft={(c) => setDraftContact(c)}
                   onLogChat={(c) => handleLogChat(c)}
                 />
               )}
 
-            {/* TAB 2: CONTACTS (Notion Table View) */}
-            {activeTab === 'contacts' && (
-              <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                      <Users className="w-5 h-5 text-[#2F54EB]" />
-                      <span>Semua Kontak (Tampilan Notion)</span>
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Kelola 10 properti schema relasi lengkap dalam format tabel intuitif
-                    </p>
-                  </div>
-
-                  {/* Search box for Notion table */}
-                  <div className="relative w-full sm:w-72">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={contactsSearch}
-                      onChange={(e) => setContactsSearch(e.target.value)}
-                      placeholder="Cari dalam tabel..."
-                      className="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#2F54EB]"
-                    />
-                  </div>
-                </div>
-
-                <NotionTableView
-                  contacts={filteredNotionContacts}
-                  onSelectContact={(c) => setSelectedContact(c)}
-                  onQuickWhatsApp={(c) => setDraftContact(c)}
-                  onLogChat={(c) => handleLogChat(c)}
-                />
-              </div>
-            )}
-
-            {/* TAB 3: CALENDAR & ALARMS */}
-            {(activeTab === 'calendar' || activeTab === 'schedules') && (
-              <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-[#2F54EB]" />
-                    <span>Jadwal & Pengingat Silaturahmi</span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Alarm follow-up spesifik dan rangkuman harian relasi yang perlu disapa
-                  </p>
-                </div>
-
-                {/* Section 1: Upcoming Follow-up Alarms */}
-                <section className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-amber-500" />
-                      <span>Alarm Target Terdekat ({upcomingAlarms.length})</span>
-                    </h3>
-                  </div>
-
-                  {upcomingAlarms.length === 0 ? (
-                    <div className="p-6 bg-white border border-slate-200 rounded-2xl text-center text-xs text-slate-500">
-                      Tidak ada alarm follow-up terjadwal dalam 48 jam ke depan.
+              {/* TAB 2: CONTACTS (Dossier Cards + Notion Table Toggle) */}
+              {activeTab === 'contacts' && (
+                <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        <Users className="w-5 h-5 text-slate-900" />
+                        <span>Semua Kontak ({filteredContacts.length})</span>
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Kelola relasi personal & pantau ritme silaturahmi berkala
+                      </p>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {upcomingAlarms.map((alarm, idx) => (
-                        <div
-                          key={`${alarm.contactId}-${idx}`}
-                          className="bg-white border border-amber-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between space-y-3"
-                        >
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-bold text-slate-900">
-                                {alarm.contactName}
-                              </span>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                                {alarm.scheduledDate}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-600 line-clamp-2">
-                              {alarm.message}
-                            </p>
-                          </div>
 
-                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    {/* View Switcher Toggle & Search */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center bg-slate-200/80 p-1 rounded-full shadow-inner">
+                        <button
+                          type="button"
+                          aria-label="Tampilan Kartu"
+                          onClick={() => setContactsViewMode('cards')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                            contactsViewMode === 'cards'
+                              ? 'bg-white text-slate-900 shadow-sm'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Kartu Kinship
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Tampilan Tabel Notion"
+                          onClick={() => setContactsViewMode('table')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                            contactsViewMode === 'table'
+                              ? 'bg-white text-slate-900 shadow-sm'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Tabel Notion
+                        </button>
+                      </div>
+
+                      <div className="relative w-full sm:w-60">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={contactsSearch}
+                          onChange={(e) => setContactsSearch(e.target.value)}
+                          placeholder="Cari kontak..."
+                          className="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {contactsViewMode === 'cards' ? (
+                    <div className="space-y-3">
+                      {filteredContacts.length === 0 ? (
+                        <div className="p-8 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+                          <p className="text-sm font-semibold text-slate-700">
+                            Tidak ada kontak ditemukan
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Mulai dengan menambahkan kontak baru atau impor dari buku telepon.
+                          </p>
+                          <div className="mt-4 flex items-center justify-center gap-2">
                             <button
                               type="button"
-                              onClick={() => {
-                                const target = contacts.find((c) => c.id === alarm.contactId);
-                                if (target) setDraftContact(target);
-                              }}
-                              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={handleOpenAddContact}
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 text-white"
                             >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Sapa WA</span>
+                              + Tambah Kontak
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                const target = contacts.find((c) => c.id === alarm.contactId);
-                                if (target) handleLogChat(target);
-                              }}
-                              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                              onClick={() => setIsSyncOpen(true)}
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Tandai Selesai</span>
+                              📱 Impor Buku Telepon
                             </button>
                           </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {filteredContacts.map((contact) => {
+                            const status = calculateContactStatus(contact);
+                            const cycle = contact.followUpCycleDays || 15;
+                            const daysLeft = status.isOverdue ? 0 : Math.max(0, cycle - status.daysOverdue);
+                            const primaryAssoc =
+                              contact.associations?.[0] || (contact.isProfessional ? 'Profesional' : 'Relasi');
+                            const badgeClass = getAssociationBadgeClass(
+                              contact.associations?.[0] || (contact.isProfessional ? 'profesional' : 'relasi')
+                            );
+
+                            return (
+                              <div
+                                key={contact.id}
+                                data-testid={`kinship-card-${contact.id}`}
+                                onClick={() => setSelectedContact(contact)}
+                                className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between gap-3"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0">
+                                      {getInitials(contact.name)}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <h3 className="font-bold text-slate-900 text-sm truncate">
+                                          {contact.name}
+                                        </h3>
+                                        <span
+                                          className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border ${badgeClass}`}
+                                        >
+                                          {primaryAssoc}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-slate-500 font-mono truncate mt-0.5">
+                                        {contact.phoneNumber}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <CadenceBadge
+                                    cadenceDays={cycle}
+                                    isOverdue={status.isOverdue}
+                                    daysLeftOrOverdue={status.isOverdue ? status.daysOverdue : daysLeft}
+                                  />
+                                </div>
+
+                                {contact.possibleFollowUpTopic && (
+                                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-xs text-slate-600 line-clamp-2">
+                                    <span className="font-semibold text-slate-800">Topik:</span>{' '}
+                                    {contact.possibleFollowUpTopic}
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+                                  <button
+                                    type="button"
+                                    aria-label={`Draf WA untuk ${contact.name}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDraftContact(contact);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    <span>Sapa WA</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    aria-label={`Catat interaksi ${contact.name}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLogEncounterContact(contact);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Catat Interaksi</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <NotionTableView
+                      contacts={filteredContacts}
+                      onSelectContact={(c) => setSelectedContact(c)}
+                      onQuickWhatsApp={(c) => setDraftContact(c)}
+                      onLogChat={(c) => handleLogChat(c)}
+                    />
                   )}
-                </section>
-
-                {/* Section 2: Daily Digest (Overdue Contacts) */}
-                <section className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-rose-500" />
-                      <span>Rangkuman Silaturahmi Hari Ini ({dailyDigest.totalOverdue})</span>
-                    </h3>
-                    <span className="text-xs text-slate-500 font-mono">{dailyDigest.date}</span>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-                    <p className="text-xs font-medium text-slate-700 mb-3">
-                      {dailyDigest.digestSummary}
-                    </p>
-
-                    {dailyDigest.contacts.length === 0 ? (
-                      <p className="text-xs text-emerald-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Alhamdulillah, tidak ada kontak yang jatuh tempo hari ini!</span>
-                      </p>
-                    ) : (
-                      <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                        {dailyDigest.contacts.map((contact) => (
-                          <div
-                            key={contact.id}
-                            className="py-2.5 flex items-center justify-between gap-2"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-slate-900 truncate">
-                                {contact.name}
-                              </p>
-                              <p className="text-[11px] text-slate-500 truncate">
-                                Siklus {contact.followUpCycleDays} hari • Terakhir:{' '}
-                                {contact.lastContactedDate || 'Belum pernah'}
-                              </p>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => setDraftContact(contact)}
-                              className="px-3 py-1 rounded-full text-xs font-semibold bg-[#2F54EB] text-white hover:bg-blue-700 shrink-0"
-                            >
-                              Sapa Sekarang
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </section>
-              </div>
-            )}
-
-            {/* TAB 4: SETTINGS */}
-            {activeTab === 'settings' && (
-              <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    <SettingsIcon className="w-5 h-5 text-[#2F54EB]" />
-                    <span>Pengaturan & Konfigurasi</span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Konfigurasi Google Gemini AI, basis data offline, dan utilitas aplikasi
-                  </p>
                 </div>
+              )}
 
-                {/* Card 1: Gemini API Key */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-start justify-between">
+              {/* TAB 3: NOTIFICATIONS / JADWAL (KinshipNotificationsView) */}
+              {(activeTab === 'notifications' || activeTab === 'calendar' || activeTab === 'schedules') && (
+                <KinshipNotificationsView
+                  contacts={contacts}
+                  onSelectContact={(c) => setSelectedContact(c)}
+                  onOpenAiDraft={(c) => setDraftContact(c)}
+                  onLogChat={(c) => handleLogChat(c)}
+                  onSnoozeContact={handleSnoozeContact}
+                />
+              )}
+
+              {/* TAB 4: SETTINGS */}
+              {activeTab === 'settings' && (
+                <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                      <SettingsIcon className="w-5 h-5 text-slate-900" />
+                      <span>Pengaturan & Konfigurasi</span>
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Konfigurasi Google Gemini AI, basis data offline, dan sinkronisasi buku telepon
+                    </p>
+                  </div>
+
+                  {/* Card 1: Gemini API Key */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                          <Key className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-800">
+                            Google Gemini AI API Key
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Digunakan untuk menyusun draf pesan WhatsApp cerdas dengan etika santun
+                          </p>
+                        </div>
+                      </div>
+                      {isApiKeySaved && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Aktif
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <input
+                        type="password"
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        placeholder="Masukkan Google Gemini API Key (AIza...)"
+                        className="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      />
+                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>Kunci API disimpan secara aman di browser lokal Anda.</span>
+                        <button
+                          type="button"
+                          onClick={handleSaveApiKey}
+                          className="px-4 py-1.5 rounded-full bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors"
+                        >
+                          Simpan Kunci
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Database Stats & Management */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                        <Key className="w-5 h-5" />
+                      <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Database className="w-5 h-5" />
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-slate-800">
-                          Google Gemini AI API Key
+                          Basis Data Offline (IndexedDB Dexie)
                         </h3>
                         <p className="text-xs text-slate-500">
-                          Digunakan untuk menyusun draf pesan WhatsApp cerdas dengan etika santun
+                          Penyimpanan lokal di perangkat Anda (100% aman & privat)
                         </p>
                       </div>
                     </div>
-                    {isApiKeySaved && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Aktif
-                      </span>
-                    )}
-                  </div>
 
-                  <div className="space-y-2">
-                    <input
-                      type="password"
-                      value={apiKeyInput}
-                      onChange={(e) => setApiKeyInput(e.target.value)}
-                      placeholder="Masukkan Google Gemini API Key (AIza...)"
-                      className="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]"
-                    />
-                    <div className="flex items-center justify-between text-[11px] text-slate-500">
-                      <span>Kunci API disimpan secara aman di browser lokal Anda.</span>
+                    <div className="grid grid-cols-2 gap-3 py-1">
+                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                        <span className="block text-xl font-extrabold text-slate-800">
+                          {contacts.length}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          Total Relasi Tersimpan
+                        </span>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                        <span className="block text-xl font-extrabold text-slate-900">
+                          {interactionsCount}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          Log Riwayat Interaksi
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 justify-between">
                       <button
                         type="button"
-                        onClick={handleSaveApiKey}
-                        className="px-4 py-1.5 rounded-full bg-[#2F54EB] text-white font-semibold hover:bg-blue-700 transition-colors"
+                        onClick={() => setIsSyncOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
                       >
-                        Simpan Kunci
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>Sinkronisasi Buku Telepon</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSeedContacts}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Isi Data Contoh (Demo Seed)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleExportBackup}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Ekspor Backup JSON</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleResetData}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hapus Semua Data</span>
                       </button>
                     </div>
                   </div>
-                </div>
 
-                {/* Card 2: Database Stats & Management */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2F54EB] flex items-center justify-center shrink-0">
-                      <Database className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">
-                        Basis Data Offline (IndexedDB)
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Penyimpanan Dexie lokal di perangkat Anda (100% aman & privat)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 py-1">
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                      <span className="block text-xl font-extrabold text-slate-800">
-                        {contacts.length}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        Total Relasi Tersimpan
-                      </span>
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                      <span className="block text-xl font-extrabold text-[#2F54EB]">
-                        {interactionsCount}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-medium">
-                        Log Riwayat Interaksi
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 justify-between">
-                    <button
-                      type="button"
-                      onClick={handleSeedContacts}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-50 text-[#2F54EB] hover:bg-blue-100 transition-colors"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Isi Data Contoh (Demo Seed)</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleResetData}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Hapus Semua Data</span>
-                    </button>
+                  {/* Card 3: About Application */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-2 text-xs text-slate-600">
+                    <h3 className="font-bold text-slate-800 text-sm">
+                      Tentang Kinship CRM v2.0
+                    </h3>
+                    <p>
+                      Aplikasi manajemen relasi dan silaturahmi personal yang dirancang dengan filosofi
+                      Kinship Pulse & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Didukung arsitektur Local-First Dexie.js, Capacitor Native Plugins, Tailwind CSS, dan Google Gemini AI.
+                    </p>
                   </div>
                 </div>
+              )}
+            </>
+          )}
+        </main>
 
-                {/* Card 3: About Application */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-2 text-xs text-slate-600">
-                  <h3 className="font-bold text-slate-800 text-sm">
-                    Tentang GrowSphere CRM v1.0.0
-                  </h3>
-                  <p>
-                    Aplikasi manajemen hubungan personal (Personal Relationship CRM) yang dirancang khusus untuk merawat silaturahmi, memperkuat ukhuwah, dan menjaga relasi bermakna.
-                  </p>
-                  <p className="text-[11px] text-slate-400">
-                    Didukung arsitektur Local-First IndexedDB Dexie, Tailwind CSS, Google Gemini 1.5 Flash, dan integrasi WhatsApp 1-Click.
-                  </p>
-                </div>
-              </div>
-            )}
-          </>
+        {/* Global Bottom Navigation Bar */}
+        <BottomNavBar
+          tabs={navTabs}
+          activeTab={
+            activeTab === 'home' ? 'radar' : activeTab === 'calendar' ? 'notifications' : activeTab
+          }
+          onTabChange={(tabId) => setActiveTab(tabId)}
+        />
+
+        {/* Kinship Contact Dossier Modal */}
+        <KinshipContactDossierModal
+          contact={selectedContact}
+          isOpen={Boolean(selectedContact)}
+          onClose={() => setSelectedContact(null)}
+          onEditContact={handleOpenEditContact}
+          onOpenAiDraft={(c) => {
+            setSelectedContact(null);
+            setDraftContact(c);
+          }}
+          onOpenLogEncounter={(c) => {
+            setSelectedContact(null);
+            setLogEncounterContact(c);
+          }}
+          onUpdateContact={handleUpdateContact}
+          interactions={activeInteractionsForSelected}
+        />
+
+        {/* Kinship Log Interaction Modal */}
+        <KinshipLogInteractionModal
+          contact={logEncounterContact}
+          isOpen={Boolean(logEncounterContact)}
+          onClose={() => setLogEncounterContact(null)}
+          onSave={handleSaveEncounter}
+        />
+
+        {/* Kinship Phonebook Sync Modal / View */}
+        {isSyncOpen && (
+          <div className="fixed inset-0 z-50 bg-[#f8f9ff] overflow-y-auto">
+            <KinshipPhonebookSyncView
+              isOpen={isSyncOpen}
+              onClose={() => setIsSyncOpen(false)}
+              onImportComplete={(result) => {
+                refreshData();
+                setIsSyncOpen(false);
+                showToast(
+                  `Berhasil mengimpor ${result.importedCount} kontak baru, ${result.updatedCount} diperbarui`,
+                  'success'
+                );
+              }}
+            />
+          </div>
         )}
-      </main>
 
-      {/* Global Bottom Navigation Bar */}
-      <BottomNavBar
-        tabs={navTabs}
-        activeTab={activeTab}
-        onTabChange={(tabId) => setActiveTab(tabId)}
-      />
+        {/* AI WhatsApp Draft Modal */}
+        <AiDraftModal
+          contact={draftContact}
+          isOpen={Boolean(draftContact)}
+          onClose={() => setDraftContact(null)}
+          apiKey={apiKey}
+          onLogChatCompleted={async (c) => {
+            await handleLogChat(c);
+            setDraftContact(null);
+          }}
+        />
 
-      {/* Global Modals */}
-      <ContactDetailModal
-        contact={selectedContact}
-        isOpen={Boolean(selectedContact)}
-        onClose={() => setSelectedContact(null)}
-        onEditContact={handleOpenEditContact}
-        onOpenAiDraft={(c) => {
-          setSelectedContact(null);
-          setDraftContact(c);
-        }}
-        onLogChat={(c) => handleLogChat(c)}
-        onUpdateContact={handleUpdateContact}
-      />
+        {/* Contact Edit Modal */}
+        <EditContactModal
+          contact={editingContact}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingContact(null);
+          }}
+          onSave={handleSaveContact}
+          onDelete={handleDeleteContact}
+        />
 
-      <NavigationDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        contacts={contacts}
-        interactions={interactions}
-        onSelectFilter={handleDrawerSelectFilter}
-        onExportBackup={handleExportBackup}
-        onImportBackup={handleImportBackup}
-      />
+        {/* Navigation Drawer */}
+        <NavigationDrawer
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          contacts={contacts}
+          interactions={interactions}
+          onSelectFilter={handleDrawerSelectFilter}
+          onExportBackup={handleExportBackup}
+          onImportBackup={handleImportBackup}
+        />
 
-      <AiDraftModal
-        contact={draftContact}
-        isOpen={Boolean(draftContact)}
-        onClose={() => setDraftContact(null)}
-        apiKey={apiKey}
-        onLogChatCompleted={async (c) => {
-          await handleLogChat(c);
-          setDraftContact(null);
-        }}
-      />
-
-      <ContactImportModal
-        isOpen={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
-        onImportComplete={(result) => {
-          refreshData();
-          showToast(
-            `Berhasil mengimpor ${result.importedCount} kontak baru, ${result.updatedCount} diperbarui`,
-            'success'
-          );
-        }}
-      />
-
-      <EditContactModal
-        contact={editingContact}
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingContact(null);
-        }}
-        onSave={handleSaveContact}
-        onDelete={handleDeleteContact}
-      />
-
-      {/* Global Toast Notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onClose={hideToast}
-      />
-    </div>
+        {/* Global Toast Notification */}
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      </div>
     </DeviceEmulatorFrame>
   );
 };

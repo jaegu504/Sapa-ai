@@ -146,7 +146,7 @@ describe('AiDraftModal', () => {
     expect(draftSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('opens WhatsApp URL in new window when Buka di WhatsApp is clicked', async () => {
+  it('opens regular WhatsApp when Kirim via WhatsApp is clicked', async () => {
     vi.spyOn(aiDraftService, 'generateWhatsAppDraft').mockResolvedValue('Pesan tes silaturahmi');
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
@@ -154,7 +154,7 @@ describe('AiDraftModal', () => {
 
     await screen.findByDisplayValue('Pesan tes silaturahmi');
 
-    const waBtn = screen.getByRole('button', { name: /buka di whatsapp/i });
+    const waBtn = screen.getByRole('button', { name: /kirim via whatsapp$/i });
     fireEvent.click(waBtn);
 
     expect(openSpy).toHaveBeenCalledTimes(1);
@@ -164,7 +164,25 @@ describe('AiDraftModal', () => {
     expect(openSpy.mock.calls[0][1]).toBe('_blank');
   });
 
-  it('calls onLogChatCompleted when checkbox is checked and Buka di WhatsApp is clicked', async () => {
+  it('opens WhatsApp Business when Kirim via WhatsApp Business is clicked', async () => {
+    vi.spyOn(aiDraftService, 'generateWhatsAppDraft').mockResolvedValue('Pesan tes bisnis');
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(<AiDraftModal contact={baseContact} isOpen={true} onClose={vi.fn()} />);
+
+    await screen.findByDisplayValue('Pesan tes bisnis');
+
+    const waBizBtn = screen.getByRole('button', { name: /kirim via whatsapp business/i });
+    fireEvent.click(waBizBtn);
+
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    const calledUrl = openSpy.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('https://wa.me/6281234567890?text=');
+    expect(calledUrl).toContain(encodeURIComponent('Pesan tes bisnis'));
+    expect(openSpy.mock.calls[0][1]).toBe('_blank');
+  });
+
+  it('calls onLogChatCompleted when checkbox is checked and Kirim via WhatsApp is clicked', async () => {
     vi.spyOn(aiDraftService, 'generateWhatsAppDraft').mockResolvedValue('Pesan dengan auto mark');
     vi.spyOn(window, 'open').mockImplementation(() => null);
     const logChatSpy = vi.fn();
@@ -186,7 +204,7 @@ describe('AiDraftModal', () => {
       fireEvent.click(checkbox);
     }
 
-    const waBtn = screen.getByRole('button', { name: /buka di whatsapp/i });
+    const waBtn = screen.getByRole('button', { name: /kirim via whatsapp$/i });
     fireEvent.click(waBtn);
 
     expect(logChatSpy).toHaveBeenCalledWith(baseContact);

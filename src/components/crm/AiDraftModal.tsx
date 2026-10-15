@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Contact } from '../../types/crm';
 import { generateWhatsAppDraft } from '../../services/aiDraftService';
-import { buildWhatsAppUrl } from '../../utils/whatsapp';
+import { DualWhatsAppButton } from '../kinship/DualWhatsAppButton';
 
 export interface AiDraftModalProps {
   contact: Contact | null;
@@ -62,10 +62,7 @@ export function AiDraftModal({
     }
   };
 
-  const handleOpenWhatsApp = () => {
-    const url = buildWhatsAppUrl(contact.phoneNumber, draftText);
-    if (!url) return;
-    window.open(url, '_blank');
+  const handleChatLogged = () => {
     if (autoMarkDone && onLogChatCompleted) {
       onLogChatCompleted(contact);
     }
@@ -245,24 +242,23 @@ export function AiDraftModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <button
             type="button"
             onClick={onClose}
             aria-label="Batal"
-            className="px-5 py-2.5 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors"
+            className="px-5 py-2.5 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors order-2 sm:order-1"
           >
             Batal
           </button>
-          <button
-            type="button"
-            onClick={handleOpenWhatsApp}
-            aria-label="Buka di WhatsApp"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
-          >
-            <span>💬</span>
-            <span>Buka di WhatsApp</span>
-          </button>
+          <div className="flex-1 order-1 sm:order-2">
+            <DualWhatsAppButton
+              phoneNumber={contact.phoneNumber}
+              draftText={draftText}
+              onChatLogged={handleChatLogged}
+              size="md"
+            />
+          </div>
         </div>
       </div>
     </div>
