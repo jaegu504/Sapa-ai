@@ -1,7 +1,69 @@
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { Contact, DigestResult, AlarmItem } from '../types/crm';
 import { calculateContactStatus } from '../utils/status';
 
 export type { DigestResult, AlarmItem };
+
+export const MORNING_DIGEST_NOTIFICATION_ID = 1001;
+export const CHANNEL_MORNING_DIGEST = 'crm_morning_digest';
+export const CHANNEL_TARGETED_ALARMS = 'crm_targeted_alarms';
+
+function getLocalNotificationsPlugin(): any {
+  if (typeof window !== 'undefined') {
+    const custom =
+      (window as any).Capacitor?.Plugins?.LocalNotifications ||
+      (window as any).LocalNotifications;
+    if (custom) {
+      return custom;
+    }
+  }
+  return LocalNotifications;
+}
+
+export function isNativePlatform(): boolean {
+  if (
+    typeof window !== 'undefined' &&
+    typeof (window as any).Capacitor?.isNativePlatform === 'function'
+  ) {
+    return (window as any).Capacitor.isNativePlatform();
+  }
+  return (
+    Capacitor.isNativePlatform() ||
+    Boolean(
+      typeof window !== 'undefined' &&
+        ((window as any).Capacitor?.Plugins?.LocalNotifications ||
+          (window as any).LocalNotifications)
+    )
+  );
+}
+
+/**
+ * Generates a stable positive 32-bit integer identifier from a string contact ID.
+ * Avoids collision with MORNING_DIGEST_NOTIFICATION_ID (1001).
+ */
+export function hashContactId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    const char = id.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  const positive = Math.abs(hash);
+  return (positive % 2000000000) + 2000;
+}
+
+/**
+ * Calculates next 08:00 AM local time.
+ */
+export function getNextEightAM(now: Date = new Date()): Date {
+  const target = new Date(now.getTime());
+  target.setHours(8, 0, 0, 0);
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+  return target;
+}
 
 /**
  * Formats a Date object or date string into a standard YYYY-MM-DD string.
@@ -155,3 +217,199 @@ export function getUpcomingAlarms(
 
   return alarms;
 }
+
+/**
+ * Requests runtime notification permission on Android/native devices.
+ * Checks permissions via LocalNotifications.checkPermissions(); if not 'granted', calls requestPermissions().
+ * Provides safe fallback for desktop web mode.
+ */
+export async function requestNotificationPermission(): Promise<boolean> {
+  try {
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin) {
+      return true;
+    }
+
+    if (typeof plugin.checkPermissions === 'function') {
+      const checkRes = await plugin.checkPermissions();
+      let status = checkRes?.display;
+
+      if (status !== 'granted') {
+        if (typeof plugin.requestPermissions === 'function') {
+          const reqRes = await plugin.requestPermissions();
+          status = reqRes?.display;
+        }
+      }
+
+      return status === 'granted';
+    }
+
+    // Web Notification API fallback if available
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission === 'denied') return false;
+      const res = await Notification.requestPermission();
+      return res === 'granted';
+    }
+
+    return true;
+  } catch (err) {
+    console.warn('[notificationService] Failed checking/requesting permissions, falling back safely:', err);
+    return true;
+  }
+}
+
+/**
+ * Initializes notification service by registering required Android notification channels:
+ * - crm_morning_digest (Kinship Daily Digest, importance 4)
+ * - crm_targeted_alarms (Kinship Targeted Follow-Ups, importance 5)
+ */
+export async function initNotificationService(): Promise<void> {
+  try {
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin || typeof plugin.createChannel !== 'function') {
+      return;
+    }
+
+    await plugin.createChannel({
+      id: CHANNEL_MORNING_DIGEST,
+      name: 'Kinship Daily Digest',
+      description: 'Ringkasan sapaan harian jam 08:00 WIB',
+      importance: 4,
+    });
+
+    await plugin.createChannel({
+      id: CHANNEL_TARGETED_ALARMS,
+      name: 'Kinship Targeted Follow-Ups',
+      description: 'Pengingat jadwal follow up khusus',
+      importance: 5,
+    });
+  } catch (err) {
+    console.warn('[notificationService] Could not register notification channels:', err);
+  }
+}
+
+/**
+ * Schedules repeating 08:00 WIB daily morning digest summarizing due/overdue contacts.
+ * Uses notification ID 1001 and channel 'crm_morning_digest'.
+ * Returns total count of overdue contacts scheduled.
+ */
+export async function scheduleDailyMorningDigest(contacts: Contact[]): Promise<number> {
+  const digest = getDailyDigestItems(contacts);
+
+  try {
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin || typeof plugin.schedule !== 'function') {
+      return digest.totalOverdue;
+    }
+
+    const next8AM = getNextEightAM();
+
+    await plugin.schedule({
+      notifications: [
+        {
+          id: MORNING_DIGEST_NOTIFICATION_ID,
+          title: 'Kinship: Waktunya Sapa Relasi',
+          body: digest.digestSummary,
+          channelId: CHANNEL_MORNING_DIGEST,
+          schedule: {
+            at: next8AM,
+            every: 'day',
+            on: {
+              hour: 8,
+              minute: 0,
+            },
+            allowWhileIdle: true,
+          },
+          extra: {
+            type: 'morning_digest',
+            overdueCount: digest.totalOverdue,
+          },
+        },
+      ],
+    });
+  } catch (err) {
+    console.warn('[notificationService] Failed to schedule morning digest:', err);
+  }
+
+  return digest.totalOverdue;
+}
+
+/**
+ * Schedules a targeted exact alarm for a contact on their nextSpecificFollowUp date/time.
+ * Generates numeric hash ID from contact.id and assigns channel 'crm_targeted_alarms'.
+ */
+export async function scheduleTargetedFollowUpAlarm(contact: Contact): Promise<boolean> {
+  if (!contact.nextSpecificFollowUp || !contact.nextSpecificFollowUp.trim()) {
+    return false;
+  }
+
+  const dateStr = contact.nextSpecificFollowUp.trim();
+  let scheduleDate: Date;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    scheduleDate = new Date(y, m - 1, d, 8, 0, 0);
+  } else {
+    scheduleDate = new Date(dateStr);
+  }
+
+  if (isNaN(scheduleDate.getTime())) {
+    return false;
+  }
+
+  const hashId = hashContactId(contact.id);
+  const topic = contact.possibleFollowUpTopic?.trim() || '';
+  const body = topic || 'Waktunya menyapa kembali';
+
+  try {
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin || typeof plugin.schedule !== 'function') {
+      return true; // Web fallback
+    }
+
+    await plugin.schedule({
+      notifications: [
+        {
+          id: hashId,
+          title: `Jadwal Follow-up: ${contact.name}`,
+          body,
+          channelId: CHANNEL_TARGETED_ALARMS,
+          schedule: {
+            at: scheduleDate,
+            allowWhileIdle: true,
+          },
+          extra: {
+            contactId: contact.id,
+          },
+        },
+      ],
+    });
+    return true;
+  } catch (err) {
+    console.warn('[notificationService] Failed to schedule targeted alarm:', err);
+    return true;
+  }
+}
+
+/**
+ * Cancels all pending/scheduled notifications.
+ */
+export async function cancelAllScheduledNotifications(): Promise<void> {
+  try {
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin) return;
+
+    if (typeof plugin.cancelAll === 'function') {
+      await plugin.cancelAll();
+    } else if (typeof plugin.getPending === 'function' && typeof plugin.cancel === 'function') {
+      const pending = await plugin.getPending();
+      if (pending?.notifications && pending.notifications.length > 0) {
+        await plugin.cancel({ notifications: pending.notifications });
+      }
+    }
+  } catch (err) {
+    console.warn('[notificationService] Failed to cancel scheduled notifications:', err);
+  }
+}
+

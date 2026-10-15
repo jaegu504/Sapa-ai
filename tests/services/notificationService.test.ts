@@ -1,5 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { getDailyDigestItems, getUpcomingAlarms } from '../../src/services/notificationService';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  getDailyDigestItems,
+  getUpcomingAlarms,
+  requestNotificationPermission,
+  initNotificationService,
+  scheduleDailyMorningDigest,
+  scheduleTargetedFollowUpAlarm,
+  cancelAllScheduledNotifications,
+  CHANNEL_MORNING_DIGEST,
+  CHANNEL_TARGETED_ALARMS,
+  MORNING_DIGEST_NOTIFICATION_ID,
+  hashContactId,
+} from '../../src/services/notificationService';
 import { Contact } from '../../src/types/crm';
 
 describe('notificationService', () => {
@@ -228,4 +240,260 @@ describe('notificationService', () => {
       expect(alarms[1].contactId).toBe('b');
     });
   });
+
+  describe('Native Local Notification Scheduling & Alarms', () => {
+    let mockCheckPermissions: any;
+    let mockRequestPermissions: any;
+    let mockCreateChannel: any;
+    let mockSchedule: any;
+    let mockCancel: any;
+    let mockCancelAll: any;
+    let mockGetPending: any;
+
+    beforeEach(() => {
+      mockCheckPermissions = vi.fn().mockResolvedValue({ display: 'granted' });
+      mockRequestPermissions = vi.fn().mockResolvedValue({ display: 'granted' });
+      mockCreateChannel = vi.fn().mockResolvedValue(undefined);
+      mockSchedule = vi.fn().mockResolvedValue({ notifications: [] });
+      mockCancel = vi.fn().mockResolvedValue(undefined);
+      mockCancelAll = vi.fn().mockResolvedValue(undefined);
+      mockGetPending = vi.fn().mockResolvedValue({ notifications: [] });
+
+      (window as any).Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: {
+            checkPermissions: mockCheckPermissions,
+            requestPermissions: mockRequestPermissions,
+            createChannel: mockCreateChannel,
+            schedule: mockSchedule,
+            cancel: mockCancel,
+            cancelAll: mockCancelAll,
+            getPending: mockGetPending,
+          },
+        },
+      };
+    });
+
+    afterEach(() => {
+      delete (window as any).Capacitor;
+      vi.restoreAllMocks();
+    });
+
+    describe('requestNotificationPermission', () => {
+      it('returns true when permission is already granted', async () => {
+        mockCheckPermissions.mockResolvedValueOnce({ display: 'granted' });
+        const granted = await requestNotificationPermission();
+        expect(granted).toBe(true);
+        expect(mockCheckPermissions).toHaveBeenCalled();
+        expect(mockRequestPermissions).not.toHaveBeenCalled();
+      });
+
+      it('requests permission if checkPermissions is prompt or not granted, and returns true if user grants', async () => {
+        mockCheckPermissions.mockResolvedValueOnce({ display: 'prompt' });
+        mockRequestPermissions.mockResolvedValueOnce({ display: 'granted' });
+
+        const granted = await requestNotificationPermission();
+        expect(granted).toBe(true);
+        expect(mockRequestPermissions).toHaveBeenCalled();
+      });
+
+      it('returns false when user denies permission', async () => {
+        mockCheckPermissions.mockResolvedValueOnce({ display: 'prompt' });
+        mockRequestPermissions.mockResolvedValueOnce({ display: 'denied' });
+
+        const granted = await requestNotificationPermission();
+        expect(granted).toBe(false);
+      });
+
+      it('returns true fallback for desktop web when plugin is unavailable or check throws', async () => {
+        delete (window as any).Capacitor;
+        const granted = await requestNotificationPermission();
+        expect(granted).toBe(true);
+      });
+    });
+
+    describe('initNotificationService', () => {
+      it('creates morning digest and targeted alarms notification channels on Android', async () => {
+        await initNotificationService();
+
+        expect(mockCreateChannel).toHaveBeenCalledTimes(2);
+        expect(mockCreateChannel).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: CHANNEL_MORNING_DIGEST,
+            name: 'Kinship Daily Digest',
+            description: 'Ringkasan sapaan harian jam 08:00 WIB',
+            importance: 4,
+          })
+        );
+        expect(mockCreateChannel).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: CHANNEL_TARGETED_ALARMS,
+            name: 'Kinship Targeted Follow-Ups',
+            description: 'Pengingat jadwal follow up khusus',
+            importance: 5,
+          })
+        );
+      });
+
+      it('handles channel registration errors gracefully on unsupported platforms without crashing', async () => {
+        mockCreateChannel.mockRejectedValueOnce(new Error('Channel creation not supported'));
+        await expect(initNotificationService()).resolves.not.toThrow();
+      });
+    });
+
+    describe('scheduleDailyMorningDigest', () => {
+      it('schedules 08:00 WIB daily morning digest with overdue contacts count', async () => {
+        // Bu Siti is overdue
+        const contacts: Contact[] = [sampleContacts[0], sampleContacts[1]];
+        const scheduledCount = await scheduleDailyMorningDigest(contacts);
+        expect(scheduledCount).toBeGreaterThan(0);
+        expect(scheduledCount).toBe(1);
+
+        expect(mockSchedule).toHaveBeenCalledTimes(1);
+        const callArgs = mockSchedule.mock.calls[0][0];
+        expect(callArgs.notifications).toHaveLength(1);
+
+        const scheduledNotif = callArgs.notifications[0];
+        expect(scheduledNotif.id).toBe(MORNING_DIGEST_NOTIFICATION_ID);
+        expect(scheduledNotif.channelId).toBe(CHANNEL_MORNING_DIGEST);
+        expect(scheduledNotif.title).toBe('Kinship: Waktunya Sapa Relasi');
+        expect(scheduledNotif.body).toContain('1 relasi perlu disapa hari ini');
+        expect(scheduledNotif.schedule).toBeDefined();
+        expect(scheduledNotif.schedule.on).toEqual(expect.objectContaining({ hour: 8, minute: 0 }));
+      });
+
+      it('handles zero overdue contacts and schedules friendly digest', async () => {
+        const contacts: Contact[] = [sampleContacts[1]]; // Only Necmiye (safe)
+        const count = await scheduleDailyMorningDigest(contacts);
+        expect(count).toBe(0);
+
+        expect(mockSchedule).toHaveBeenCalledTimes(1);
+        const callArgs = mockSchedule.mock.calls[0][0];
+        const scheduledNotif = callArgs.notifications[0];
+        expect(scheduledNotif.body).toBe('Semua relasi aman hari ini');
+      });
+
+      it('falls back safely without crashing when local notifications are unsupported', async () => {
+        delete (window as any).Capacitor;
+        const contacts: Contact[] = [sampleContacts[0]];
+        const count = await scheduleDailyMorningDigest(contacts);
+        expect(count).toBe(1);
+      });
+    });
+
+    describe('scheduleTargetedFollowUpAlarm', () => {
+      it('schedules targeted exact alarm on contact nextSpecificFollowUp date', async () => {
+        const contact: Contact = {
+          id: 'test-1',
+          name: 'Ahmad Faiz',
+          phoneNumber: '+628123456789',
+          associations: ['Ihvan'],
+          isProfessional: false,
+          lastContactedDate: '2026-09-01',
+          followUpCycleDays: 15,
+          nextSpecificFollowUp: '2026-10-20T08:00:00.000Z',
+          metContext: '',
+          lastUpdateNotes: '',
+          possibleFollowUpTopic: 'Diskusi proyek',
+          createdAt: '2026-09-01',
+          updatedAt: '2026-09-01',
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(true);
+
+        expect(mockSchedule).toHaveBeenCalledTimes(1);
+        const scheduledNotif = mockSchedule.mock.calls[0][0].notifications[0];
+        expect(scheduledNotif.title).toBe('Jadwal Follow-up: Ahmad Faiz');
+        expect(scheduledNotif.body).toBe('Diskusi proyek');
+        expect(scheduledNotif.channelId).toBe(CHANNEL_TARGETED_ALARMS);
+        expect(scheduledNotif.id).toBe(hashContactId('test-1'));
+        expect(scheduledNotif.schedule.at).toEqual(new Date('2026-10-20T08:00:00.000Z'));
+      });
+
+      it('falls back to default body when possibleFollowUpTopic is empty', async () => {
+        const contact: Contact = {
+          ...sampleContacts[2],
+          id: 'test-2',
+          name: 'Haji Yusuf',
+          nextSpecificFollowUp: '2026-10-25T14:30:00.000Z',
+          possibleFollowUpTopic: '',
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(true);
+
+        const scheduledNotif = mockSchedule.mock.calls[0][0].notifications[0];
+        expect(scheduledNotif.body).toBe('Waktunya menyapa kembali');
+      });
+
+      it('handles date-only nextSpecificFollowUp strings (YYYY-MM-DD)', async () => {
+        const contact: Contact = {
+          ...sampleContacts[2],
+          id: 'test-3',
+          name: 'Pak Budi',
+          nextSpecificFollowUp: '2026-11-01',
+          possibleFollowUpTopic: 'Silaturahmi',
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(true);
+
+        const scheduledNotif = mockSchedule.mock.calls[0][0].notifications[0];
+        expect(scheduledNotif.schedule.at).toBeInstanceOf(Date);
+        expect(scheduledNotif.schedule.at.getFullYear()).toBe(2026);
+        expect(scheduledNotif.schedule.at.getMonth()).toBe(10); // 0-indexed: Nov = 10
+        expect(scheduledNotif.schedule.at.getDate()).toBe(1);
+        expect(scheduledNotif.schedule.at.getHours()).toBe(8);
+      });
+
+      it('returns false when contact has no nextSpecificFollowUp', async () => {
+        const contact: Contact = {
+          ...sampleContacts[0],
+          nextSpecificFollowUp: null,
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(false);
+        expect(mockSchedule).not.toHaveBeenCalled();
+      });
+
+      it('returns false when nextSpecificFollowUp is an invalid date string', async () => {
+        const contact: Contact = {
+          ...sampleContacts[0],
+          nextSpecificFollowUp: 'not-a-valid-date',
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(false);
+        expect(mockSchedule).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('cancelAllScheduledNotifications', () => {
+      it('cancels all pending notifications via cancelAll', async () => {
+        await cancelAllScheduledNotifications();
+        expect(mockCancelAll).toHaveBeenCalled();
+      });
+
+      it('handles unsupported environment without throwing error', async () => {
+        delete (window as any).Capacitor;
+        await expect(cancelAllScheduledNotifications()).resolves.not.toThrow();
+      });
+    });
+
+    describe('hashContactId', () => {
+      it('generates a consistent positive 32-bit integer for a given id', () => {
+        const hash1 = hashContactId('contact-abc-123');
+        const hash2 = hashContactId('contact-abc-123');
+        expect(hash1).toBe(hash2);
+        expect(hash1).toBeGreaterThan(0);
+        expect(Number.isInteger(hash1)).toBe(true);
+        expect(hash1).not.toBe(MORNING_DIGEST_NOTIFICATION_ID);
+      });
+
+      it('produces different hash IDs for different contact ids', () => {
+        const hashA = hashContactId('contact-a');
+        const hashB = hashContactId('contact-b');
+        expect(hashA).not.toBe(hashB);
+      });
+    });
+  });
 });
+
