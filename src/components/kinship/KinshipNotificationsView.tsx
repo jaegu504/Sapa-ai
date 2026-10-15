@@ -127,18 +127,25 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
     const overdueContacts = dailyDigest.contacts;
 
-    // Map unique contacts for today
+    // Map unique contacts for today, preventing duplicate IDs or identical phone numbers
     const map = new Map<string, { contact: Contact; isAlarm: boolean; alarmTopic?: string }>();
+    const seenPhones = new Set<string>();
 
     upcomingAlarms.forEach((alarm) => {
       const c = contacts.find((item) => item.id === alarm.contactId);
       if (c) {
-        map.set(c.id, { contact: c, isAlarm: true, alarmTopic: alarm.topic });
+        const phone = c.phoneNumber?.replace(/\D/g, '');
+        if (!phone || !seenPhones.has(phone)) {
+          if (phone) seenPhones.add(phone);
+          map.set(c.id, { contact: c, isAlarm: true, alarmTopic: alarm.topic });
+        }
       }
     });
 
     overdueContacts.forEach((c) => {
-      if (!map.has(c.id)) {
+      const phone = c.phoneNumber?.replace(/\D/g, '');
+      if (!map.has(c.id) && (!phone || !seenPhones.has(phone))) {
+        if (phone) seenPhones.add(phone);
         map.set(c.id, { contact: c, isAlarm: false });
       }
     });
@@ -264,11 +271,11 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-slate-50 text-slate-900 pb-28">
-      {/* 1. Header Bar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      {/* 1. Header Bar (in-flow to cleanly align below application topbar) */}
+      <header className="pt-2 pb-1">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="flex flex-col">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">Jadwal & Pengingat</h1>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                 🔔 Jam 08:00 WIB Aktif
@@ -478,26 +485,29 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                         </div>
 
                         {/* Snooze Options Bar */}
-                        <div className="ml-1.5 flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[11px] font-medium text-slate-400 mr-1">Tunda:</span>
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 ml-1.5">
+                          <span className="text-[11px] font-semibold text-slate-400 mr-1 shrink-0 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            Tunda:
+                          </span>
                           <button
                             type="button"
                             onClick={() => handleSnooze(contact, 3)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all"
+                            className="shrink-0 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all border border-slate-200/60"
                           >
                             +3 Hari
                           </button>
                           <button
                             type="button"
                             onClick={() => handleSnooze(contact, calculateDaysUntilWeekend(now))}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all"
+                            className="shrink-0 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all border border-slate-200/60"
                           >
                             Akhir Pekan
                           </button>
                           <button
                             type="button"
                             onClick={() => handleSnooze(contact, 7)}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all"
+                            className="shrink-0 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all border border-slate-200/60"
                           >
                             Minggu Depan (+7 hr)
                           </button>
@@ -509,7 +519,8 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                             phoneNumber={contact.phoneNumber}
                             draftText={icebreaker}
                             onChatLogged={() => onLogChat?.(contact)}
-                            size="md"
+                            size="sm"
+                            layout="row"
                           />
                         </div>
                       </div>
@@ -544,14 +555,14 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                         key={contact.id}
                         className="p-3 bg-slate-50/70 hover:bg-slate-50 rounded-xl flex items-center justify-between gap-3 border border-slate-100 transition-colors"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
                             onClick={() => onSelectContact?.(contact)}
                             className="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0 cursor-pointer"
                           >
                             {getInitials(contact.name)}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4
                                 onClick={() => onSelectContact?.(contact)}
@@ -559,7 +570,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                               >
                                 {contact.name}
                               </h4>
-                              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 shrink-0">
                                 {item.formattedDate}
                               </span>
                             </div>
@@ -567,12 +578,15 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                           </div>
                         </div>
 
-                        <div className="shrink-0 flex items-center gap-1.5">
+                        <div className="shrink-0 flex items-center gap-1.5 w-auto">
                           <DualWhatsAppButton
                             phoneNumber={contact.phoneNumber}
                             draftText={generateIcebreaker(contact)}
                             onChatLogged={() => onLogChat?.(contact)}
                             size="sm"
+                            layout="row"
+                            variant="compact"
+                            className="!w-auto"
                           />
                         </div>
                       </div>
