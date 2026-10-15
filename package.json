@@ -11,6 +11,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^8.5.3",
     "clsx": "^2.1.1",
     "dexie": "^4.0.9",
     "lucide-react": "^0.453.0",

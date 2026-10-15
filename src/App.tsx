@@ -544,7 +544,6 @@ export const App: React.FC = () => {
                   onSelectContact={(c) => setSelectedContact(c)}
                   onQuickWhatsApp={(c) => setDraftContact(c)}
                   onLogChat={(c) => handleLogChat(c)}
-                  onOpenMenu={() => setIsDrawerOpen(true)}
                 />
               )}
 

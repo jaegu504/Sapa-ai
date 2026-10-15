@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Smartphone, Monitor, Signal, Wifi, Battery } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 export interface DeviceEmulatorFrameProps {
   children: React.ReactNode;
@@ -18,6 +19,8 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
   className = '',
   mockTime,
 }) => {
+  const isNative = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+
   const [internalIsEmulator, setInternalIsEmulator] = useState<boolean>(defaultMode === 'emulator');
   const isEmulatorMode = controlledIsEmulator !== undefined ? controlledIsEmulator : internalIsEmulator;
 
@@ -47,6 +50,10 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
     const timer = setInterval(updateClock, 30000);
     return () => clearInterval(timer);
   }, [mockTime]);
+
+  if (isNative) {
+    return <>{children}</>;
+  }
 
   if (!isEmulatorMode) {
     return (

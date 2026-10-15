@@ -204,7 +204,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* CircularQuickActions */}
       <section
         aria-label="Aksi Cepat"
-        className="flex items-center justify-between sm:justify-start sm:gap-6 bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-xs overflow-x-auto"
+        className="relative z-10 isolate flex items-center justify-between sm:justify-start sm:gap-6 bg-white border border-slate-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-xs overflow-x-auto"
       >
         <CircularQuickAction
           label="Impor HP"
