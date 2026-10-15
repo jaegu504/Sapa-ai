@@ -9,6 +9,7 @@ import {
   MessageCircle,
   CheckCircle,
   Sparkles,
+  Menu,
 } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { calculateContactStatus } from '../../utils/status';
@@ -25,6 +26,7 @@ export interface DashboardViewProps {
   onSelectContact?: (contact: Contact) => void;
   onQuickWhatsApp?: (contact: Contact) => void;
   onLogChat?: (contact: Contact) => void;
+  onOpenMenu?: () => void;
   now?: Date;
 }
 
@@ -45,6 +47,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectContact,
   onQuickWhatsApp,
   onLogChat,
+  onOpenMenu,
   now = new Date(),
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +56,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [overdueOnly, setOverdueOnly] = useState(false);
 
   const greeting = getGreeting(now);
+
+  // Top due or overdue contacts for Copilot recommendation
+  const dueOrOverdueContacts = useMemo(() => {
+    return contacts
+      .filter((c) => calculateContactStatus(c, now).isOverdue)
+      .sort((a, b) => {
+        const statA = calculateContactStatus(a, now).daysOverdue;
+        const statB = calculateContactStatus(b, now).daysOverdue;
+        return statB - statA;
+      });
+  }, [contacts, now]);
+
+  const topDueContacts = useMemo(() => dueOrOverdueContacts.slice(0, 3), [dueOrOverdueContacts]);
 
   // Metrics calculation
   const { overdueCount, healthScorePercent, activeCount } = useMemo(() => {
@@ -132,15 +148,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-6 space-y-6">
       {/* Header bar */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <span>{greeting}, Sahabat!</span>
-            <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Kelola silaturahmi & hubungan bermakna ({contacts.length} total relasi)
-          </p>
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {onOpenMenu && (
+            <button
+              type="button"
+              aria-label="Buka Menu Analitik"
+              onClick={onOpenMenu}
+              className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+            >
+              <Menu className="w-5 h-5 text-slate-700" />
+            </button>
+          )}
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <span>{greeting}, Sahabat!</span>
+              <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Kelola silaturahmi & hubungan bermakna ({contacts.length} total relasi)
+            </p>
+          </div>
         </div>
 
         {/* Total Badge */}
@@ -287,6 +315,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           ))}
         </div>
       </section>
+
+      {/* Smart Daily Copilot Card */}
+      {topDueContacts.length > 0 && !searchQuery.trim() && activeFilter === 'Semua' && !overdueOnly && (
+        <section
+          aria-label="Rekomendasi Sapaan Hari Ini"
+          className="bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-white border border-blue-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                <span>✨ Rekomendasi Sapaan Hari Ini</span>
+              </span>
+            </div>
+            <span className="text-xs text-blue-700 font-medium">
+              Ada {dueOrOverdueContacts.length} relasi yang perlu disapa hari ini
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {topDueContacts.map((contact) => {
+              const initials =
+                contact.name
+                  .split(' ')
+                  .map((p) => p[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase() || 'GS';
+              const badgeText =
+                contact.associations[0] || (contact.isProfessional ? 'Profesional' : 'Relasi');
+
+              return (
+                <div
+                  key={contact.id}
+                  className="bg-white border border-blue-100 rounded-xl p-3 flex items-center justify-between shadow-2xs gap-2"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-[#2F54EB] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 truncate">{contact.name}</p>
+                      <span className="inline-block text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                        {badgeText}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-testid={`copilot-sapa-${contact.id}`}
+                    onClick={() => onQuickWhatsApp?.(contact)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shrink-0 shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Sapa</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Main Content: Cards Grid or Notion Table */}
       <main aria-label="Daftar Relasi">

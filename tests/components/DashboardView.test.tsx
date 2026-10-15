@@ -96,7 +96,7 @@ describe('DashboardView', () => {
     render(<DashboardView contacts={sampleContacts} now={now} />);
 
     const searchInput = screen.getByPlaceholderText(/cari/i);
-    expect(screen.getByText('Yılmaz Kileci Abi')).toBeDefined();
+    expect(screen.getAllByText('Yılmaz Kileci Abi').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Ahmad Fauzi')).toBeDefined();
     expect(screen.getByText('Dr. Hendra Gunawan')).toBeDefined();
 
@@ -192,4 +192,63 @@ describe('DashboardView', () => {
 
     expect(screen.getByText(/tidak ada kontak/i)).toBeDefined();
   });
+
+  it('renders hamburger menu button and triggers onOpenMenu callback', () => {
+    const handleOpenMenu = vi.fn();
+    render(
+      <DashboardView
+        contacts={sampleContacts}
+        onOpenMenu={handleOpenMenu}
+        now={now}
+      />
+    );
+
+    const menuBtn = screen.getByRole('button', { name: /buka menu analitik/i });
+    expect(menuBtn).toBeDefined();
+
+    fireEvent.click(menuBtn);
+    expect(handleOpenMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders Smart Daily Copilot Card with top due contacts and quick WhatsApp action', () => {
+    const handleQuickWhatsApp = vi.fn();
+
+    render(
+      <DashboardView
+        contacts={sampleContacts}
+        onQuickWhatsApp={handleQuickWhatsApp}
+        now={now}
+      />
+    );
+
+    // Smart Copilot should show when there are overdue contacts (c1 is overdue)
+    expect(screen.getByText(/Rekomendasi Sapaan Hari Ini/i)).toBeDefined();
+    expect(screen.getByText(/Ada 1 relasi yang perlu disapa hari ini/i)).toBeDefined();
+
+    // Top overdue contact c1 (Yılmaz Kileci Abi) should be listed
+    expect(screen.getAllByText('Yılmaz Kileci Abi').length).toBeGreaterThanOrEqual(1);
+
+    // Quick WhatsApp button in Copilot card
+    const sapaBtn = screen.getByTestId('copilot-sapa-c1');
+    expect(sapaBtn).toBeDefined();
+
+    fireEvent.click(sapaBtn);
+    expect(handleQuickWhatsApp).toHaveBeenCalledWith(sampleContacts[0]);
+  });
+
+  it('does not render Smart Daily Copilot Card when all contacts are safe', () => {
+    const safeContacts: Contact[] = [
+      {
+        ...sampleContacts[1], // Ahmad Fauzi (Aman)
+      },
+      {
+        ...sampleContacts[2], // Dr. Hendra Gunawan (Aman)
+      },
+    ];
+
+    render(<DashboardView contacts={safeContacts} now={now} />);
+
+    expect(screen.queryByText(/Rekomendasi Sapaan Hari Ini/i)).toBeNull();
+  });
 });
+

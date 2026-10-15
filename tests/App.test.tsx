@@ -98,7 +98,7 @@ describe('App Integration', () => {
     fireEvent.click(homeTabBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Ustadz Danu Hasan')).toBeDefined();
+      expect(screen.getAllByText('Ustadz Danu Hasan').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Bunda Sarah')).toBeDefined();
     });
   });
