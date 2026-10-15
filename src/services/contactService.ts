@@ -36,6 +36,7 @@ export async function importContacts(
         name: (raw.name && raw.name.trim()) || existing.name,
         associations: updatedAssociations,
         isProfessional: raw.isProfessional !== undefined ? raw.isProfessional : existing.isProfessional,
+        ...(raw.followUpCycleDays !== undefined ? { followUpCycleDays: raw.followUpCycleDays } : {}),
         updatedAt: nowIso,
       });
       updatedCount++;
@@ -50,7 +51,7 @@ export async function importContacts(
         associations: raw.associations && raw.associations.length > 0 ? raw.associations : ['Teman'],
         isProfessional: raw.isProfessional ?? false,
         lastContactedDate: null,
-        followUpCycleDays: 15,
+        followUpCycleDays: raw.followUpCycleDays ?? 15,
         nextSpecificFollowUp: null,
         metContext: '',
         lastUpdateNotes: '',

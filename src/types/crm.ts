@@ -38,6 +38,7 @@ export interface RawPhoneContact {
   phoneNumber: string;
   associations?: string[];
   isProfessional?: boolean;
+  followUpCycleDays?: number;
 }
 
 export interface ImportResult {
