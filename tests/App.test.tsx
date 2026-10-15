@@ -126,4 +126,109 @@ describe('App Integration', () => {
       expect(screen.getByText('Impor Kontak Telepon')).toBeDefined();
     });
   });
+
+  it('opens and closes NavigationDrawer from the hamburger menu button', async () => {
+    render(<App />);
+
+    const menuBtn = screen.getByRole('button', { name: /buka menu analitik/i });
+    fireEvent.click(menuBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Ringkasan & Analitik')).toBeDefined();
+      expect(screen.getByText(/Health Score Silaturahmi/i)).toBeDefined();
+    });
+
+    const closeBtn = screen.getByRole('button', { name: /tutup menu/i });
+    fireEvent.click(closeBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Ringkasan & Analitik')).toBeNull();
+    });
+  });
+
+  it('toggles DeviceEmulatorFrame between emulator and desktop mode', async () => {
+    render(<App />);
+
+    // Toggle to emulator mode
+    const emulatorBtn = screen.getByRole('button', { name: /mode emulator hp/i });
+    fireEvent.click(emulatorBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('device-emulator-frame')).toBeDefined();
+      expect(screen.getByTestId('device-emulator-viewport')).toBeDefined();
+    });
+
+    // Toggle back to desktop mode
+    const desktopBtn = screen.getByRole('button', { name: /mode desktop/i });
+    fireEvent.click(desktopBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('device-emulator-frame')).toBeNull();
+    });
+  });
+
+  it('updates contact inline and persists to database', async () => {
+    const testContact = {
+      id: 'c-test-update-1',
+      name: 'Habib Umar Faruq',
+      phoneNumber: '+6281234567800',
+      associations: ['Ihvan'],
+      isProfessional: false,
+      followUpCycleDays: 14,
+      lastContactedDate: '2026-10-01',
+      nextSpecificFollowUp: null,
+      metContext: 'Pertemuan Masjid',
+      lastUpdateNotes: 'Catatan awal',
+      possibleFollowUpTopic: 'Topik awal diskusi',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await crmDb.contacts.add(testContact);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Habib Umar Faruq').length).toBeGreaterThanOrEqual(1);
+    });
+
+    fireEvent.click(screen.getAllByText('Habib Umar Faruq')[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeDefined();
+    });
+
+    const chip3Hari = screen.getByRole('button', { name: /\+3 Hari/i });
+    fireEvent.click(chip3Hari);
+
+    await waitFor(async () => {
+      const updated = await crmDb.contacts.get('c-test-update-1');
+      expect(updated?.nextSpecificFollowUp).toBeDefined();
+      expect(updated?.nextSpecificFollowUp).not.toBeNull();
+    });
+  });
+
+  it('exports JSON backup when triggered from NavigationDrawer', async () => {
+    const createObjectURLMock = vi.fn().mockReturnValue('blob:mock-url');
+    const revokeObjectURLMock = vi.fn();
+    window.URL.createObjectURL = createObjectURLMock;
+    window.URL.revokeObjectURL = revokeObjectURLMock;
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    render(<App />);
+
+    const menuBtn = screen.getByRole('button', { name: /buka menu analitik/i });
+    fireEvent.click(menuBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Ringkasan & Analitik')).toBeDefined();
+    });
+
+    const exportBtn = screen.getByRole('button', { name: /ekspor backup json/i });
+    fireEvent.click(exportBtn);
+
+    await waitFor(() => {
+      expect(createObjectURLMock).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalled();
+    });
+  });
 });

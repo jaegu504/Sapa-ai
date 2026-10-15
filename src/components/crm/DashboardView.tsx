@@ -349,7 +349,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               return (
                 <div
                   key={contact.id}
-                  className="bg-white border border-blue-100 rounded-xl p-3 flex items-center justify-between shadow-2xs gap-2"
+                  onClick={() => onSelectContact?.(contact)}
+                  className="bg-white border border-blue-100 rounded-xl p-3 flex items-center justify-between shadow-2xs gap-2 cursor-pointer hover:border-blue-200 transition-colors"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-[#2F54EB] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
