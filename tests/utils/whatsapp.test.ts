@@ -92,7 +92,15 @@ describe('buildDualWhatsAppUrl', () => {
 });
 
 describe('openWhatsApp', () => {
+  let originalLocation: Location;
+
   beforeEach(() => {
+    vi.restoreAllMocks();
+    originalLocation = window.location;
+  });
+
+  afterEach(() => {
+    (window as any).location = originalLocation;
     vi.restoreAllMocks();
   });
 
@@ -125,7 +133,6 @@ describe('openWhatsApp', () => {
   });
 
   it('assigns window.location.href with intent URL on Android', () => {
-    const originalLocation = window.location;
     delete (window as any).location;
     (window as any).location = { href: '' };
 
@@ -138,13 +145,10 @@ describe('openWhatsApp', () => {
 
     expect(window.location.href).toContain('package=com.whatsapp');
     expect(window.location.href).toContain('phone=628123456789');
-
-    (window as any).location = originalLocation;
   });
 
   it('falls back to window.open if window.location.href throws on Android', () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-    const originalLocation = window.location;
 
     delete (window as any).location;
     (window as any).location = {
@@ -161,8 +165,6 @@ describe('openWhatsApp', () => {
     });
 
     expect(openSpy).toHaveBeenCalledWith('https://wa.me/628123456789?text=Halo%21', '_blank');
-
-    (window as any).location = originalLocation;
   });
 });
 
