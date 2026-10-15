@@ -5,3 +5,4 @@ export * from './KinshipDashboardView';
 export * from './KinshipContactDossierModal';
 export * from './KinshipLogInteractionModal';
 export * from './KinshipPhonebookSyncView';
+export * from './KinshipNotificationsView';
