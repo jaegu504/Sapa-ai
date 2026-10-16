@@ -25,6 +25,9 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
+      transitionTimingFunction: {
+        'spring': 'cubic-bezier(0.32, 0.72, 0, 1)',
+      },
     },
   },
   plugins: [],

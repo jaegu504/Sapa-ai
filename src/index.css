@@ -8,3 +8,49 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
 }
+
+/* Gemini Live & iOS Micro-Interactions */
+@keyframes geminiAura {
+  0% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.45));
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 18px rgba(139, 92, 246, 0.55));
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.45));
+  }
+}
+
+@keyframes shimmerWave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.gemini-aura-glow {
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6, #06B6D4, #10B981, #3B82F6);
+  background-size: 300% 300%;
+  animation: geminiAura 4s ease infinite;
+}
+
+.shimmer-wave {
+  animation: shimmerWave 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.ios-spring {
+  transition: all 400ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ios-tap {
+  transition: transform 150ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.ios-tap:active {
+  transform: scale(0.96);
+}
