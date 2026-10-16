@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   generateDeterministicFallbackDraft,
   generateWhatsAppDraft,
+  generateSapaDrafts,
 } from '../../src/services/aiDraftService';
 import { Contact } from '../../src/types/crm';
 
@@ -226,5 +227,184 @@ describe('generateWhatsAppDraft (Gemini API & Fallback)', () => {
     const draft = await generateWhatsAppDraft(sampleContact, 'test-key');
     expect(draft).toContain('Assalamu’alaikum');
     expect(draft).toContain('Ust. Abdullah');
+  });
+});
+
+describe('Sapa AI Engine: Multi-Label Tone Blending & Turkish Support', () => {
+  it('blends Hoca + Teman: takzim salam + warm friendly brotherhood tone in Indonesian', () => {
+    const contact: Contact = {
+      id: 'ht1',
+      name: 'Ust. Ridwan',
+      phoneNumber: '+628123456789',
+      associations: ['Hoca', 'Teman'],
+      isProfessional: false,
+      lastContactedDate: '2026-09-20',
+      followUpCycleDays: 15,
+      nextSpecificFollowUp: null,
+      metContext: 'Kajian & Futsal',
+      lastUpdateNotes: '',
+      possibleFollowUpTopic: 'Agenda silaturahmi & ngopi santai',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const draft = generateDeterministicFallbackDraft(contact, 'id');
+    expect(draft).toMatch(/Assalamu’alaikum|Assalamu'alaikum/);
+    expect(draft).toContain('Ust. Ridwan');
+    // Blended tone check: contains respect and friendly warmth
+    expect(draft.toLowerCase()).toMatch(/ngopi|santai|silaturahmi|senggang/);
+  });
+
+  it('blends Keluarga + Profesional: caring family tone with business clarity', () => {
+    const contact: Contact = {
+      id: 'kp1',
+      name: 'Om Budi',
+      phoneNumber: '+628111222333',
+      associations: ['Keluarga', 'Profesional'],
+      isProfessional: true,
+      lastContactedDate: '2026-09-10',
+      followUpCycleDays: 15,
+      nextSpecificFollowUp: null,
+      metContext: '',
+      lastUpdateNotes: '',
+      possibleFollowUpTopic: 'Kerjasama renovasi rumah',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const draft = generateDeterministicFallbackDraft(contact, 'id');
+    expect(draft).toContain('Om Budi');
+    expect(draft).toContain('Kerjasama renovasi rumah');
+    expect(draft.toLowerCase()).toMatch(/keluarga|sehat|kabar/);
+  });
+
+  it('generates authentic Turkish greetings for Hoca category', () => {
+    const contact: Contact = {
+      id: 'tr_hoca',
+      name: 'Mehmet',
+      phoneNumber: '+905551234567',
+      associations: ['Hoca'],
+      isProfessional: false,
+      lastContactedDate: '2026-09-01',
+      followUpCycleDays: 15,
+      nextSpecificFollowUp: null,
+      metContext: 'Istanbul',
+      lastUpdateNotes: '',
+      possibleFollowUpTopic: 'Kuran dersi ve sohbet',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const draft = generateDeterministicFallbackDraft(contact, 'tr');
+    expect(draft.toLowerCase()).toMatch(/selamün aleyküm|hocam|saygılar/);
+    expect(draft).toContain('Mehmet');
+  });
+
+  it('generates authentic Turkish friendly / brotherhood greetings with çay invitation', () => {
+    const contact: Contact = {
+      id: 'tr_friend',
+      name: 'Emre',
+      phoneNumber: '+905559876543',
+      associations: ['Ihvan', 'Teman'],
+      isProfessional: false,
+      lastContactedDate: '2026-09-01',
+      followUpCycleDays: 15,
+      nextSpecificFollowUp: null,
+      metContext: '',
+      lastUpdateNotes: '',
+      possibleFollowUpTopic: 'Hafta sonu buluşması',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const draft = generateDeterministicFallbackDraft(contact, 'tr', 'catchup_meet');
+    expect(draft.toLowerCase()).toMatch(/çay|kahve|buluş|görüş/);
+    expect(draft).toContain('Emre');
+  });
+});
+
+describe('generateSapaDrafts', () => {
+  const sampleContact: Contact = {
+    id: 'sapa_c1',
+    name: 'Fatih',
+    phoneNumber: '+905551112233',
+    associations: ['Teman'],
+    isProfessional: false,
+    lastContactedDate: '2026-10-01',
+    followUpCycleDays: 15,
+    nextSpecificFollowUp: null,
+    metContext: '',
+    lastUpdateNotes: '',
+    possibleFollowUpTopic: 'Proyek mobile app',
+    createdAt: '',
+    updatedAt: '',
+  };
+
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it('returns 3 distinct options (Kabar & Doa, Bahasan Topik, Ajak Temu/Çay) on offline fallback', async () => {
+    // When no API key or proxy is provided, or fetch fails
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+    const result = await generateSapaDrafts({
+      contact: sampleContact,
+      language: 'tr',
+    });
+
+    expect(result.drafts).toHaveLength(3);
+    const angles = result.drafts.map((d) => d.angle);
+    expect(angles).toContain('warm_greeting');
+    expect(angles).toContain('topic_discussion');
+    expect(angles).toContain('catchup_meet');
+    expect(result.source).toBe('offline_rule');
+  });
+
+  it('calls Cloudflare Worker proxy and maps AI response into 3 distinct options', async () => {
+    const mockWorkerResponse = {
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                text: JSON.stringify([
+                  { angle: 'warm_greeting', title: 'Kabar & Doa', text: 'Selamün aleyküm Fatih, afiyettesinizdir inşallah.' },
+                  { angle: 'topic_discussion', title: 'Bahasan Topik', text: 'Selam Fatih, geçen konuştuğumuz mobil uygulama projesi nasıl gidiyor?' },
+                  { angle: 'catchup_meet', title: 'Ajak Temu / Çay', text: 'Selam Fatih, bu hafta müsait olduğunda bir çay içelim mi?' },
+                ]),
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockWorkerResponse,
+    });
+
+    const result = await generateSapaDrafts(
+      {
+        contact: sampleContact,
+        language: 'tr',
+      },
+      'https://sapa-ai.jaegu108.workers.dev/'
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(result.drafts).toHaveLength(3);
+    expect(result.drafts[0].text).toContain('Selamün aleyküm Fatih');
+    expect(result.drafts[1].text).toContain('mobil uygulama');
+    expect(result.drafts[2].text).toContain('çay içelim');
+  });
+
+  it('uses variationIndex and previousDrafts to ensure anti-repetition across multiple generations', () => {
+    const prevDrafts = [
+      generateDeterministicFallbackDraft(sampleContact, 'tr', 'warm_greeting', 0),
+    ];
+    const newDraft = generateDeterministicFallbackDraft(sampleContact, 'tr', 'warm_greeting', 1);
+
+    expect(newDraft).not.toBe(prevDrafts[0]);
   });
 });
