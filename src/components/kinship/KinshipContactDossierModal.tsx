@@ -164,8 +164,12 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
     contact.followUpCycleDays,
   ]);
 
+  const isMountedRef = useRef<boolean>(true);
+
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, []);
@@ -177,13 +181,19 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
     setSaveStatus('saving');
     try {
       await onUpdateContact(contact.id, updates);
-      setSaveStatus('saved');
+      if (typeof window !== 'undefined' && isMountedRef.current) {
+        setSaveStatus('saved');
+      }
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
-        setSaveStatus('idle');
+        if (typeof window !== 'undefined' && isMountedRef.current) {
+          setSaveStatus('idle');
+        }
       }, 1500);
     } catch {
-      setSaveStatus('idle');
+      if (typeof window !== 'undefined' && isMountedRef.current) {
+        setSaveStatus('idle');
+      }
     }
   };
 

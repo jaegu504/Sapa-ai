@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { App } from '../src/App';
 import { crmDb } from '../src/db/crmDatabase';
 
@@ -9,6 +9,10 @@ describe('App Integration', () => {
     await crmDb.interactions.clear();
     localStorage.clear();
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it('renders Sapa header and default Radar tab', async () => {
