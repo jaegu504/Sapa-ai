@@ -34,7 +34,7 @@ export default {
 
       const body = await request.json();
       const prompt = body.prompt;
-      let model = body.model || "gemini-3.6-flash";
+      const requestedModel = body.model || "gemini-3.5-flash-lite";
 
       if (!prompt) {
         return new Response(JSON.stringify({ error: "Parameter 'prompt' wajib dikirim." }), {
@@ -43,8 +43,13 @@ export default {
         });
       }
 
-      // 2. Teruskan permintaan ke Google Gemini API secara aman
-      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      // 2. Teruskan permintaan ke Google Gemini API dengan auto-fallback & retry
+      const modelsToTry = [
+        requestedModel,
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+      ].filter((m, i, arr) => arr.indexOf(m) === i); // unique
+
       const geminiPayload = {
         contents: [
           {
@@ -57,16 +62,45 @@ export default {
         },
       };
 
-      const geminiResponse = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(geminiPayload),
-      });
+      let lastResponse = null;
+      let lastData = null;
 
-      const data = await geminiResponse.json();
+      for (const model of modelsToTry) {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        // Coba panggil model
+        let geminiResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(geminiPayload),
+        });
 
-      return new Response(JSON.stringify(data), {
-        status: geminiResponse.status,
+        // Jika terjadi lonjakan beban sesaat (503), tunggu 800ms dan coba ulang sekali
+        if (geminiResponse.status === 503) {
+          await new Promise((res) => setTimeout(res, 800));
+          geminiResponse = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(geminiPayload),
+          });
+        }
+
+        const data = await geminiResponse.json();
+        lastResponse = geminiResponse;
+        lastData = data;
+
+        // Jika berhasil (200 OK), langsung kembalikan ke klien
+        if (geminiResponse.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      // Jika seluruh model gagal, kembalikan response terakhir
+      return new Response(JSON.stringify(lastData), {
+        status: lastResponse ? lastResponse.status : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (err) {

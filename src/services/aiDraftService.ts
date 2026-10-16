@@ -424,59 +424,91 @@ export async function generateSapaDrafts(
   const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
   const workerEndpoint = proxyUrl || (!isTestEnv ? DEFAULT_WORKER_PROXY_URL : undefined);
   if (workerEndpoint) {
-    try {
-      const resp = await fetch(workerEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          model: 'gemini-3.6-flash',
-          temperature: 0.85,
-        }),
-      });
+    const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+    for (const modelToTry of modelsToTry) {
+      try {
+        let resp = await fetch(workerEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            model: modelToTry,
+            temperature: 0.85,
+          }),
+        });
 
-      if (resp.ok) {
-        const data = await resp.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (typeof rawText === 'string') {
-          const parsed = parseDraftsJson(rawText, fallbackDrafts);
-          if (parsed.length === 3) {
-            return { drafts: parsed, source: 'worker' };
+        // If temporary 503 spike, wait 800ms and retry once
+        if (resp.status === 503) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          resp = await fetch(workerEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt,
+              model: modelToTry,
+              temperature: 0.85,
+            }),
+          });
+        }
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (typeof rawText === 'string') {
+            const parsed = parseDraftsJson(rawText, fallbackDrafts);
+            if (parsed.length === 3) {
+              return { drafts: parsed, source: 'worker' };
+            }
           }
         }
+      } catch (_err) {
+        // try next model
       }
-    } catch (_err) {
-      // ignore and try direct or fallback
     }
   }
 
   // 2. Try Direct Gemini API (if user has custom key)
   if (apiKey && apiKey.trim()) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(
-        apiKey.trim()
-      )}`;
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.85, maxOutputTokens: 500 },
-        }),
-      });
+    const directModels = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+    for (const modelToTry of directModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${encodeURIComponent(
+          apiKey.trim()
+        )}`;
+        let resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.85, maxOutputTokens: 600 },
+          }),
+        });
 
-      if (resp.ok) {
-        const data = await resp.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (typeof rawText === 'string') {
-          const parsed = parseDraftsJson(rawText, fallbackDrafts);
-          if (parsed.length === 3) {
-            return { drafts: parsed, source: 'gemini_direct' };
+        if (resp.status === 503) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.85, maxOutputTokens: 600 },
+            }),
+          });
+        }
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (typeof rawText === 'string') {
+            const parsed = parseDraftsJson(rawText, fallbackDrafts);
+            if (parsed.length === 3) {
+              return { drafts: parsed, source: 'gemini_direct' };
+            }
           }
         }
+      } catch (_err) {
+        // try next model
       }
-    } catch (_err) {
-      // fallback
     }
   }
 
