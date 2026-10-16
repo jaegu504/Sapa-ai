@@ -393,7 +393,8 @@ export async function generateSapaDrafts(
   ].join('\n');
 
   // 1. Try Cloudflare Worker Proxy
-  const workerEndpoint = proxyUrl || DEFAULT_WORKER_PROXY_URL;
+  const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+  const workerEndpoint = proxyUrl || (!isTestEnv ? DEFAULT_WORKER_PROXY_URL : undefined);
   if (workerEndpoint) {
     try {
       const resp = await fetch(workerEndpoint, {

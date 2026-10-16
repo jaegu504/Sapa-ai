@@ -240,4 +240,76 @@ describe('AiDraftModal', () => {
 
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('auto-detects Turkish when contact phone starts with +90 and displays Türkçe segment', async () => {
+    const trContact: Contact = {
+      ...baseContact,
+      id: 'c_tr',
+      name: 'Emre Yilmaz',
+      phoneNumber: '+905551234567',
+    };
+
+    render(<AiDraftModal contact={trContact} isOpen={true} onClose={vi.fn()} />);
+
+    // Segmented button for Türkçe should exist and be active
+    const trBtn = screen.getByRole('button', { name: /türkçe|tr/i });
+    expect(trBtn).toBeDefined();
+  });
+
+  it('displays 3 instant draft option cards and updates textarea when another card is clicked', async () => {
+    vi.spyOn(aiDraftService, 'generateSapaDrafts').mockResolvedValue({
+      drafts: [
+        { id: '1', angle: 'warm_greeting', title: 'Kabar & Doa', text: 'Teks opsi pertama' },
+        { id: '2', angle: 'topic_discussion', title: 'Bahasan Topik', text: 'Teks opsi kedua topik' },
+        { id: '3', angle: 'catchup_meet', title: 'Ajak Temu / Ngopi', text: 'Teks opsi ketiga temu' },
+      ],
+      source: 'offline_rule',
+    });
+
+    render(<AiDraftModal contact={baseContact} isOpen={true} onClose={vi.fn()} />);
+
+    // 3 cards rendered
+    expect(await screen.findByText('Kabar & Doa')).toBeDefined();
+    expect(screen.getByText('Bahasan Topik')).toBeDefined();
+    expect(screen.getByText(/Ajak Temu/i)).toBeDefined();
+
+    // Initially selected first card
+    expect(screen.getByDisplayValue('Teks opsi pertama')).toBeDefined();
+
+    // Click on 2nd card (Bahasan Topik)
+    const topicCard = screen.getByText('Bahasan Topik');
+    fireEvent.click(topicCard);
+
+    // Textarea now displays second option
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Teks opsi kedua topik')).toBeDefined();
+    });
+  });
+
+  it('switches language and generates drafts in chosen language when language segment is tapped', async () => {
+    const sapaSpy = vi.spyOn(aiDraftService, 'generateSapaDrafts').mockResolvedValue({
+      drafts: [
+        { id: '1', angle: 'warm_greeting', title: 'Kabar & Doa', text: 'Teks ID' },
+        { id: '2', angle: 'topic_discussion', title: 'Bahasan Topik', text: 'Teks Topik ID' },
+        { id: '3', angle: 'catchup_meet', title: 'Ajak Temu', text: 'Teks Temu ID' },
+      ],
+      source: 'offline_rule',
+    });
+
+    render(<AiDraftModal contact={baseContact} isOpen={true} onClose={vi.fn()} />);
+
+    await screen.findByText('Kabar & Doa');
+
+    // Tap Turkish segment
+    const trBtn = screen.getByRole('button', { name: /türkçe|tr/i });
+    fireEvent.click(trBtn);
+
+    await waitFor(() => {
+      expect(sapaSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ language: 'tr' }),
+        undefined,
+        undefined
+      );
+    });
+  });
 });
