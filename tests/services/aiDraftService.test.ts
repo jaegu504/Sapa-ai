@@ -429,4 +429,98 @@ describe('generateSapaDrafts', () => {
     expect(draft).not.toContain('proyek riset');
     expect(draft).toContain('geçenlerde bahsettiğimiz konu');
   });
+
+  it('calls Cloudflare Worker proxy and maps Groq OpenAI choices format into 3 distinct options', async () => {
+    const mockGroqWorkerResponse = {
+      choices: [
+        {
+          message: {
+            content: JSON.stringify([
+              { angle: 'warm_greeting', title: 'Hâl Hatır & Dua', text: 'Selam Fatih kardeşim, nasılsın? Sıhhatin yerindedir inşallah.' },
+              { angle: 'topic_discussion', title: 'Konu & Gündem', text: 'Selam Fatih, mobil uygulama projesi konusunu konuşalım mı?' },
+              { angle: 'catchup_meet', title: 'Buluşma & Çay Daveti', text: 'Selam Fatih, bu hafta uygun olduğunda bir çay içip sohbet edelim.' },
+            ]),
+          },
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockGroqWorkerResponse,
+    });
+
+    const result = await generateSapaDrafts(
+      {
+        contact: sampleContact,
+        language: 'tr',
+      },
+      'https://sapa-ai.jaegu108.workers.dev/'
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(result.source).toBe('worker');
+    expect(result.drafts).toHaveLength(3);
+    expect(result.drafts[0].text).toContain('Fatih kardeşim');
+    expect(result.drafts[1].text).toContain('mobil uygulama');
+    expect(result.drafts[2].text).toContain('çay içip');
+  });
+
+  it('calls Groq API directly when apiKey starts with gsk_', async () => {
+    const mockGroqDirectResponse = {
+      choices: [
+        {
+          message: {
+            content: JSON.stringify([
+              { angle: 'warm_greeting', title: 'Kabar & Doa', text: 'Hai Fatih, apa kabar? Semoga sehat selalu.' },
+              { angle: 'topic_discussion', title: 'Bahasan Topik', text: 'Hai Fatih, mau tanya update proyek aplikasi.' },
+              { angle: 'catchup_meet', title: 'Ajak Temu / Ngopi', text: 'Hai Fatih, kapan ada waktu ngopi bareng?' },
+            ]),
+          },
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockGroqDirectResponse,
+    });
+
+    const result = await generateSapaDrafts(
+      {
+        contact: sampleContact,
+        language: 'id',
+      },
+      undefined,
+      'gsk_testGroqKey123'
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.groq.com/openai/v1/chat/completions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer gsk_testGroqKey123',
+        }),
+      })
+    );
+    expect(result.source).toBe('groq_direct');
+    expect(result.drafts).toHaveLength(3);
+  });
+
+  it('supports Groq gsk_ API key in legacy generateWhatsAppDraft', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'Halo Fatih, semoga sehat selalu!' } }],
+      }),
+    });
+
+    const draft = await generateWhatsAppDraft(sampleContact, 'gsk_mockGroqKey');
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.groq.com/openai/v1/chat/completions',
+      expect.anything()
+    );
+    expect(draft).toBe('Halo Fatih, semoga sehat selalu!');
+  });
 });

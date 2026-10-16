@@ -32,7 +32,7 @@ export function AiDraftModal({
   const [previousDrafts, setPreviousDrafts] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [autoMarkDone, setAutoMarkDone] = useState<boolean>(false);
-  const [draftSource, setDraftSource] = useState<'worker' | 'gemini_direct' | 'offline_rule'>('worker');
+  const [draftSource, setDraftSource] = useState<'worker' | 'gemini_direct' | 'groq_direct' | 'offline_rule'>('worker');
 
   const contactId = contact?.id;
 
@@ -266,7 +266,7 @@ export function AiDraftModal({
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span>✨</span> Gemini AI
+                    <span>✨</span> {draftSource === 'groq_direct' ? 'Groq AI' : draftSource === 'gemini_direct' ? 'Gemini AI' : 'Sapa AI'}
                   </span>
                 )}
               </div>

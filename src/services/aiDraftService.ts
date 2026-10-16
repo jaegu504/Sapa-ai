@@ -355,7 +355,7 @@ export async function generateSapaDrafts(
   options: GenerateSapaOptions,
   proxyUrl?: string,
   apiKey?: string
-): Promise<{ drafts: SapaDraftOption[]; source: 'worker' | 'gemini_direct' | 'offline_rule' }> {
+): Promise<{ drafts: SapaDraftOption[]; source: 'worker' | 'gemini_direct' | 'groq_direct' | 'offline_rule' }> {
   const { contact, language, previousDrafts = [] } = options;
   const variationIndex = previousDrafts.length;
 
@@ -453,7 +453,9 @@ export async function generateSapaDrafts(
 
         if (resp.ok) {
           const data = await resp.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          const rawText =
+            data?.choices?.[0]?.message?.content ||
+            data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (typeof rawText === 'string') {
             const parsed = parseDraftsJson(rawText, fallbackDrafts);
             if (parsed.length === 3) {
@@ -467,26 +469,58 @@ export async function generateSapaDrafts(
     }
   }
 
-  // 2. Try Direct Gemini API (if user has custom key)
+  // 2. Try Direct API (Groq if starts with 'gsk_', or Google Gemini)
   if (apiKey && apiKey.trim()) {
-    const directModels = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
-    for (const modelToTry of directModels) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${encodeURIComponent(
-          apiKey.trim()
-        )}`;
-        let resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.85, maxOutputTokens: 600 },
-          }),
-        });
+    const key = apiKey.trim();
+    if (key.startsWith('gsk_')) {
+      const groqModels = ['openai/gpt-oss-120b', 'qwen/qwen3-32b'];
+      for (const modelToTry of groqModels) {
+        try {
+          const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${key}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: modelToTry,
+              messages: [
+                {
+                  role: 'system',
+                  content:
+                    'Anda adalah asisten cerdas WhatsApp Sapaan Silaturahmi. Kembalikan HANYA format JSON ARRAY murni tanpa backtick markdown.',
+                },
+                {
+                  role: 'user',
+                  content: prompt,
+                },
+              ],
+              temperature: 0.85,
+            }),
+          });
 
-        if (resp.status === 503) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
-          resp = await fetch(url, {
+          if (resp.ok) {
+            const data = await resp.json();
+            const rawText = data?.choices?.[0]?.message?.content;
+            if (typeof rawText === 'string') {
+              const parsed = parseDraftsJson(rawText, fallbackDrafts);
+              if (parsed.length === 3) {
+                return { drafts: parsed, source: 'groq_direct' };
+              }
+            }
+          }
+        } catch (_err) {
+          // try next model
+        }
+      }
+    } else {
+      const directModels = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+      for (const modelToTry of directModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${encodeURIComponent(
+            key
+          )}`;
+          let resp = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -494,20 +528,32 @@ export async function generateSapaDrafts(
               generationConfig: { temperature: 0.85, maxOutputTokens: 600 },
             }),
           });
-        }
 
-        if (resp.ok) {
-          const data = await resp.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (typeof rawText === 'string') {
-            const parsed = parseDraftsJson(rawText, fallbackDrafts);
-            if (parsed.length === 3) {
-              return { drafts: parsed, source: 'gemini_direct' };
+          if (resp.status === 503) {
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            resp = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.85, maxOutputTokens: 600 },
+              }),
+            });
+          }
+
+          if (resp.ok) {
+            const data = await resp.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (typeof rawText === 'string') {
+              const parsed = parseDraftsJson(rawText, fallbackDrafts);
+              if (parsed.length === 3) {
+                return { drafts: parsed, source: 'gemini_direct' };
+              }
             }
           }
+        } catch (_err) {
+          // try next model
         }
-      } catch (_err) {
-        // try next model
       }
     }
   }
@@ -552,27 +598,43 @@ export async function generateWhatsAppDraft(
     return fallbackDraft;
   }
 
-  const prompt = [
-    `Anda adalah asisten Personal Relationship CRM. Buat 1 draf pesan pembuka WhatsApp (2-3 kalimat) yang sangat natural, hangat, dan santun dalam Bahasa Indonesia untuk menghubungi kontak berikut:`,
-    `- Nama: ${contact.name}`,
-    `- Kategori/Asosiasi: ${contact.associations?.join(', ') || 'Umum'}`,
-    `- Hubungan Profesional: ${contact.isProfessional ? 'Ya' : 'Tidak'}`,
-    `- Konteks Pertemuan: ${contact.metContext || '-'}`,
-    `- Catatan Kabar Terakhir: ${contact.lastUpdateNotes || '-'}`,
-    `- Topik Follow-Up Berikutnya: ${contact.possibleFollowUpTopic || '-'}`,
-    ``,
-    `Panduan gaya:`,
-    `- Jika kategori Hoca/Ustadz: gunakan salam takzim 'Assalamu’alaikum', sangat santun, tawadhu, dan penuh hormat.`,
-    `- Jika Ihvan/Teman: hangat, akrab, dan bersahabat.`,
-    `- Jika Keluarga: penuh kasih sayang dan personal.`,
-    `- Jika Profesional: sopan, profesional, dan ringkas.`,
-    `- Sisipkan topik follow-up atau kabar terakhir secara natural jika tersedia.`,
-    `- HANYA kembalikan teks pesan sapaan saja tanpa tanda petik pembuka/penutup, tanpa salam penutup formal surat, dan tanpa penjelasan pengantar.`,
-  ].join('\n');
+  const key = apiKey.trim();
+
+  // If user provided a Groq key (gsk_...)
+  if (key.startsWith('gsk_')) {
+    try {
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (typeof text === 'string' && text.trim().length > 0) {
+          return text.trim();
+        }
+      }
+    } catch (_err) {
+      return fallbackDraft;
+    }
+  }
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
-      apiKey.trim()
+      key
     )}`;
     const response = await fetch(url, {
       method: 'POST',

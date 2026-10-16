@@ -1,7 +1,7 @@
 /**
  * Sapa AI - Cloudflare Worker Proxy
- * Berfungsi sebagai perantara aman agar API Key Gemini tersimpan di Cloudflare,
- * bukan di dalam APK HP pengguna.
+ * Berfungsi sebagai perantara aman untuk Groq (OpenAI gpt-oss-120b) & Google Gemini.
+ * Disimpan di Cloudflare agar API Key tidak terekspos di HP pengguna.
  */
 export default {
   async fetch(request, env) {
@@ -11,7 +11,7 @@ export default {
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     };
 
-    // 1. Tangani CORS Preflight (OPTIONS request dari browser/mobile)
+    // 1. Tangani CORS Preflight (OPTIONS request dari mobile/browser)
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
@@ -24,17 +24,11 @@ export default {
     }
 
     try {
-      const apiKey = env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return new Response(
-          JSON.stringify({ error: "GEMINI_API_KEY belum dipasang di Settings > Variables Cloudflare." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      const groqKey = env.GROQ_API_KEY || "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";
+      const geminiKey = env.GEMINI_API_KEY;
 
       const body = await request.json();
       const prompt = body.prompt;
-      const requestedModel = body.model || "gemini-3.5-flash-lite";
 
       if (!prompt) {
         return new Response(JSON.stringify({ error: "Parameter 'prompt' wajib dikirim." }), {
@@ -43,66 +37,87 @@ export default {
         });
       }
 
-      // 2. Teruskan permintaan ke Google Gemini API dengan auto-fallback & retry
-      const modelsToTry = [
-        requestedModel,
-        "gemini-3.5-flash-lite",
-        "gemini-3.6-flash",
-      ].filter((m, i, arr) => arr.indexOf(m) === i); // unique
+      // =====================================================================
+      // 1. PRIORITAS UTAMA: Groq LPU (OpenAI gpt-oss-120b / 120 Miliar Parameter)
+      // Kecepatan kilat (~1 detik), kuota ribuan request/hari, super cerdas.
+      // =====================================================================
+      if (groqKey) {
+        try {
+          const groqModel = body.model && (body.model.startsWith("openai/") || body.model.startsWith("qwen/"))
+            ? body.model
+            : "openai/gpt-oss-120b";
 
-      const geminiPayload = {
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: body.temperature ?? 0.85,
-        },
-      };
-
-      let lastResponse = null;
-      let lastData = null;
-
-      for (const model of modelsToTry) {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        
-        // Coba panggil model
-        let geminiResponse = await fetch(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(geminiPayload),
-        });
-
-        // Jika terjadi lonjakan beban sesaat (503), tunggu 800ms dan coba ulang sekali
-        if (geminiResponse.status === 503) {
-          await new Promise((res) => setTimeout(res, 800));
-          geminiResponse = await fetch(geminiUrl, {
+          const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(geminiPayload),
+            headers: {
+              "Authorization": `Bearer ${groqKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: groqModel,
+              messages: [
+                {
+                  role: "system",
+                  content: "Anda adalah asisten cerdas WhatsApp Sapaan Silaturahmi. Kembalikan HANYA format JSON ARRAY murni tanpa backtick markdown.",
+                },
+                {
+                  role: "user",
+                  content: prompt,
+                },
+              ],
+              temperature: body.temperature ?? 0.85,
+            }),
           });
-        }
 
-        const data = await geminiResponse.json();
-        lastResponse = geminiResponse;
-        lastData = data;
-
-        // Jika berhasil (200 OK), langsung kembalikan ke klien
-        if (geminiResponse.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-          return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          if (groqResp.ok) {
+            const data = await groqResp.json();
+            if (data?.choices?.[0]?.message?.content) {
+              return new Response(JSON.stringify(data), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+        } catch (_groqErr) {
+          // Otomatis lanjut ke fallback Gemini di bawah jika Groq bermasalah
         }
       }
 
-      // Jika seluruh model gagal, kembalikan response terakhir
-      return new Response(JSON.stringify(lastData), {
-        status: lastResponse ? lastResponse.status : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // =====================================================================
+      // 2. CADANGAN OTOMATIS: Google Gemini (jika Groq sedang sibuk)
+      // =====================================================================
+      if (geminiKey) {
+        const geminiModels = ["gemini-3.5-flash-lite", "gemini-3.6-flash"];
+        const geminiPayload = {
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: body.temperature ?? 0.85 },
+        };
+
+        for (const m of geminiModels) {
+          try {
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+            const geminiResp = await fetch(geminiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(geminiPayload),
+            });
+            if (geminiResp.ok) {
+              const data = await geminiResp.json();
+              if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                return new Response(JSON.stringify(data), {
+                  status: 200,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+              }
+            }
+          } catch (_e) {}
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ error: "Layanan AI sedang sibuk. Silakan coba kembali sesaat lagi." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     } catch (err) {
       return new Response(JSON.stringify({ error: err.message || "Internal Server Error" }), {
         status: 500,

@@ -923,10 +923,10 @@ export const App: React.FC = () => {
                         </div>
                         <div>
                           <h3 className="text-sm font-bold text-slate-800">
-                            Google Gemini AI API Key
+                            Google Gemini AI API Key & Groq
                           </h3>
                           <p className="text-xs text-slate-500">
-                            Digunakan untuk menyusun draf pesan WhatsApp cerdas dengan etika santun
+                            Default menggunakan Groq AI kilat via cloud proxy. Masukkan kunci pribadi (Groq / Gemini) jika ingin kuota khusus.
                           </p>
                         </div>
                       </div>
@@ -942,7 +942,7 @@ export const App: React.FC = () => {
                         type="password"
                         value={apiKeyInput}
                         onChange={(e) => setApiKeyInput(e.target.value)}
-                        placeholder="Masukkan Google Gemini API Key (AIza...)"
+                        placeholder="Masukkan Google Gemini API Key (AIza...) atau Groq Key (gsk_...)"
                         className="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
                       />
                       <div className="flex items-center justify-between text-[11px] text-slate-500">
