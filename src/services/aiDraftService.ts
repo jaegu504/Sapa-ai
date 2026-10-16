@@ -30,6 +30,23 @@ export function isTurkishPhoneNumber(phoneNumber?: string): boolean {
 }
 
 /**
+ * Detects if a text contains common Indonesian words, so we avoid
+ * injecting raw Indonesian notes into Turkish fallback templates.
+ */
+export function isIndonesianNote(text?: string): boolean {
+  if (!text) return false;
+  const keywords = [
+    'mau', 'ajak', 'ngobrol', 'ketemu', 'ketemuan', 'kabar', 'bahas', 'proyek',
+    'bareng', 'tentang', 'tanya', 'santai', 'ngeteh', 'ngopi', 'ngajak', 'pengin',
+    'ingin', 'bisa', 'sama', 'lagi', 'sudah', 'udah', 'belum', 'nanti', 'besok',
+    'pekan', 'minggu', 'kemarin', 'terkait', 'soal', 'perihal', 'diskusi', 'riset',
+    'minta', 'tolong'
+  ];
+  const lower = text.toLowerCase();
+  return keywords.some((w) => new RegExp(`\\b${w}\\b`, 'i').test(lower));
+}
+
+/**
  * Generates an appropriate deterministic WhatsApp draft based on
  * relationship tags, tone blending, language (ID / TR), and conversational angle.
  */
@@ -73,10 +90,16 @@ export function generateDeterministicFallbackDraft(
   // TURKISH (TÜRKÇE) PHRASING GENERATOR
   // -------------------------------------------------------------
   if (language === 'tr') {
+    const rawSubject = topic || notes;
+    const subject = rawSubject
+      ? isIndonesianNote(rawSubject)
+        ? 'geçenlerde bahsettiğimiz konu'
+        : rawSubject
+      : undefined;
+
     // 1. Hoca category (Respectful, takzim, Hocam)
     if (isHoca) {
-      if (effectiveAngle === 'topic_discussion' && (topic || notes)) {
-        const subject = topic || notes;
+      if (effectiveAngle === 'topic_discussion' && subject) {
         const variants = [
           `Selamün aleyküm Hocam ${name}, afiyettesinizdir inşallah. Müsait olduğunuzda ${subject} hakkında istişare etmek isterim. Hürmetler ve dualar ile.`,
           `Selamün aleyküm Mehmet Hocam, hayırlı günler. Geçen bahsettiğiniz ${subject} konusunu merak etmiştim, vaktiniz olursa konuşmak isterim. Saygılarımla.`,
@@ -101,8 +124,7 @@ export function generateDeterministicFallbackDraft(
     // 2. Ihvan / Teman / Brotherhood (Kardeşim / Abi / Dostum)
     if (isIhvan || isTeman) {
       const salutation = isIhvan ? 'Kardeşim' : 'Dostum';
-      if (effectiveAngle === 'topic_discussion' && (topic || notes)) {
-        const subject = topic || notes;
+      if (effectiveAngle === 'topic_discussion' && subject) {
         const variants = [
           `Selam ${name} ${salutation}, nasılsın? Geçen konuştuğumuz ${subject} nasıl gidiyor, merak ettim.`,
           `Selamün aleyküm ${name}, umarım iyisindir. ${subject} konusu aklıma geldi, son durum nedir?`,
@@ -126,8 +148,8 @@ export function generateDeterministicFallbackDraft(
 
     // 3. Keluarga / Family
     if (isKeluarga) {
-      if (effectiveAngle === 'topic_discussion' && (topic || notes)) {
-        return `Canım ${name}, nasılsın? ${topic || notes} konusunu merak ettim, her şey yolunda mı? Çok öpüyorum.`;
+      if (effectiveAngle === 'topic_discussion' && subject) {
+        return `Canım ${name}, nasılsın? ${subject} konusunu merak ettim, her şey yolunda mı? Çok öpüyorum.`;
       }
       if (effectiveAngle === 'catchup_meet') {
         return `Canım ${name}, seni çok özledik! En kısa zamanda bir araya gelip çay içelim, çok sevgiler.`;
@@ -137,8 +159,8 @@ export function generateDeterministicFallbackDraft(
 
     // 4. Profesional
     if (isProfesional) {
-      if (effectiveAngle === 'topic_discussion' && (topic || notes)) {
-        return `İyi günler ${name} Bey/Hanım, umarım iyisinizdir. ${topic || notes} konusundaki gelişmeleri takip etmek adına iletişime geçmek istedim. Saygılarımla.`;
+      if (effectiveAngle === 'topic_discussion' && subject) {
+        return `İyi günler ${name} Bey/Hanım, umarım iyisinizdir. ${subject} konusundaki gelişmeleri takip etmek adına iletişime geçmek istedim. Saygılarımla.`;
       }
       if (effectiveAngle === 'catchup_meet') {
         return `İyi günler ${name} Bey/Hanım, umarım haftanız verimli geçiyordur. Müsait olduğunuz bir vakit kısa bir kahve veya toplantı eşliğinde istişare edebilir miyiz?`;
@@ -150,8 +172,8 @@ export function generateDeterministicFallbackDraft(
     if (effectiveAngle === 'catchup_meet') {
       return `Merhaba ${name}, umarım iyisindir. Müsait olduğun bir vakit görüşüp bir çay içelim mi?`;
     }
-    if (topic || notes) {
-      return `Merhaba ${name}, umarım iyisindir. ${topic || notes} konusunu sormak için yazmıştım.`;
+    if (subject) {
+      return `Merhaba ${name}, umarım iyisindir. ${subject} konusunu sormak için yazmıştım.`;
     }
     return `Merhaba ${name}, umarım her şey yolundadır ve iyisindir. Hal hatır sormak istedim.`;
   }
@@ -361,24 +383,30 @@ export async function generateSapaDrafts(
   // System Prompt for Gemini
   const langPrompt =
     language === 'tr'
-      ? `Bahasa: TÜRKÇE (Türk adabına uygun, samimi, saygılı, Hocam/Abi/Kardeşim gibi hitapları ilişki kategorisine göre yerinde kullanan).`
-      : `Bahasa: BAHASA INDONESIA (Natural WhatsApp conversation, hangat, santun, multi-label blending).`;
+      ? `Bahasa Target: TÜRKÇE (Türk adabına uygun, samimi, saygılı, Hocam/Abi/Kardeşim gibi hitapları ilişki kategorisine göre yerinde kullanan, 100% akıcı Türkçe).`
+      : `Bahasa Target: BAHASA INDONESIA (Natural WhatsApp conversation, hangat, santun, multi-label blending).`;
 
   const prompt = [
     `Anda adalah asisten cerdas WhatsApp Sapaan Silaturahmi (Personal Relationship Assistant).`,
-    `Buatkan tepat 3 (tiga) variasi draf pesan pembuka WhatsApp yang mengalir natural untuk kontak berikut:`,
+    `Tugas Anda adalah membuat tepat 3 (tiga) variasi draf pesan pembuka WhatsApp yang mengalir sangat alami, santai, dan luwes untuk kontak berikut:`,
     `- Nama: ${contact.name}`,
-    `- Bahasa: ${language === 'tr' ? 'Türkçe' : 'Bahasa Indonesia'}`,
+    `- Bahasa Target: ${language === 'tr' ? 'Türkçe' : 'Bahasa Indonesia'}`,
     `- Asosiasi/Label: ${contact.associations?.join(', ') || 'Teman'}`,
     `- Hubungan Profesional: ${contact.isProfessional ? 'Ya' : 'Tidak'}`,
     `- Konteks Pertemuan: ${contact.metContext || '-'}`,
     `- Catatan Kabar Terakhir: ${contact.lastUpdateNotes || '-'}`,
-    `- Topik Follow-Up Berikutnya: ${contact.possibleFollowUpTopic || '-'}`,
+    `- Catatan Follow-Up / Topik dari Pengguna: ${contact.possibleFollowUpTopic || '-'}`,
+    ``,
+    `ATURAN EMAS INTENT & BAHASA (SANGAT KRUSIAL):`,
+    `1. PENGOLAHAN INTENSI (JANGAN SALIN MENTAH-MENTAH): Catatan follow-up / kabar di atas ditulis secara singkat atau kasar oleh pengguna sebagai pengingat pribadinya (sering kali dalam Bahasa Indonesia). JANGAN PERNAH menyalin, mengutip, atau menempelkan kata-kata catatan tersebut mentah-mentah ke dalam draf!`,
+    `2. ADAPTASI & SINTESIS: Pahami MAKSUD/INTI PESANNYA, lalu susun ulang menjadi kalimat sapaan yang organik, sopan, dan luwes sesuai kepribadian hubungan. Contoh: jika catatan bertuliskan "mau nanya kelanjutan proyek riset kemarin dan ngajak ngeteh santai", ubah intinya menjadi ajakan dan sapaan yang mengalir alami tanpa menjiplak susunan kata aslinya.`,
+    `3. 100% BAHASA TARGET: Seluruh teks draf wajib sepenuhnya dalam Bahasa Target (${language === 'tr' ? 'Türkçe' : 'Bahasa Indonesia'}). JANGAN PERNAH menyelipkan kata bahasa Indonesia jika bahasa target adalah Türkçe!`,
+    `4. ADAB PERCAKAPAN: Jika target adalah Türkçe, gunakan etiket Turki yang autentik (misal: "Selamün aleyküm Hocam", "müsait olduğunuzda bir çay içelim mi"). Jika Indonesia, sesuaikan takzim/santai.`,
     ``,
     `3 Sudut Pandang yang WAJIB dibuat:`,
-    `1. angle "warm_greeting": Menanyakan kabar, mendoakan kebaikan dan kesehatan.`,
-    `2. angle "topic_discussion": Membahas secara luwes topik follow up atau kabar terakhir.`,
-    `3. angle "catchup_meet": Mengajak bertemu santai (ngopi / çay içelim / diskusi ringan).`,
+    `1. angle "warm_greeting": Menanyakan kabar, mendoakan kebaikan, kesehatan, atau kelancaran aktivitas.`,
+    `2. angle "topic_discussion": Membahas secara luwes inti topik pembicaraan/proyek tanpa mengutip kata catatan mentah-mentah.`,
+    `3. angle "catchup_meet": Mengajak bertemu santai (ngopi / çay içelim / diskusi ringan bila ada waktu senggang).`,
     ``,
     langPrompt,
     `Catatan Anti-Repetisi: JANGAN gunakan kalimat pembuka yang sama persis dengan draf berikut:`,
@@ -402,7 +430,7 @@ export async function generateSapaDrafts(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt,
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-3.6-flash',
           temperature: 0.85,
         }),
       });
@@ -425,7 +453,7 @@ export async function generateSapaDrafts(
   // 2. Try Direct Gemini API (if user has custom key)
   if (apiKey && apiKey.trim()) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${encodeURIComponent(
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(
         apiKey.trim()
       )}`;
       const resp = await fetch(url, {

@@ -407,4 +407,26 @@ describe('generateSapaDrafts', () => {
 
     expect(newDraft).not.toBe(prevDrafts[0]);
   });
+
+  it('prevents raw Indonesian notes from leaking into Turkish fallback drafts', () => {
+    const contact: Contact = {
+      id: 'tr_indo_notes',
+      name: 'Emre Yilmaz',
+      phoneNumber: '+905551234567',
+      associations: ['Hoca', 'Teman'],
+      isProfessional: false,
+      lastContactedDate: '2026-09-01',
+      followUpCycleDays: 15,
+      nextSpecificFollowUp: null,
+      metContext: 'Istanbul',
+      lastUpdateNotes: '',
+      possibleFollowUpTopic: 'mau nanya kelanjutan proyek riset kemarin dan ngajak ngeteh santai',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const draft = generateDeterministicFallbackDraft(contact, 'tr', 'topic_discussion');
+    expect(draft).not.toContain('mau nanya');
+    expect(draft).not.toContain('proyek riset');
+    expect(draft).toContain('geçenlerde bahsettiğimiz konu');
+  });
 });

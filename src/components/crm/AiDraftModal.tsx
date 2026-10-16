@@ -32,6 +32,7 @@ export function AiDraftModal({
   const [previousDrafts, setPreviousDrafts] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [autoMarkDone, setAutoMarkDone] = useState<boolean>(false);
+  const [draftSource, setDraftSource] = useState<'worker' | 'gemini_direct' | 'offline_rule'>('worker');
 
   const contactId = contact?.id;
 
@@ -76,13 +77,14 @@ export function AiDraftModal({
           ]);
         } else if (sapaResult && sapaResult.drafts && sapaResult.drafts.length > 0) {
           setDraftOptions(sapaResult.drafts);
+          setDraftSource(sapaResult.source);
           const activeOpt =
             sapaResult.drafts.find((d) => d.angle === selectedAngle) || sapaResult.drafts[0];
           setDraftText(activeOpt.text);
           setSelectedAngle(activeOpt.angle);
         }
       } catch (_err) {
-        // Fallback
+        setDraftSource('offline_rule');
       } finally {
         setLoading(false);
       }
@@ -253,10 +255,21 @@ export function AiDraftModal({
           <div className="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3.5">
             {/* Tone and Regenerate Bar */}
             <div className="flex items-center justify-between gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${tone.classes}`}>
-                <span>🎯</span>
-                <span>{tone.label}</span>
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${tone.classes}`}>
+                  <span>🎯</span>
+                  <span>{tone.label}</span>
+                </span>
+                {draftSource === 'offline_rule' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200" title="Koneksi atau kuota AI tidak tersedia, menggunakan draf aturan cadangan offline">
+                    <span>⚡</span> Cadangan
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span>✨</span> Gemini AI
+                  </span>
+                )}
+              </div>
 
               <button
                 type="button"

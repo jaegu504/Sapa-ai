@@ -34,7 +34,7 @@ export default {
 
       const body = await request.json();
       const prompt = body.prompt;
-      let model = body.model || "gemini-3-flash-preview";
+      let model = body.model || "gemini-3.6-flash";
 
       if (!prompt) {
         return new Response(JSON.stringify({ error: "Parameter 'prompt' wajib dikirim." }), {
