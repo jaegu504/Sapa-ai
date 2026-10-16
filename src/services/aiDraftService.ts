@@ -514,7 +514,13 @@ export async function generateSapaDrafts(
         }
       }
     } else {
-      const directModels = ['gemini-3.5-flash-lite', 'gemini-3.6-flash'];
+      const directModels = [
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-3.6-flash',
+      ];
       for (const modelToTry of directModels) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${encodeURIComponent(
