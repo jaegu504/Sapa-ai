@@ -523,4 +523,36 @@ describe('generateSapaDrafts', () => {
     );
     expect(draft).toBe('Halo Fatih, semoga sehat selalu!');
   });
+
+  it('safely parses plain string array from AI response into 3 distinct Sapa options', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify([
+                'Hai Fatih! Lama tak jumpa, gimana kabarmu?',
+                'Yo Fatih! Apa kabar bro? Proyek aplikasi gimana?',
+                'Halo Fatih! Kapan nih ada waktu ngopi bareng?',
+              ]),
+            },
+          },
+        ],
+      }),
+    });
+
+    const result = await generateSapaDrafts(
+      {
+        contact: sampleContact,
+        language: 'id',
+      },
+      'https://sapa-ai.jaegu108.workers.dev/'
+    );
+
+    expect(result.drafts).toHaveLength(3);
+    expect(result.drafts[0].text).toBe('Hai Fatih! Lama tak jumpa, gimana kabarmu?');
+    expect(result.drafts[1].text).toBe('Yo Fatih! Apa kabar bro? Proyek aplikasi gimana?');
+    expect(result.drafts[2].text).toBe('Halo Fatih! Kapan nih ada waktu ngopi bareng?');
+  });
 });

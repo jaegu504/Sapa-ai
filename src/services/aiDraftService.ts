@@ -576,12 +576,22 @@ function parseDraftsJson(raw: string, fallback: SapaDraftOption[]): SapaDraftOpt
     const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
     const arr = JSON.parse(cleaned);
     if (Array.isArray(arr) && arr.length >= 3) {
-      return arr.slice(0, 3).map((item, idx) => ({
-        id: `opt_${item.angle || idx}`,
-        angle: (item.angle as SapaAngle) || fallback[idx].angle,
-        title: item.title || fallback[idx].title,
-        text: (item.text || '').trim() || fallback[idx].text,
-      }));
+      return arr.slice(0, 3).map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            id: `opt_${idx}`,
+            angle: fallback[idx].angle,
+            title: fallback[idx].title,
+            text: item.trim() || fallback[idx].text,
+          };
+        }
+        return {
+          id: `opt_${item.angle || idx}`,
+          angle: (item.angle as SapaAngle) || fallback[idx].angle,
+          title: item.title || fallback[idx].title,
+          text: (item.text || '').trim() || fallback[idx].text,
+        };
+      });
     }
   } catch (_e) {
     // fallback if JSON parsing fails
