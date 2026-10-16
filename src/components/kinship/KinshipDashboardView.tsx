@@ -140,16 +140,12 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
       <header className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-3">
           {/* User profile avatar with Sapa Logo */}
-          <div
+          <img
+            src="/logo.png"
+            alt="Sapa Logo"
             aria-label="Profil Pengguna"
-            className="w-10 h-10 rounded-2xl bg-linear-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/80"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-              <path d="M9.5 11.5h.01" strokeWidth={3} />
-              <path d="M14.5 11.5h.01" strokeWidth={3} />
-            </svg>
-          </div>
+            className="w-10 h-10 rounded-2xl shadow-md ring-2 ring-white/80 object-cover"
+          />
           <div>
             <div className="flex items-center gap-1.5 leading-none">
               <span className="text-xl font-extrabold tracking-tight text-slate-900">Sapa</span>

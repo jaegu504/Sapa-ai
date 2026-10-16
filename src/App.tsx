@@ -646,13 +646,11 @@ export const App: React.FC = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-md">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  <path d="M9.5 11.5h.01" strokeWidth={3} />
-                  <path d="M14.5 11.5h.01" strokeWidth={3} />
-                </svg>
-              </div>
+              <img
+                src="/logo.png"
+                alt="Sapa Logo"
+                className="w-8 h-8 rounded-xl shadow-xs object-cover"
+              />
               <div>
                 <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
                   Sapa
