@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#ffffff", "surface-container-low": "#eff4ff", "outline-variant": "#c6c6cd", "surface-bright": "#f8f9ff", "outline": "#76777d", "surface-container": "#e5eeff", "on-secondary": "#ffffff", "error": "#ba1a1a", "tertiary-container": "#40000d", "background": "#f8f9ff", "primary": "#000000", "primary-fixed": "#dae2fd", "primary-fixed-dim": "#bec6e0", "on-secondary-fixed": "#002113", "surface-container-lowest": "#ffffff", "on-surface-variant": "#45464d", "error-container": "#ffdad6", "on-tertiary-fixed-variant": "#92002a", "on-primary": "#ffffff", "surface-variant": "#d3e4fe", "on-error-container": "#93000a", "tertiary": "#000000", "surface": "#f8f9ff", "secondary-fixed": "#6ffbbe", "on-error": "#ffffff", "primary-container": "#131b2e", "on-primary-container": "#7c839b", "on-tertiary-fixed": "#40000d", "inverse-on-surface": "#eaf1ff", "tertiary-fixed-dim": "#ffb2b7", "surface-container-highest": "#d3e4fe", "surface-tint": "#565e74", "on-surface": "#0b1c30", "on-background": "#0b1c30", "inverse-primary": "#bec6e0", "surface-dim": "#cbdbf5", "on-secondary-fixed-variant": "#005236", "tertiary-fixed": "#ffdadb", "on-secondary-container": "#00714d", "inverse-surface": "#213145", "surface-container-high": "#dce9ff", "secondary": "#006c49", "secondary-fixed-dim": "#4edea3", "on-tertiary-container": "#f23d5c", "secondary-container": "#6cf8bb", "on-primary-fixed": "#131b2e", "on-primary-fixed-variant": "#3f465c" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-lg": "1.5rem", "margin": "1rem", "space-md": "1rem", "space-xl": "2rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem" }, "fontFamily": { "headline-sm": ["Plus Jakarta Sans"], "headline-xl-mobile": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "body-md": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "label-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"] }, "fontSize": { "headline-sm": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "headline-xl-mobile": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "12px", "letterSpacing": "0.04em", "fontWeight": "700" }], "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-md": ["20px", { "lineHeight": "26px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-lg": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } }</script></head><body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="Kinship CRM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WIMfrSwid76TnYfloVqxgMWB8gkzFiN3iDfk6zj_ajIjob1h1fpH1AA0fTeJ0QhpAQYTwDey0Kl_S-fMEMWKQynE-A-K9morJHldCJCp5M0iOG75wksZHGTKQ1GoL-eIK2bfjlPBoxyB_xJHk-lPBUtn42UDygdqRIVAIS6ofPZs5VC2B6JlohNoDlmvArrLtb-hZAU3qm6tgUe74obc_YhZp8Fq_T0fcQDf4AeL0TWCtPp3x2Rs7qLuMU"/><span class="font-headline-sm text-headline-sm text-on-surface">Kinship</span><span class="font-headline-sm text-headline-sm text-outline-variant font-normal">·</span><h1 class="font-headline-sm text-headline-sm text-on-surface">Schedule</h1></div><button aria-label="Account and Profile" class="min-h-[44px] min-w-[44px] flex items-center justify-center p-space-xs rounded-full hover:bg-surface-container-high transition-colors"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhnFJ-7R9JVct54dyTuav1PM3EAo5T3PGL91Bf-sJ8k_8nbLOqVmPDJG6pETilwDnRHHw2Q7F8yCkwKl9IJGU-BYbFcBEhHqoNXxmriXznP42KG-ZKD_m1J1f6ogr-cIx8k3f89zXpeRd9PimF62cbYFyZrSktVPRHmeb398pB3NHDmzsiRDjptjdLBe62i126KAuYlC3xvJ_RxHWDpO3mW6pGj4cn2rXPNB7fI10GymWcndVdpLeXlQ"/></button></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface px-margin"><div class="flex flex-col w-full gap-space-lg">
+<!-- Interactive Segmented Tabs -->
+<div class="w-full bg-surface-container-low p-space-xs rounded-full flex items-center justify-between shadow-sm">
+<button class="flex-1 py-space-sm px-space-xs rounded-full font-label-md text-label-md text-center transition-all bg-surface-container-lowest text-on-surface shadow-sm" id="tab-upcoming" onclick="switchQueueTab('upcoming')">
+      Upcoming Catch-ups
+    </button>
+<button class="flex-1 py-space-sm px-space-xs rounded-full font-label-md text-label-md text-center transition-all text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1" id="tab-inbox" onclick="switchQueueTab('inbox')">
+<span>Inbox</span>
+<span class="w-2 h-2 rounded-full bg-error"></span>
+</button>
+<button class="flex-1 py-space-sm px-space-xs rounded-full font-label-md text-label-md text-center transition-all text-on-surface-variant hover:text-on-surface" id="tab-cadence" onclick="switchQueueTab('cadence')">
+      Cadence Rules
+    </button>
+</div>
+<!-- Tab Panel: Upcoming & Daily Queue -->
+<div class="flex flex-col gap-space-lg w-full" id="queue-view">
+<!-- Section: Daily Morning Digest Banner -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm relative overflow-hidden flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">forward_to_inbox</span>
+</div>
+<div class="flex-1 min-w-0 pr-space-xs">
+<div class="flex items-center gap-space-xs mb-0.5">
+<span class="font-label-sm text-label-sm uppercase text-secondary font-semibold tracking-wider">Digest Status</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</div>
+<p class="font-headline-sm text-headline-sm text-on-surface">Daily Morning Digest Sent</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">To <span class="font-medium text-on-surface">user@example.com</span> at 08:00 WIB</p>
+</div>
+<button aria-label="Dismiss banner" class="p-1 text-outline hover:text-on-surface rounded-full transition-colors" onclick="this.parentElement.remove()">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Section: Today's Follow-Up Notifications -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">notifications_active</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Today's Reminders</h2>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-space-sm py-0.5 rounded-full">2 Pending</span>
+</div>
+<!-- Alert Card 1: Raditya Pratama (Urgent Cadence) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md relative overflow-hidden">
+<!-- Glow bar marker on the left -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary rounded-l-xl"></div>
+<div class="flex items-start justify-between gap-space-sm pl-space-xs">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="Warm natural portrait of Raditya Pratama, a friendly Southeast Asian man in his early 30s smiling gently, captured in soft indoor morning light, clean editorial photography, light background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrn-XA-6fPOMrrGLkF5waPT4YWY3WF8RIxiWI6jddvKuK1tGeYxnsKm8od5M4X_lsEoOgxcSkOQjylT7JZkFgBsmYy9_IDZlI-Sso6f1zM6QHZupT3SxfCmnvJOMN_a-YimEFGzBugp14gRPo6prN9Z3yX-qDtE1JR1eZyMHk5Ip1Vg_rOQfr7v0ig9d0i4_mG8gRv9hs13xMv5VUmv4jkhy25VTC7NQquiJaAXx0vz70lgcW4_txgBA"/>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-secondary ring-2 ring-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary text-[9px]">schedule</span>
+</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Raditya Pratama</h3>
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full">Sahabat Kuliah</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event_repeat</span>
+                Jadwal follow-up 3 mingguan tercapai!
+              </p>
+</div>
+</div>
+<div class="shrink-0 text-right">
+<span class="font-label-sm text-label-sm bg-error-container text-on-error-container px-2 py-0.5 rounded-full font-semibold">Today</span>
+</div>
+</div>
+<!-- Icebreaker Box -->
+<div class="bg-surface-container-low rounded-lg p-space-sm ml-space-xs flex flex-col gap-1">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px]">auto_awesome</span>
+<span class="font-label-sm text-label-sm font-semibold uppercase tracking-wider">Suggested Icebreaker</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic">"Hei Mas Radit, apa kabar? Mau ngopi santai lagi minggu ini?"</p>
+</div>
+<!-- Actions -->
+<div class="flex flex-col sm:flex-row gap-space-xs ml-space-xs">
+<!-- WhatsApp direct button -->
+<a class="min-h-[44px] flex-1 bg-secondary text-on-secondary px-space-md py-space-sm rounded-full font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-transform" href="https://wa.me/?text=Hei%20Mas%20Radit,%20apa%20kabar?%20Mau%20ngopi%20santai%20lagi%20minggu%20ini?" rel="noopener" target="_blank">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+<span>Direct WhatsApp Chat</span>
+</a>
+<div class="flex gap-space-xs">
+<button class="min-h-[44px] flex-1 sm:flex-none px-space-md py-space-sm bg-surface-container text-on-surface font-label-md text-label-md rounded-full flex items-center justify-center gap-1.5 hover:bg-surface-container-high transition-colors" onclick="snoozeReminder(this, 'Raditya Pratama')">
+<span class="material-symbols-outlined text-[16px]">alarm_add</span>
+<span>Snooze 2 Days</span>
+</button>
+<button aria-label="Mark as logged" class="min-h-[44px] px-space-sm py-space-sm bg-surface-container-low text-on-surface-variant hover:text-on-surface font-label-md text-label-md rounded-full flex items-center justify-center" onclick="markLogged(this, 'Raditya Pratama')">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Alert Card 2: Maya Arisandi (Birthday & Collab) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-on-tertiary-container rounded-l-xl"></div>
+<div class="flex items-start justify-between gap-space-sm pl-space-xs">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="Portrait of Maya Arisandi, an inspiring Indonesian creative design director in modern professional casual wear, soft natural workspace backdrop with warm tones and lush greenery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyHR1sT7t3caFk23MnIH1sewXx6pLSd2ZM9Wd2Z_u4EjvDAVdQVHg29P9XSe4g0wbgCCP43qjLIk-R9c_oZwih0IaaNoaa7JNSQugjtACy9T1_030Djb6o6ppmVjm462gMqP6u5xOso_wUcXjIT2hBm7GjjaGtS3ql-ZPU7-8AFM33MTBsFBJjZHHSDEYWksgY2-BzPneApCMxK608N0AEPcq0Rl_JIbKpWcPriFrnggeqR6KWIHgWlA"/>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-error-container text-on-error-container ring-2 ring-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-[9px]" style="font-variation-settings: 'FILL' 1;">cake</span>
+</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Maya Arisandi</h3>
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full">Design Director</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 flex items-center gap-1 truncate">
+<span class="material-symbols-outlined text-on-tertiary-container text-[14px]">celebration</span>
+<span class="font-medium text-on-surface">Ulang tahun besok!</span> (9 Nov) &amp; project kolaborasi
+              </p>
+</div>
+</div>
+<div class="shrink-0 text-right">
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-medium">Tomorrow</span>
+</div>
+</div>
+<!-- Note snippet -->
+<div class="bg-surface-container-low rounded-lg p-space-sm ml-space-xs flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-[16px] text-outline">lightbulb</span>
+<span class="truncate">Hadiah favorit: Kopi specialty beans / buku tipografi editorial.</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex gap-space-sm ml-space-xs">
+<a class="min-h-[44px] flex-1 bg-secondary text-on-secondary px-space-md py-space-sm rounded-full font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-transform" href="https://wa.me/?text=Halo%20Mbak%20Maya,%20selamat%20ulang%20tahun%20ya!%20Semoga%20sehat%20sukses%20selalu." rel="noopener" target="_blank">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+<span>Kirim WhatsApp</span>
+</a>
+<button class="min-h-[44px] flex-1 px-space-md py-space-sm bg-surface-container text-on-surface font-label-md text-label-md rounded-full flex items-center justify-center gap-1.5 hover:bg-surface-container-high transition-colors" onclick="scheduleBirthdayGreeting()">
+<span class="material-symbols-outlined text-[16px]">edit_calendar</span>
+<span>Atur Ucapan</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Section: Agenda Minggu Ini -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[20px]">calendar_month</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Agenda Minggu Ini</h2>
+</div>
+<button class="font-label-md text-label-md text-secondary hover:underline flex items-center gap-0.5">
+<span>Lihat Semua</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+<!-- Schedule Group 1: Besok (Sabtu, 9 Nov) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Besok · Sabtu, 9 Nov</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full">1 Catch-up</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-space-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-10 h-10 rounded-full object-cover shrink-0" data-alt="Portrait of Budi Santoso, warm thoughtful senior tech professional with round spectacles, pleasant smile, softly lit coffee shop setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsQF27lrGTysDALoBehs9vzhngvl8Bd0iRzpr0_Sis0a6o13ueBm7X3Yk2V2AI-eEewO1d1ucYtZTaUj7qpF5j8Bl7H_2PrG69yaYQY0TVNssUwj9BndrjzQkfH7JxUCvPD5XTrcul0AbjKM7Y5LNIurRmv7QoOlLtKrKjiVNiE1uCzXaRdhgE7ZkX9-sfJvjJbmALj4WAxe9yU6j0vaTuN9NnNfoTBj6FDipYK0pQs4iwywiMyJuNKg"/>
+<div class="min-w-0">
+<h4 class="font-headline-sm text-headline-sm text-on-surface truncate">Budi Santoso</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                10:30 WIB · Casual Brunch
+              </p>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[13px] text-outline">location_on</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Giyanti Coffee Roastery, Menteng</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<a aria-label="Call Budi" class="min-h-[40px] min-w-[40px] rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" href="tel:+62812345678">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</a>
+<a aria-label="Chat Budi on WhatsApp" class="min-h-[40px] min-w-[40px] rounded-full bg-secondary text-on-secondary flex items-center justify-center hover:opacity-90 transition-opacity" href="https://wa.me/">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Schedule Group 2: Senin, 11 Nov -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="font-label-lg text-label-lg text-on-surface font-semibold">Senin, 11 Nov</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full">2 Touchpoints</span>
+</div>
+<!-- Sub Item A -->
+<div class="bg-surface-container-low rounded-lg p-space-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-10 h-10 rounded-full object-cover shrink-0" data-alt="Portrait of Sarah Wijaya, cheerful product manager in Jakarta cafe, bright modern aesthetic, vibrant natural light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZ4rDtdLegWqWHnAPpfq3D6bRAwQUNrjLk7plE-x9xqrd9tlFMyCaYqOW2IxTcxACGVyx5PnVvCG2lwXtNIUPzYq8Nzih33tSS1T49_CseYaBZW9spSGtMgaianaAL_QyELTYXhBO48m9VUvkju_XlJKqI49tQcfHSn3Cb97ftBGtnQt7ue2PVROLu5LJb92IoB7SXYuLIy5I3nEFshUYCjpDny5DvdUZ1bYSVbuypaTZbmt_iTBI7vQ"/>
+<div class="min-w-0">
+<h4 class="font-headline-sm text-headline-sm text-on-surface truncate">Sarah Wijaya</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">videocam</span>
+                15:00 WIB · 1-on-1 Mentorship Sync
+              </p>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[13px] text-outline">link</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Google Meet (Kinship Virtual Room)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button aria-label="Copy meeting link" class="min-h-[40px] min-w-[40px] rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" onclick="copyMeetLink()">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<a aria-label="Chat Sarah on WhatsApp" class="min-h-[40px] min-w-[40px] rounded-full bg-secondary text-on-secondary flex items-center justify-center hover:opacity-90 transition-opacity" href="https://wa.me/">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</a>
+</div>
+</div>
+<!-- Sub Item B -->
+<div class="bg-surface-container-low rounded-lg p-space-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<img class="w-10 h-10 rounded-full object-cover shrink-0" data-alt="Portrait of Dimas Anggara, smiling young entrepreneur in a minimal studio office, confident warm gaze." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsEB3irOvmbiFOlR4iOs0NrImuFF4GVIWxy7jBM50nqsh6jDsFv0PzB5XUKiZU7DrhIK6SUWOqTBhf4sKAizQ3jOMPCqW4_olXGrbQ8mUgqGtAOETBr7H0COju9x_STB3geRm_D-7u9UAcRfpixzGDztqA5nOZRRHYb__Huf_fyYhEurgYaZ4Tn5b-XZ6kk0rQ6Q6_sLgkfFf5j2VZrTO36B7sIbJ069WmvyFlSLOaagbkpu6TnWDNyg"/>
+<div class="min-w-0">
+<h4 class="font-headline-sm text-headline-sm text-on-surface truncate">Dimas Anggara</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">coffee</span>
+                19:30 WIB · Dinner Catch-up
+              </p>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[13px] text-outline">location_on</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Senopati, Jakarta Selatan</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<a aria-label="Call Dimas" class="min-h-[40px] min-w-[40px] rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" href="tel:+62813998877">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</a>
+<a aria-label="Chat Dimas on WhatsApp" class="min-h-[40px] min-w-[40px] rounded-full bg-secondary text-on-secondary flex items-center justify-center hover:opacity-90 transition-opacity" href="https://wa.me/">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Preferences & Toggles Drawer Panel -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-outline text-[20px]">tune</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Queue &amp; Dispatch Settings</h3>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container-high px-2 py-0.5 rounded-full font-medium">Auto-sync ON</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Toggle 1: Push Notifications -->
+<label class="flex items-center justify-between p-space-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-space-sm min-w-0 pr-2">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface shrink-0">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Receive Push Notifications</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Instant cues for overdue cadence circles</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</label>
+<!-- Toggle 2: Daily Email Digest -->
+<label class="flex items-center justify-between p-space-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-space-sm min-w-0 pr-2">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface shrink-0">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Send Daily Email Digest</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Sent everyday at 08:00 WIB</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</label>
+<!-- Toggle 3: Auto-open WhatsApp -->
+<label class="flex items-center justify-between p-space-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center gap-space-sm min-w-0 pr-2">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Auto-open WhatsApp</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Launch chat template directly on tap</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 accent-secondary rounded cursor-pointer" type="checkbox"/>
+</label>
+</div>
+</div>
+</div>
+<!-- Alternative View: Notification Center / Inbox (Hidden by default) -->
+<div class="hidden flex flex-col gap-space-md w-full" id="inbox-view">
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent System Alerts</h3>
+<button class="font-label-sm text-label-sm text-secondary hover:underline" onclick="clearAllNotifications()">Mark all read</button>
+</div>
+<div class="flex flex-col gap-space-xs mt-2">
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">check_circle</span>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-label-md text-on-surface">Google Calendar Synced</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">3 events added to your Weekly Agenda automatically.</p>
+<span class="font-label-sm text-label-sm text-outline mt-1 block">2 jam yang lalu</span>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-lowest flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-on-tertiary-container text-[20px] mt-0.5">celebration</span>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-label-md text-on-surface">Birthday approaching</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Maya Arisandi turns another year older tomorrow.</p>
+<span class="font-label-sm text-label-sm text-outline mt-1 block">5 jam yang lalu</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Alternative View: Cadence Rules (Hidden by default) -->
+<div class="hidden flex flex-col gap-space-md w-full" id="cadence-view">
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Cadence Intervals &amp; Rhythms</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Configure default reminder frequencies for your intimacy circles.</p>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between p-space-sm bg-surface-container-low rounded-lg">
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Inner Circle (Keluarga &amp; Sahabat)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Weekly nudge (Every 7 days)</p>
+</div>
+<span class="bg-secondary text-on-secondary font-label-sm text-label-sm px-2.5 py-1 rounded-full font-semibold">Active</span>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-container-low rounded-lg">
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Key Collaborators &amp; Mentors</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Bi-weekly / Monthly (Every 21 days)</p>
+</div>
+<span class="bg-secondary text-on-secondary font-label-sm text-label-sm px-2.5 py-1 rounded-full font-semibold">Active</span>
+</div>
+<div class="flex items-center justify-between p-space-sm bg-surface-container-low rounded-lg">
+<div>
+<p class="font-label-lg text-label-lg text-on-surface">Extended Network &amp; Alumni</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Quarterly (Every 90 days)</p>
+</div>
+<span class="bg-secondary text-on-secondary font-label-sm text-label-sm px-2.5 py-1 rounded-full font-semibold">Active</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast notification element for interactive micro-feedback -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-primary-container text-on-primary px-space-md py-space-sm rounded-full shadow-lg font-label-md text-label-md hidden items-center gap-2 pointer-events-none transition-all" id="toast">
+<span class="material-symbols-outlined text-[18px] text-secondary-container">check</span>
+<span id="toast-message">Action saved successfully</span>
+</div>
+</div>
+<script>
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-message');
+    if (!toast || !toastMsg) return;
+    toastMsg.textContent = msg;
+    toast.classList.remove('hidden');
+    toast.classList.add('flex');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
+    }, 2400);
+  }
+
+  function snoozeReminder(btn, name) {
+    const card = btn.closest('.bg-surface-container-lowest');
+    if (card) {
+      card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      card.style.opacity = '0.3';
+      card.style.transform = 'scale(0.98)';
+      setTimeout(() => {
+        card.style.display = 'none';
+        showToast('Snoozed 2 days for ' + name);
+      }, 250);
+    }
+  }
+
+  function markLogged(btn, name) {
+    const card = btn.closest('.bg-surface-container-lowest');
+    if (card) {
+      card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      card.style.opacity = '0.2';
+      setTimeout(() => {
+        card.style.display = 'none';
+        showToast('Logged interaction with ' + name);
+      }, 250);
+    }
+  }
+
+  function scheduleBirthdayGreeting() {
+    showToast('Scheduled birthday card for Maya Arisandi');
+  }
+
+  function copyMeetLink() {
+    showToast('Meeting link copied to clipboard');
+  }
+
+  function clearAllNotifications() {
+    showToast('All notifications marked as read');
+  }
+
+  function switchQueueTab(tabName) {
+    const tabs = ['upcoming', 'inbox', 'cadence'];
+    const views = {
+      'upcoming': document.getElementById('queue-view'),
+      'inbox': document.getElementById('inbox-view'),
+      'cadence': document.getElementById('cadence-view')
+    };
+
+    tabs.forEach(t => {
+      const btn = document.getElementById('tab-' + t);
+      if (btn) {
+        if (t === tabName) {
+          btn.className = "flex-1 py-space-sm px-space-xs rounded-full font-label-md text-label-md text-center transition-all bg-surface-container-lowest text-on-surface shadow-sm";
+        } else {
+          btn.className = "flex-1 py-space-sm px-space-xs rounded-full font-label-md text-label-md text-center transition-all text-on-surface-variant hover:text-on-surface";
+        }
+      }
+      if (views[t]) {
+        if (t === tabName) {
+          views[t].classList.remove('hidden');
+        } else {
+          views[t].classList.add('hidden');
+        }
+      }
+    });
+  }
+</script></main><div class="fixed bottom-0 w-full z-50 pb-safe pointer-events-none px-margin mb-space-sm"><nav class="pointer-events-auto mx-auto max-w-md bg-surface-container-lowest/90 backdrop-blur-xl rounded-full shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12),0_4px_12px_-2px_rgba(15,23,42,0.06)] px-space-sm py-space-xs flex items-center justify-around" data-active-classes="text-primary bg-surface-container font-semibold"><a class="flex-1 min-h-[44px] flex flex-col items-center justify-center py-space-xs px-space-xs rounded-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="radar" href="#"><span class="material-symbols-outlined text-[22px]">radar</span><span class="font-label-sm text-label-sm mt-0.5">Radar</span></a><a class="flex-1 min-h-[44px] flex flex-col items-center justify-center py-space-xs px-space-xs rounded-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="contacts" href="#"><span class="material-symbols-outlined text-[22px]">contacts</span><span class="font-label-sm text-label-sm mt-0.5">Contacts</span></a><a aria-current="page" class="flex-1 min-h-[44px] flex flex-col items-center justify-center py-space-xs px-space-xs rounded-full transition-colors text-primary bg-surface-container font-semibold" data-path="schedule" href="#"><span class="material-symbols-outlined text-[22px]">event_upcoming</span><span class="font-label-sm text-label-sm mt-0.5">Schedule</span></a><a class="flex-1 min-h-[44px] flex flex-col items-center justify-center py-space-xs px-space-xs rounded-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="sync-import" href="#"><span class="material-symbols-outlined text-[22px]">cloud_sync</span><span class="font-label-sm text-label-sm mt-0.5">Sync &amp; Import</span></a></nav></div></body></html>
