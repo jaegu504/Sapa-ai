@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Contact } from '../../types/crm';
 import {
   generateSapaDrafts,
@@ -35,20 +35,22 @@ export function AiDraftModal({
   const [draftSource, setDraftSource] = useState<'worker' | 'gemini_direct' | 'groq_direct' | 'offline_rule'>('worker');
 
   const contactId = contact?.id;
+  const selectedAngleRef = useRef<SapaAngle>(selectedAngle);
+  selectedAngleRef.current = selectedAngle;
 
   // Initialize language based on phone number (+90 Turkey vs other)
   useEffect(() => {
-    if (contact) {
+    if (contact && isOpen) {
       const isTurkish = isTurkishPhoneNumber(contact.phoneNumber);
       setLanguage(isTurkish ? 'tr' : 'id');
       setPreviousDrafts([]);
       setSelectedAngle('warm_greeting');
     }
-  }, [contactId]);
+  }, [contactId, isOpen]);
 
   // Load drafts when modal opens or language changes
   const fetchDrafts = useCallback(
-    async (lang: SapaLanguage, accumulatedDrafts: string[] = []) => {
+    async (lang: SapaLanguage, accumulatedDrafts: string[] = [], preferredAngle?: SapaAngle) => {
       if (!contact) return;
       setLoading(true);
 
@@ -78,8 +80,9 @@ export function AiDraftModal({
         } else if (sapaResult && sapaResult.drafts && sapaResult.drafts.length > 0) {
           setDraftOptions(sapaResult.drafts);
           setDraftSource(sapaResult.source);
+          const targetAngle = preferredAngle || selectedAngleRef.current;
           const activeOpt =
-            sapaResult.drafts.find((d) => d.angle === selectedAngle) || sapaResult.drafts[0];
+            sapaResult.drafts.find((d) => d.angle === targetAngle) || sapaResult.drafts[0];
           setDraftText(activeOpt.text);
           setSelectedAngle(activeOpt.angle);
         }
@@ -89,7 +92,7 @@ export function AiDraftModal({
         setLoading(false);
       }
     },
-    [contact, selectedAngle, apiKey]
+    [contact?.id, apiKey]
   );
 
   useEffect(() => {
@@ -113,7 +116,7 @@ export function AiDraftModal({
   const handleRegenerate = async () => {
     const updatedHistory = draftText ? [...previousDrafts, draftText] : previousDrafts;
     setPreviousDrafts(updatedHistory);
-    await fetchDrafts(language, updatedHistory);
+    await fetchDrafts(language, updatedHistory, selectedAngle);
   };
 
   const handleChatLogged = () => {

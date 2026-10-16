@@ -256,8 +256,8 @@ describe('AiDraftModal', () => {
     expect(trBtn).toBeDefined();
   });
 
-  it('displays 3 instant draft option cards and updates textarea when another card is clicked', async () => {
-    vi.spyOn(aiDraftService, 'generateSapaDrafts').mockResolvedValue({
+  it('displays 3 instant draft option cards and updates textarea when another card is clicked without re-generating', async () => {
+    const sapaSpy = vi.spyOn(aiDraftService, 'generateSapaDrafts').mockResolvedValue({
       drafts: [
         { id: '1', angle: 'warm_greeting', title: 'Kabar & Doa', text: 'Teks opsi pertama' },
         { id: '2', angle: 'topic_discussion', title: 'Bahasan Topik', text: 'Teks opsi kedua topik' },
@@ -275,15 +275,19 @@ describe('AiDraftModal', () => {
 
     // Initially selected first card
     expect(screen.getByDisplayValue('Teks opsi pertama')).toBeDefined();
+    expect(sapaSpy).toHaveBeenCalledTimes(1);
 
     // Click on 2nd card (Bahasan Topik)
     const topicCard = screen.getByText('Bahasan Topik');
     fireEvent.click(topicCard);
 
-    // Textarea now displays second option
+    // Textarea now displays second option instantly
     await waitFor(() => {
       expect(screen.getByDisplayValue('Teks opsi kedua topik')).toBeDefined();
     });
+
+    // CRITICAL: generateSapaDrafts MUST NOT be called again on option click!
+    expect(sapaSpy).toHaveBeenCalledTimes(1);
   });
 
   it('switches language and generates drafts in chosen language when language segment is tapped', async () => {
