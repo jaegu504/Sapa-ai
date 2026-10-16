@@ -30,10 +30,10 @@ describe('Kinship UI Components', () => {
       );
 
       expect(screen.getByText('92%')).toBeDefined();
-      expect(screen.getByText('Kinship Pulse')).toBeDefined();
-      expect(screen.getByText('42 Active')).toBeDefined();
-      expect(screen.getByText('3 Due')).toBeDefined();
-      expect(screen.getByText('2 Paused')).toBeDefined();
+      expect(screen.getByText('Denyut Sapa')).toBeDefined();
+      expect(screen.getByText('42 Aktif')).toBeDefined();
+      expect(screen.getByText('3 Perlu Disapa')).toBeDefined();
+      expect(screen.getByText('2 Dijeda')).toBeDefined();
     });
 
     it('calculates arc strokeDashoffset based on radius 58 and clamped score', () => {
@@ -101,7 +101,7 @@ describe('Kinship UI Components', () => {
         />
       );
 
-      const duePill = screen.getByText('4 Due');
+      const duePill = screen.getByText('4 Perlu Disapa');
       expect(duePill.className).toMatch(/rose|coral|red/i);
     });
 
@@ -117,7 +117,7 @@ describe('Kinship UI Components', () => {
         />
       );
 
-      const arcContainer = screen.getByRole('button', { name: /kinship pulse/i });
+      const arcContainer = screen.getByRole('button', { name: /denyut sapa/i });
       fireEvent.click(arcContainer);
       expect(onPulseClick).toHaveBeenCalledTimes(1);
     });

@@ -79,7 +79,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
             {Math.round(clampedScore)}%
           </span>
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mt-1">
-            Kinship Pulse
+            Denyut Sapa
           </span>
         </div>
       </div>
@@ -87,7 +87,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
       {/* Bottom stat pills */}
       <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
         <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-          {activeCount} Active
+          {activeCount} Aktif
         </span>
         <span
           className={`px-3 py-1 rounded-full text-xs transition-colors ${
@@ -96,10 +96,10 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
               : 'bg-slate-100 text-slate-700 font-medium'
           }`}
         >
-          {dueCount} Due
+          {dueCount} Perlu Disapa
         </span>
         <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-          {pausedCount} Paused
+          {pausedCount} Dijeda
         </span>
       </div>
     </div>
@@ -110,7 +110,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
       <button
         type="button"
         onClick={onPulseClick}
-        aria-label={`Kinship Pulse ${Math.round(clampedScore)}%`}
+        aria-label={`Denyut Sapa ${Math.round(clampedScore)}%`}
         className={`w-full text-left bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-[0.99] ${className}`}
       >
         {content}

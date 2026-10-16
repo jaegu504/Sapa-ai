@@ -7,6 +7,7 @@ import {
   Flame,
   Radio,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { calculateContactStatus } from '../../utils/status';
@@ -138,16 +139,20 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
       {/* Top Header Bar */}
       <header className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-3">
-          {/* User profile avatar */}
+          {/* User profile avatar with Sapa Logo */}
           <div
             aria-label="Profil Pengguna"
-            className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-900 to-slate-700 text-white flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-white/80"
+            className="w-10 h-10 rounded-2xl bg-linear-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/80"
           >
-            SK
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              <path d="M9.5 11.5h.01" strokeWidth={3} />
+              <path d="M14.5 11.5h.01" strokeWidth={3} />
+            </svg>
           </div>
           <div>
             <div className="flex items-center gap-1.5 leading-none">
-              <span className="text-xl font-extrabold tracking-tight text-slate-900">Kinship</span>
+              <span className="text-xl font-extrabold tracking-tight text-slate-900">Sapa</span>
               <span className="text-slate-400 font-normal">·</span>
               <h1 className="text-xl font-semibold text-slate-600">Radar</h1>
             </div>
@@ -186,8 +191,8 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
         </div>
       </header>
 
-      {/* Kinship Pulse Card */}
-      <section aria-label="Kinship Pulse Overview">
+      {/* Denyut Sapa Card */}
+      <section aria-label="Denyut Sapa Overview">
         <KinshipPulseArc
           score={healthScore}
           activeCount={activeCount}
@@ -294,14 +299,29 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
                     </div>
                   )}
 
-                  {/* Quick Dual WhatsApp Action */}
-                  <div className="pt-1">
-                    <DualWhatsAppButton
-                      phoneNumber={contact.phoneNumber}
-                      draftText={draftText}
-                      onChatLogged={() => onLogChat?.(contact)}
-                      size="sm"
-                    />
+                  {/* Quick Dual WhatsApp Action & Explicit Sudah Sapa Button */}
+                  <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <DualWhatsAppButton
+                        phoneNumber={contact.phoneNumber}
+                        draftText={draftText}
+                        size="sm"
+                      />
+                    </div>
+                    {onLogChat && (
+                      <button
+                        type="button"
+                        aria-label={`Tandai sudah sapa ${contact.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLogChat(contact);
+                        }}
+                        className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 min-h-[34px]"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Sudah Sapa</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );

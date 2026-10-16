@@ -54,15 +54,22 @@ export function hashContactId(id: string): number {
 }
 
 /**
- * Calculates next 08:00 AM local time.
+ * Calculates next digest time (defaults to 08:00 AM local time).
  */
-export function getNextEightAM(now: Date = new Date()): Date {
+export function getNextDigestTime(targetHour: number = 8, targetMinute: number = 0, now: Date = new Date()): Date {
   const target = new Date(now.getTime());
-  target.setHours(8, 0, 0, 0);
+  target.setHours(targetHour, targetMinute, 0, 0);
   if (target.getTime() <= now.getTime()) {
     target.setDate(target.getDate() + 1);
   }
   return target;
+}
+
+/**
+ * Calculates next 08:00 AM local time (backward compatible).
+ */
+export function getNextEightAM(now: Date = new Date()): Date {
+  return getNextDigestTime(8, 0, now);
 }
 
 /**
@@ -273,14 +280,14 @@ export async function initNotificationService(): Promise<void> {
 
     await plugin.createChannel({
       id: CHANNEL_MORNING_DIGEST,
-      name: 'Kinship Daily Digest',
+      name: 'Ringkasan Sapaan Pagi Sapa',
       description: 'Ringkasan sapaan harian jam 08:00 WIB',
       importance: 4,
     });
 
     await plugin.createChannel({
       id: CHANNEL_TARGETED_ALARMS,
-      name: 'Kinship Targeted Follow-Ups',
+      name: 'Pengingat Jadwal Sapa',
       description: 'Pengingat jadwal follow up khusus',
       importance: 5,
     });
@@ -290,11 +297,14 @@ export async function initNotificationService(): Promise<void> {
 }
 
 /**
- * Schedules repeating 08:00 WIB daily morning digest summarizing due/overdue contacts.
+ * Schedules repeating daily digest summarizing due/overdue contacts at custom or 08:00 WIB time.
  * Uses notification ID 1001 and channel 'crm_morning_digest'.
  * Returns total count of overdue contacts scheduled.
  */
-export async function scheduleDailyMorningDigest(contacts: Contact[]): Promise<number> {
+export async function scheduleDailyMorningDigest(
+  contacts: Contact[],
+  options?: { hour?: number; minute?: number }
+): Promise<number> {
   const digest = getDailyDigestItems(contacts);
 
   try {
@@ -303,21 +313,23 @@ export async function scheduleDailyMorningDigest(contacts: Contact[]): Promise<n
       return digest.totalOverdue;
     }
 
-    const next8AM = getNextEightAM();
+    const hour = options?.hour ?? 8;
+    const minute = options?.minute ?? 0;
+    const nextTime = getNextDigestTime(hour, minute);
 
     await plugin.schedule({
       notifications: [
         {
           id: MORNING_DIGEST_NOTIFICATION_ID,
-          title: 'Kinship: Waktunya Sapa Relasi',
+          title: 'Sapa: Waktunya Menyapa Relasi',
           body: digest.digestSummary,
           channelId: CHANNEL_MORNING_DIGEST,
           schedule: {
-            at: next8AM,
+            at: nextTime,
             every: 'day',
             on: {
-              hour: 8,
-              minute: 0,
+              hour,
+              minute,
             },
             allowWhileIdle: true,
           },

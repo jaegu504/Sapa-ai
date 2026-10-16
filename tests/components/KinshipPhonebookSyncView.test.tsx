@@ -54,7 +54,7 @@ describe('KinshipPhonebookSyncView', () => {
     await waitFor(() => {
       expect(screen.getByText('Akses Kontak Belum Diizinkan')).toBeDefined();
       expect(
-        screen.getByText(/Diperlukan izin sistem Android agar GrowSphere dapat membaca kontak/i)
+        screen.getByText(/Diperlukan izin sistem Android agar Sapa dapat membaca kontak/i)
       ).toBeDefined();
       expect(screen.getByRole('button', { name: /Izinkan Akses Kontak/i })).toBeDefined();
     });
@@ -235,11 +235,22 @@ describe('KinshipPhonebookSyncView', () => {
     const googleTab = screen.getByRole('button', { name: /Google Kontak/i });
     fireEvent.click(googleTab);
 
-    expect(screen.getByText(/Google Kontak segera hadir/i)).toBeDefined();
+    expect(screen.getByText(/Sinkronisasi Google Kontak/i)).toBeDefined();
 
     const phonebookTab = screen.getByRole('button', { name: /Buku Telepon/i });
     fireEvent.click(phonebookTab);
 
-    expect(screen.getByText('Abi Syihab')).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText('Abi Syihab')).toBeDefined();
+    });
+  });
+
+  it('allows uploading and parsing CSV/VCF file on CSV tab', async () => {
+    render(<KinshipPhonebookSyncView isOpen={true} />);
+
+    const csvTab = screen.getByRole('button', { name: /File CSV \/ VCF/i });
+    fireEvent.click(csvTab);
+
+    expect(screen.getByText(/Unggah File Kontak/i)).toBeDefined();
   });
 });

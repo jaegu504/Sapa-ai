@@ -321,7 +321,7 @@ describe('notificationService', () => {
         expect(mockCreateChannel).toHaveBeenCalledWith(
           expect.objectContaining({
             id: CHANNEL_MORNING_DIGEST,
-            name: 'Kinship Daily Digest',
+            name: 'Ringkasan Sapaan Pagi Sapa',
             description: 'Ringkasan sapaan harian jam 08:00 WIB',
             importance: 4,
           })
@@ -329,7 +329,7 @@ describe('notificationService', () => {
         expect(mockCreateChannel).toHaveBeenCalledWith(
           expect.objectContaining({
             id: CHANNEL_TARGETED_ALARMS,
-            name: 'Kinship Targeted Follow-Ups',
+            name: 'Pengingat Jadwal Sapa',
             description: 'Pengingat jadwal follow up khusus',
             importance: 5,
           })
@@ -357,7 +357,7 @@ describe('notificationService', () => {
         const scheduledNotif = callArgs.notifications[0];
         expect(scheduledNotif.id).toBe(MORNING_DIGEST_NOTIFICATION_ID);
         expect(scheduledNotif.channelId).toBe(CHANNEL_MORNING_DIGEST);
-        expect(scheduledNotif.title).toBe('Kinship: Waktunya Sapa Relasi');
+        expect(scheduledNotif.title).toBe('Sapa: Waktunya Menyapa Relasi');
         expect(scheduledNotif.body).toContain('1 relasi perlu disapa hari ini');
         expect(scheduledNotif.schedule).toBeDefined();
         expect(scheduledNotif.schedule.on).toEqual(expect.objectContaining({ hour: 8, minute: 0 }));

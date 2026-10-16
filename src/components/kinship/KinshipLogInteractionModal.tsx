@@ -143,7 +143,7 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                  Kinship Interaction Log
+                  Catatan Interaksi Sapa
                 </span>
               </div>
               <h2

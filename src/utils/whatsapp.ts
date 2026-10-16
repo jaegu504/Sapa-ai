@@ -1,5 +1,11 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { normalizePhoneNumber } from './phone';
+
+export interface WhatsAppLauncherPluginType {
+  openWhatsApp(options: { phone: string; text?: string; appType: 'regular' | 'business' }): Promise<void>;
+}
+
+export const WhatsAppLauncher = registerPlugin<WhatsAppLauncherPluginType>('WhatsAppLauncher');
 
 function encodeWhatsAppText(text: string): string {
   return encodeURIComponent(text).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
@@ -172,7 +178,27 @@ export function openWhatsApp(
     return;
   }
 
+  const normalized = normalizePhoneNumber(phone);
+  const cleanDigits = normalized ? normalized.replace(/\D/g, '') : phone.replace(/\D/g, '');
+  const trimmedMessage = msg ? msg.trim() : '';
+
   if (isAndroid) {
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) {
+      WhatsAppLauncher.openWhatsApp({
+        phone: cleanDigits,
+        text: trimmedMessage,
+        appType: chosenAppType,
+      }).catch((err) => {
+        console.warn('[WhatsAppLauncher] Native launch failed, falling back:', err);
+        try {
+          window.location.href = url;
+        } catch {
+          window.open(fallbackUrl, '_blank');
+        }
+      });
+      return;
+    }
+
     try {
       window.location.href = url;
     } catch {

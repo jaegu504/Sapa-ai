@@ -635,7 +635,7 @@ export const App: React.FC = () => {
     <DeviceEmulatorFrame>
       <div className="min-h-screen bg-[#f8f9ff] flex flex-col font-sans pb-24 selection:bg-[#2F54EB] selection:text-white">
         {/* Top Application Navbar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 pt-[env(safe-area-inset-top,0px)]">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <button
@@ -646,15 +646,19 @@ export const App: React.FC = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                KS
+              <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-md">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                  <path d="M9.5 11.5h.01" strokeWidth={3} />
+                  <path d="M14.5 11.5h.01" strokeWidth={3} />
+                </svg>
               </div>
               <div>
                 <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
-                  Kinship
+                  Sapa
                 </span>
                 <span className="hidden sm:inline-block text-xs text-slate-400 ml-2 font-medium">
-                  Personal Relationship CRM
+                  Rawat & jaga ritme silaturahmi
                 </span>
               </div>
             </div>
@@ -688,7 +692,7 @@ export const App: React.FC = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 gap-3">
               <RefreshCw className="w-8 h-8 animate-spin text-slate-600" />
-              <p className="text-sm font-medium">Memuat data relasi Kinship CRM...</p>
+              <p className="text-sm font-medium">Memuat data relasi Sapa...</p>
             </div>
           ) : (
             <>
@@ -731,7 +735,7 @@ export const App: React.FC = () => {
                               : 'text-slate-600 hover:text-slate-900'
                           }`}
                         >
-                          Kartu Kinship
+                          Kartu Sapa
                         </button>
                         <button
                           type="button"
@@ -1031,11 +1035,11 @@ export const App: React.FC = () => {
                   {/* Card 3: About Application */}
                   <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-2 text-xs text-slate-600">
                     <h3 className="font-bold text-slate-800 text-sm">
-                      Tentang Kinship CRM v2.0
+                      Tentang Sapa v2.0
                     </h3>
                     <p>
                       Aplikasi manajemen relasi dan silaturahmi personal yang dirancang dengan filosofi
-                      Kinship Pulse & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
+                      Denyut Sapa & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
                     </p>
                     <p className="text-[11px] text-slate-400">
                       Didukung arsitektur Local-First Dexie.js, Capacitor Native Plugins, Tailwind CSS, dan Google Gemini AI.
@@ -1084,7 +1088,7 @@ export const App: React.FC = () => {
 
         {/* Kinship Phonebook Sync Modal / View */}
         {isSyncOpen && (
-          <div className="fixed inset-0 z-50 bg-[#f8f9ff] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-[#f8f9ff] flex flex-col">
             <KinshipPhonebookSyncView
               isOpen={isSyncOpen}
               onClose={() => setIsSyncOpen(false)}

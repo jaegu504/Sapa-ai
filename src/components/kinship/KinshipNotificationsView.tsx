@@ -112,12 +112,31 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [snoozedContactIds, setSnoozedContactIds] = useState<Record<string, number>>({});
+  const [digestTime, setDigestTime] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('kinship_digest_time') || '08:00';
+    }
+    return '08:00';
+  });
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 2800);
+  };
+
+  const handleDigestTimeChange = async (newTime: string) => {
+    if (!newTime) return;
+    setDigestTime(newTime);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kinship_digest_time', newTime);
+    }
+    const [h, m] = newTime.split(':').map(Number);
+    if (!isNaN(h) && !isNaN(m)) {
+      await scheduleDailyMorningDigest(contacts, { hour: h, minute: m });
+      showToast(`Waktu pengingat harian disetel ke ${newTime} WIB`);
+    }
   };
 
   // 1. Calculate Today's Catch-ups
@@ -278,7 +297,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">Jadwal & Pengingat</h1>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                🔔 Jam 08:00 WIB Aktif
+                🔔 Jam {digestTime} WIB Aktif
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">Sapaan terencana & agenda minggu ini</p>
@@ -304,7 +323,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Upcoming Catch-ups
+            Jadwal Sapaan
           </button>
           <button
             type="button"
@@ -315,7 +334,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>Inbox</span>
+            <span>Kotak Masuk</span>
             <span className="w-2 h-2 rounded-full bg-rose-500" />
           </button>
           <button
@@ -327,7 +346,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Cadence Rules
+            Aturan Ritme
           </button>
         </div>
 
@@ -343,11 +362,11 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700">
-                      Digest Status
+                      Status Ringkasan
                     </span>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   </div>
-                  <p className="text-sm font-semibold text-slate-900">Daily Morning Digest Sent</p>
+                  <p className="text-sm font-semibold text-slate-900">Ringkasan Sapaan Pagi Terkirim</p>
                   <p className="text-xs text-slate-600 truncate">
                     Ringkasan sapaan harian dikirim setiap <span className="font-medium text-slate-800">08:00 WIB</span>
                   </p>
@@ -368,7 +387,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-rose-500" />
-                  <h2 className="text-lg font-bold text-slate-900">Today's Reminders</h2>
+                  <h2 className="text-lg font-bold text-slate-900">Pengingat Hari Ini</h2>
                 </div>
                 <span className="bg-slate-200/70 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   {todayCatchUps.length} Pending
@@ -530,12 +549,12 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               )}
             </div>
 
-            {/* Section: Agenda Minggu Ini */}
+            {/* Section: Agenda Pekan Ini */}
             <div className="flex flex-col gap-3 mt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-emerald-600" />
-                  <h2 className="text-lg font-bold text-slate-900">Agenda Minggu Ini</h2>
+                  <h2 className="text-lg font-bold text-slate-900">Agenda Pekan Ini</h2>
                 </div>
                 <span className="text-xs text-slate-500 font-medium">
                   {weeklyAgenda.length} Sapaan Terjadwal
@@ -601,10 +620,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-slate-600" />
-                  <h3 className="text-base font-bold text-slate-900">Queue & Dispatch Settings</h3>
+                  <h3 className="text-base font-bold text-slate-900">Pengaturan Notifikasi & Antrean</h3>
                 </div>
                 <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  Auto-sync ON
+                  Sinkron Otomatis ON
                 </span>
               </div>
 
@@ -617,10 +636,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-slate-900 truncate">
-                        Daily Morning Digest (08:00 WIB)
+                        Ringkasan Sapaan Pagi ({digestTime} WIB)
                       </p>
                       <p className="text-[11px] text-slate-500 truncate">
-                        Ringkasan sapaan harian dikirim setiap jam 08:00 WIB
+                        Ringkasan sapaan harian dikirim setiap jam {digestTime} WIB
                       </p>
                     </div>
                   </div>
@@ -632,6 +651,49 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                   />
                 </label>
 
+                {/* Custom Time Selector & Presets */}
+                {morningDigestEnabled && (
+                  <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
+                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Atur Jam Notifikasi Harian</span>
+                      </div>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        {digestTime} WIB
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      {['08:00', '09:00', '13:00', '20:00'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => handleDigestTimeChange(preset)}
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                            digestTime === preset
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-white border border-emerald-200/80 text-emerald-800 hover:bg-emerald-100/60'
+                          }`}
+                        >
+                          {preset} WIB
+                        </button>
+                      ))}
+
+                      <div className="flex items-center gap-1 ml-auto">
+                        <span className="text-[10px] text-slate-500 font-medium">Kustom:</span>
+                        <input
+                          type="time"
+                          aria-label="Waktu kustom pengingat"
+                          value={digestTime}
+                          onChange={(e) => handleDigestTimeChange(e.target.value)}
+                          className="px-2 py-0.5 text-xs font-semibold bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Toggle 2: Receive Push Notifications */}
                 <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 hover:bg-slate-50 border border-slate-100/80 cursor-pointer transition-colors">
                   <div className="flex items-center gap-3 min-w-0 pr-2">
@@ -640,7 +702,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-slate-900 truncate">
-                        Receive Push Notifications
+                        Terima Notifikasi Sistem
                       </p>
                       <p className="text-[11px] text-slate-500 truncate">
                         Pengingat langsung untuk relasi yang melewati batas siklus
@@ -663,7 +725,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-slate-900 truncate">
-                        Auto-open WhatsApp
+                        Buka WhatsApp Otomatis
                       </p>
                       <p className="text-[11px] text-slate-500 truncate">
                         Langsung buka template pesan saat tombol sapa ditekan
@@ -709,13 +771,13 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
         {activeTab === 'inbox' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Recent System Alerts</h3>
+              <h3 className="text-base font-bold text-slate-900">Pemberitahuan Sistem Terkini</h3>
               <button
                 type="button"
                 onClick={() => showToast('Semua notifikasi ditandai telah dibaca')}
                 className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
               >
-                Mark all read
+                Tandai sudah dibaca
               </button>
             </div>
 
@@ -723,7 +785,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="p-3 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-900">Morning Digest Dispatched</p>
+                  <p className="text-xs font-semibold text-slate-900">Ringkasan Sapaan Pagi Terkirim</p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {overdueCount} relasi disarankan untuk disapa pagi ini sesuai ritme intim.
                   </p>
@@ -749,7 +811,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
         {activeTab === 'cadence' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Cadence Intervals & Rhythms</h3>
+              <h3 className="text-base font-bold text-slate-900">Interval & Ritme Sapaan</h3>
               <p className="text-xs text-slate-500 mt-1">
                 Frekuensi sapaan berkala default yang menjaga ritme silaturahmi tetap harmonis.
               </p>
@@ -762,7 +824,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                   <p className="text-xs text-slate-500 mt-0.5">Weekly nudge (Setiap 7 hari)</p>
                 </div>
                 <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                  Active
+                  Aktif
                 </span>
               </div>
 
@@ -772,7 +834,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                   <p className="text-xs text-slate-500 mt-0.5">Bi-weekly / Monthly (Setiap 14-21 hari)</p>
                 </div>
                 <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                  Active
+                  Aktif
                 </span>
               </div>
 
@@ -782,7 +844,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                   <p className="text-xs text-slate-500 mt-0.5">Quarterly (Setiap 60-90 hari)</p>
                 </div>
                 <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                  Active
+                  Aktif
                 </span>
               </div>
             </div>

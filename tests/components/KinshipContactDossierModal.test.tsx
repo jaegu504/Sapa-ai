@@ -75,7 +75,7 @@ describe('KinshipContactDossierModal', () => {
     );
 
     expect(screen.getByRole('dialog')).toBeDefined();
-    expect(screen.getByText('Dossier Relasi')).toBeDefined();
+    expect(screen.getByText('Profil Relasi')).toBeDefined();
     expect(screen.getByText('Raditya Pratama')).toBeDefined();
     expect(screen.getByText('+6281234567890')).toBeDefined();
 
@@ -324,5 +324,34 @@ describe('KinshipContactDossierModal', () => {
     );
 
     expect(screen.getByText(/Belum ada riwayat interaksi/i)).toBeDefined();
+  });
+
+  it('allows toggling association labels and calls onUpdateContact', async () => {
+    const onUpdateContact = vi.fn().mockResolvedValue(undefined);
+    render(
+      <KinshipContactDossierModal
+        contact={mockContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={onUpdateContact}
+      />
+    );
+
+    // Click "Ubah Label" button
+    const ubahBtn = screen.getByRole('button', { name: /Ubah Asosiasi Kontak/i });
+    fireEvent.click(ubahBtn);
+
+    expect(screen.getByText(/Pilih Label \/ Hubungan:/i)).toBeDefined();
+
+    // Toggle 'Hoca' (currently mockContact only has ['Ihvan'])
+    const hocaBtn = screen.getByRole('button', { name: /\+ Hoca/i });
+    await act(async () => {
+      fireEvent.click(hocaBtn);
+    });
+
+    expect(onUpdateContact).toHaveBeenCalledWith('contact-1', {
+      associations: ['Keluarga', 'Ihvan', 'Hoca'],
+      isProfessional: true,
+    });
   });
 });

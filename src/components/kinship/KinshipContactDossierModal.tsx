@@ -105,6 +105,15 @@ function getInteractionTypeBadge(type: string) {
   }
 }
 
+const AVAILABLE_ASSOCIATIONS = [
+  'Ihvan',
+  'Hoca',
+  'Keluarga',
+  'Zahiri',
+  'Teman',
+  'Profesional',
+] as const;
+
 export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProps> = ({
   contact,
   isOpen,
@@ -161,6 +170,8 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
     };
   }, []);
 
+  const [isEditingAssociations, setIsEditingAssociations] = useState<boolean>(false);
+
   const handleUpdate = async (updates: Partial<Contact>) => {
     if (!onUpdateContact || !contact) return;
     setSaveStatus('saving');
@@ -174,6 +185,34 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
     } catch {
       setSaveStatus('idle');
     }
+  };
+
+  const handleToggleAssociation = async (assoc: string) => {
+    if (!contact) return;
+    const current = contact.associations || [];
+    let updated: string[];
+    let updatedIsProf = contact.isProfessional;
+
+    if (assoc === 'Profesional') {
+      updatedIsProf = !contact.isProfessional;
+      if (updatedIsProf) {
+        if (!current.includes('Profesional')) updated = [...current, 'Profesional'];
+        else updated = current;
+      } else {
+        updated = current.filter((a) => a !== 'Profesional');
+      }
+    } else {
+      if (current.includes(assoc)) {
+        updated = current.filter((a) => a !== assoc);
+      } else {
+        updated = [...current, assoc];
+      }
+    }
+
+    await handleUpdate({
+      associations: updated,
+      isProfessional: updatedIsProf,
+    });
   };
 
   const status = calculateContactStatus(contact, now);
@@ -208,7 +247,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Dossier Relasi
+              Profil Relasi
             </h2>
           </div>
           <div className="flex items-center gap-1.5">
@@ -292,7 +331,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                   />
                 </div>
 
-                {/* Association badges */}
+                {/* Association badges with edit toggle */}
                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                   {contact.associations?.map((assoc) => (
                     <span
@@ -304,12 +343,54 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                       {assoc}
                     </span>
                   ))}
-                  {contact.isProfessional && (
+                  {contact.isProfessional && !contact.associations?.includes('Profesional') && (
                     <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200">
                       Profesional
                     </span>
                   )}
+                  <button
+                    type="button"
+                    aria-label="Ubah Asosiasi Kontak"
+                    onClick={() => setIsEditingAssociations((prev) => !prev)}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 bg-blue-50/60 hover:bg-blue-100/60 transition-colors cursor-pointer"
+                  >
+                    <Tag className="w-2.5 h-2.5" />
+                    <span>{isEditingAssociations ? 'Tutup' : 'Ubah Label'}</span>
+                  </button>
                 </div>
+
+                {/* Interactive Association Selector Drawer/Panel */}
+                {isEditingAssociations && (
+                  <div className="mt-2.5 p-2.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-1.5">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Pilih Label / Hubungan:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {AVAILABLE_ASSOCIATIONS.map((assoc) => {
+                        const isSelected =
+                          assoc === 'Profesional'
+                            ? Boolean(contact.isProfessional || contact.associations?.includes('Profesional'))
+                            : Boolean(contact.associations?.includes(assoc));
+
+                        return (
+                          <button
+                            key={assoc}
+                            type="button"
+                            onClick={() => handleToggleAssociation(assoc)}
+                            className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer font-medium ${
+                              isSelected
+                                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                            }`}
+                          >
+                            <span>{isSelected ? '✓' : '+'}</span>
+                            <span>{assoc}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Phone & Met details */}
                 <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
@@ -388,7 +469,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
               <div className="flex items-center gap-1.5 text-slate-800">
                 <FileText className="w-4 h-4 text-slate-500" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Dossier & Notion Properties
+                  Profil & Properti Relasi
                 </h4>
               </div>
               <div className="flex items-center gap-2">
@@ -405,7 +486,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                   </span>
                 )}
                 <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-                  LIVE SYNC
+                  SINKRON OTOMATIS
                 </span>
               </div>
             </div>

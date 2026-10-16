@@ -11,11 +11,11 @@ describe('App Integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders Kinship header and default Radar tab', async () => {
+  it('renders Sapa header and default Radar tab', async () => {
     render(<App />);
 
     // Check header title
-    expect(screen.getByText('Kinship')).toBeDefined();
+    expect(screen.getByText('Sapa')).toBeDefined();
 
     // Bottom nav tabs should be rendered
     expect(screen.getByRole('button', { name: /^radar$/i })).toBeDefined();
@@ -23,9 +23,9 @@ describe('App Integration', () => {
     expect(screen.getByRole('button', { name: /^jadwal$/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /^pengaturan$/i })).toBeDefined();
 
-    // Default Radar (KinshipDashboardView) should display Kinship Pulse
+    // Default Radar (KinshipDashboardView) should display Denyut Sapa
     await waitFor(() => {
-      expect(screen.getByLabelText(/Kinship Pulse Overview/i)).toBeDefined();
+      expect(screen.getByLabelText(/Denyut Sapa Overview/i)).toBeDefined();
       expect(screen.getByText(/Cadence Radar/i)).toBeDefined();
     });
   });
@@ -88,8 +88,8 @@ describe('App Integration', () => {
     await waitFor(() => {
       expect(screen.getByText(/Jadwal & Pengingat/i)).toBeDefined();
       expect(screen.getByText(/08:00 WIB Aktif/i)).toBeDefined();
-      expect(screen.getByRole('button', { name: /upcoming catch-ups/i })).toBeDefined();
-      expect(screen.getByRole('button', { name: /inbox/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /jadwal sapaan/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /kotak masuk/i })).toBeDefined();
     });
   });
 

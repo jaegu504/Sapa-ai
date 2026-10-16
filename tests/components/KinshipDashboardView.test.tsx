@@ -97,11 +97,11 @@ describe('KinshipDashboardView', () => {
     );
 
     // Title & Editorial styling
-    expect(screen.getByText('Kinship')).toBeDefined();
+    expect(screen.getByText('Sapa')).toBeDefined();
     expect(screen.getByText('Radar')).toBeDefined();
 
-    // User avatar initials
-    expect(screen.getByText('SK')).toBeDefined();
+    // User avatar
+    expect(screen.getByLabelText('Profil Pengguna')).toBeDefined();
 
     // Notification bell button with overdue count badge (2 due contacts)
     const bellBtn = screen.getByRole('button', { name: /notifikasi/i });
@@ -129,10 +129,10 @@ describe('KinshipDashboardView', () => {
 
     // 2 out of 4 overdue -> 50% health score
     expect(screen.getByText('50%')).toBeDefined();
-    expect(screen.getByText('Kinship Pulse')).toBeDefined();
-    expect(screen.getByText('4 Active')).toBeDefined();
-    expect(screen.getByText('2 Due')).toBeDefined();
-    expect(screen.getByText('0 Paused')).toBeDefined();
+    expect(screen.getByText('Denyut Sapa')).toBeDefined();
+    expect(screen.getByText('4 Aktif')).toBeDefined();
+    expect(screen.getByText('2 Perlu Disapa')).toBeDefined();
+    expect(screen.getByText('0 Dijeda')).toBeDefined();
   });
 
   it('renders Needs Attention Today section with overdue contacts, topic preview, and Dual WhatsApp', () => {
@@ -163,7 +163,7 @@ describe('KinshipDashboardView', () => {
     fireEvent.click(radityaCard);
     expect(onSelectContact).toHaveBeenCalledWith(mockContacts[0]);
 
-    // Clicking WhatsApp button invokes openWhatsApp and onLogChat
+    // Clicking WhatsApp button invokes openWhatsApp without prematurely calling onLogChat
     const whatsappBtn = screen.getAllByRole('button', { name: /kirim via whatsapp$/i })[0];
     fireEvent.click(whatsappBtn);
     expect(whatsappUtils.openWhatsApp).toHaveBeenCalledWith(
@@ -171,6 +171,11 @@ describe('KinshipDashboardView', () => {
       "Assalamu'alaikum Raditya Pratama, Tanyakan progres tim baru",
       'regular'
     );
+    expect(onLogChat).not.toHaveBeenCalled();
+
+    // Clicking 'Sudah Sapa' marks the interaction as completed
+    const sudahSapaBtn = screen.getAllByRole('button', { name: /sudah sapa/i })[0];
+    fireEvent.click(sudahSapaBtn);
     expect(onLogChat).toHaveBeenCalledWith(mockContacts[0]);
   });
 

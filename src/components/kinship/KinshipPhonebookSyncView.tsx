@@ -13,6 +13,8 @@ import {
   Circle,
   Loader2,
   Users,
+  Upload,
+  AlertCircle,
 } from 'lucide-react';
 import type { RawPhoneContact, ImportResult } from '../../types/crm';
 import {
@@ -20,6 +22,7 @@ import {
   ContactsPermissionStatus,
 } from '../../services/nativeContactsAdapter';
 import { importContacts } from '../../services/contactService';
+import { parseVcf, parseCsv } from '../../utils/contactImportParsers';
 
 export interface KinshipPhonebookSyncViewProps {
   isOpen?: boolean; // if used as modal or full screen
@@ -80,9 +83,14 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
   const [selectedCadence, setSelectedCadence] = useState<number>(15);
   const [importing, setImporting] = useState<boolean>(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [visibleLimit, setVisibleLimit] = useState<number>(50);
 
   const loadContacts = useCallback(async () => {
     setLoading(true);
+    setUploadedFileName(null);
+    setFileError(null);
     try {
       const result = await getDeviceContactsWithStatus();
       setPermissionStatus(result.permissionStatus);
@@ -105,11 +113,19 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
       setSearchQuery('');
       setSelectedPhones(new Set());
       setImportResult(null);
+      setFileError(null);
       return;
     }
 
-    loadContacts();
-  }, [isOpen, loadContacts]);
+    if (activeTab === 'phonebook') {
+      loadContacts();
+    }
+  }, [isOpen, activeTab, loadContacts]);
+
+  // Reset pagination limit on search query change to keep DOM render count light
+  useEffect(() => {
+    setVisibleLimit(50);
+  }, [searchQuery]);
 
   const handleRequestPermission = async () => {
     setRequestingPermission(true);
@@ -126,6 +142,48 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
     }
   };
 
+  // Handle CSV / VCF file upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileError(null);
+    setLoading(true);
+
+    try {
+      const text = await file.text();
+      let parsed: RawPhoneContact[] = [];
+
+      const lowerName = file.name.toLowerCase();
+      if (lowerName.endsWith('.vcf') || lowerName.endsWith('.vcard')) {
+        parsed = parseVcf(text);
+      } else if (lowerName.endsWith('.csv') || file.type.includes('csv')) {
+        parsed = parseCsv(text);
+      } else {
+        parsed = parseVcf(text);
+        if (parsed.length === 0) {
+          parsed = parseCsv(text);
+        }
+      }
+
+      if (parsed.length === 0) {
+        setFileError('Tidak ditemukan kontak dengan nomor telepon valid dalam file ini.');
+        return;
+      }
+
+      setContacts(parsed);
+      setUploadedFileName(file.name);
+      // Auto-select all parsed contacts for convenience
+      setSelectedPhones(new Set(parsed.map((c) => c.phoneNumber)));
+    } catch (err: any) {
+      console.error('Failed to parse file:', err);
+      setFileError('Gagal memproses file: ' + (err?.message || 'Format tidak didukung'));
+    } finally {
+      setLoading(false);
+      e.target.value = '';
+    }
+  };
+
   // Filter contacts by search query
   const filteredContacts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -137,6 +195,11 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
         (c.associations && c.associations.some((a) => a.toLowerCase().includes(q)))
     );
   }, [contacts, searchQuery]);
+
+  // Windowed visible contacts to prevent rendering thousands of DOM elements
+  const displayedContacts = useMemo(() => {
+    return filteredContacts.slice(0, visibleLimit);
+  }, [filteredContacts, visibleLimit]);
 
   const areAllFilteredSelected =
     filteredContacts.length > 0 &&
@@ -187,16 +250,16 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
   if (isOpen === false) return null;
 
-  const showPermissionWarning = permissionStatus !== 'granted';
+  const showPermissionWarning = activeTab === 'phonebook' && permissionStatus !== 'granted';
 
   return (
     <div
       role="region"
       aria-label="Sinkronisasi & Impor Kontak"
-      className="w-full max-w-2xl mx-auto min-h-screen bg-[#f8f9ff] text-slate-900 flex flex-col font-sans pb-32"
+      className="w-full max-w-2xl mx-auto h-full flex flex-col bg-[#f8f9ff] text-slate-900 font-sans"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-[#f8f9ff]/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between">
+      <header className="shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between pt-[env(safe-area-inset-top,12px)]">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
             <Users className="w-5 h-5 text-emerald-400" />
@@ -218,14 +281,15 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         )}
       </header>
 
-      <main className="p-4 space-y-4 flex-1">
+      {/* Scrollable Content Body */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Banner / Helper Info */}
         <div className="relative overflow-hidden bg-white border border-slate-200/70 rounded-3xl p-4 shadow-sm">
           <div className="flex items-start gap-3">
@@ -235,7 +299,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-bold text-slate-800">Sinkronisasi & Impor Kontak</h2>
               <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                Pilih kontak dari buku telepon ponsel atau akun Google untuk dipantau ritme
+                Pilih kontak dari buku telepon ponsel atau unggah file vCard/CSV untuk dipantau ritme
                 follow-up-nya secara berkala.
               </p>
             </div>
@@ -246,21 +310,24 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           <button
             type="button"
-            onClick={() => setActiveTab('phonebook')}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            onClick={() => {
+              setActiveTab('phonebook');
+              loadContacts();
+            }}
+            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'phonebook'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span>Buku Telepon (HP) {contacts.length > 0 ? `(${contacts.length})` : ''}</span>
+            <span>Buku Telepon (HP) {activeTab === 'phonebook' && contacts.length > 0 ? `(${contacts.length})` : ''}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('google')}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'google'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100'
@@ -273,91 +340,196 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
           <button
             type="button"
             onClick={() => setActiveTab('csv')}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'csv'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>File CSV / VCF</span>
+            <span>File CSV / VCF {uploadedFileName ? `(${contacts.length})` : ''}</span>
           </button>
         </div>
 
-        {/* Tab Placeholder States */}
+        {/* Google Contacts Tab with Step-by-Step Sync Guide & File Upload */}
         {activeTab === 'google' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 text-center space-y-2">
-            <RefreshCw className="w-8 h-8 text-blue-500 mx-auto animate-pulse" />
-            <h3 className="text-sm font-bold text-slate-800">Google Kontak segera hadir</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Fitur integrasi Google People API sedang disiapkan. Silakan gunakan tab Buku Telepon
-              (HP) untuk mengimpor kontak dari perangkat Anda saat ini.
-            </p>
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-bold text-slate-900">Sinkronisasi Google Kontak</h3>
+                <p className="text-xs text-slate-500">
+                  Impor kontak akun Google Anda ke Sapa CRM dalam 3 langkah mudah:
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+              <div className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+                <span>Buka <strong>contacts.google.com</strong> di browser ponsel atau laptop.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+                <span>Klik <strong>Ekspor (Export)</strong> lalu pilih format <strong>Google CSV</strong> atau <strong>vCard</strong>.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
+                <span>Unggah file hasil ekspor tersebut di bawah ini untuk langsung dipilih & diatur ritme sapaannya.</span>
+              </div>
+            </div>
+
+            <div className="pt-1">
+              <input
+                type="file"
+                accept=".vcf,.vcard,.csv,text/csv,text/vcard,text/x-vcard"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="google-contacts-file-input"
+              />
+              <label
+                htmlFor="google-contacts-file-input"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-semibold cursor-pointer shadow-sm transition-all"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Unggah File Google Contacts (.csv / .vcf)</span>
+              </label>
+            </div>
           </div>
         )}
 
+        {/* CSV / VCF File Tab */}
         {activeTab === 'csv' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 text-center space-y-2">
-            <FileText className="w-8 h-8 text-emerald-500 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-800">File CSV / VCF segera hadir</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Unggah file vCard (.vcf) atau spreadsheet (.csv) akan didukung pada pembaruan
-              berikutnya.
-            </p>
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
+            <div className="text-center space-y-1">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                <FileText className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Unggah File Kontak (.vcf / .csv)</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Mendukung file vCard dari Google, iPhone, Android, WhatsApp, atau file spreadsheet CSV.
+              </p>
+            </div>
+
+            {uploadedFileName && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-emerald-900 truncate">
+                    File dimuat: {uploadedFileName} ({contacts.length} kontak)
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {fileError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-xs text-rose-800">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{fileError}</span>
+              </div>
+            )}
+
+            <input
+              type="file"
+              accept=".vcf,.vcard,.csv,text/csv,text/vcard,text/x-vcard"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="csv-vcf-file-input"
+            />
+            <label
+              htmlFor="csv-vcf-file-input"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-semibold cursor-pointer shadow-sm transition-all"
+            >
+              <Upload className="w-4 h-4" />
+              <span>{uploadedFileName ? 'Ganti File Kontak' : 'Pilih File dari Perangkat'}</span>
+            </label>
           </div>
         )}
 
-        {/* Phonebook Tab Content */}
-        {activeTab === 'phonebook' && (
+        {/* Native Permission Card for Phonebook */}
+        {showPermissionWarning && (
+          <div className="border border-amber-300 bg-amber-50/90 rounded-3xl p-4 space-y-3 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-amber-900">
+                  Akses Kontak Belum Diizinkan
+                </h3>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  Diperlukan izin sistem Android agar Sapa dapat membaca kontak dari buku
+                  telepon Anda secara offline & aman.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-1 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleRequestPermission}
+                disabled={requestingPermission}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {requestingPermission && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Izinkan Akses Kontak</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success Banner */}
+        {importResult && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <p className="font-bold text-emerald-800">
+                Berhasil menyinkronkan {importResult.importedCount} kontak baru,{' '}
+                {importResult.updatedCount} kontak diperbarui.
+              </p>
+              <p className="text-emerald-600 mt-0.5">
+                Kontak telah disetel dengan ritme sapaan Intentional Care.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state for phonebook when device contacts list is empty */}
+        {activeTab === 'phonebook' && !loading && !searchQuery && contacts.length === 0 && !showPermissionWarning && (
+          <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-8 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+              <Users className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-800">Buku Telepon Kosong</h3>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                Tidak ada kontak ditemukan di buku telepon HP Anda, atau izin membaca kontak belum aktif.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+              <button
+                type="button"
+                onClick={loadContacts}
+                className="px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-semibold hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Muat Ulang Buku Telepon
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('csv')}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold hover:bg-slate-200 transition-all cursor-pointer"
+              >
+                Unggah File CSV / VCF
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Contact List Section (available for Phonebook, or uploaded CSV/Google) */}
+        {(contacts.length > 0 || loading || searchQuery) && (
           <>
-            {/* Native Permission Card */}
-            {showPermissionWarning && (
-              <div className="border border-amber-300 bg-amber-50/90 rounded-3xl p-4 space-y-3 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                    <ShieldAlert className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-amber-900">
-                      Akses Kontak Belum Diizinkan
-                    </h3>
-                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                      Diperlukan izin sistem Android agar GrowSphere dapat membaca kontak dari buku
-                      telepon Anda secara offline & aman.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-1 flex items-center justify-end">
-                  <button
-                    type="button"
-                    onClick={handleRequestPermission}
-                    disabled={requestingPermission}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    {requestingPermission && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    <span>Izinkan Akses Kontak</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Success Banner */}
-            {importResult && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <p className="font-bold text-emerald-800">
-                    Berhasil menyinkronkan {importResult.importedCount} kontak baru,{' '}
-                    {importResult.updatedCount} kontak diperbarui.
-                  </p>
-                  <p className="text-emerald-600 mt-0.5">
-                    Kontak telah disetel dengan ritme sapaan Intentional Care.
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Search Input */}
             <div className="space-y-2">
               <div className="relative">
@@ -366,7 +538,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nama, kantor, nomor..."
+                  placeholder="Cari nama atau nomor telepon..."
                   className="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all shadow-sm"
                 />
               </div>
@@ -383,15 +555,15 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 <button
                   type="button"
                   onClick={handleToggleSelectAll}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
                 >
                   {areAllFilteredSelected ? 'Batalkan Pilihan' : 'Pilih Semua'}
                 </button>
               </div>
             </div>
 
-            {/* Contact Checklist */}
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-0.5">
+            {/* Contact Checklist Cards */}
+            <div className="space-y-2">
               {loading ? (
                 <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-600" />
@@ -402,70 +574,83 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                   Tidak ada kontak ditemukan.
                 </div>
               ) : (
-                filteredContacts.map((contact) => {
-                  const isSelected = selectedPhones.has(contact.phoneNumber);
-                  return (
-                    <div
-                      key={contact.phoneNumber}
-                      onClick={() => handleToggleContact(contact.phoneNumber)}
-                      className={`flex items-center justify-between p-3 rounded-2xl bg-white border transition-all cursor-pointer shadow-sm ${
-                        isSelected
-                          ? 'border-emerald-500/70 bg-emerald-50/20 shadow-md ring-1 ring-emerald-400/30'
-                          : 'border-slate-200/70 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {/* Squircle Avatar with Initials */}
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0">
-                          {getInitials(contact.name)}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h3 className="text-xs font-bold text-slate-900 truncate">
-                              {contact.name}
-                            </h3>
-                            {contact.associations && contact.associations.length > 0 && (
-                              <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                                {contact.associations[0]}
-                              </span>
-                            )}
+                <>
+                  {displayedContacts.map((contact) => {
+                    const isSelected = selectedPhones.has(contact.phoneNumber);
+                    return (
+                      <div
+                        key={contact.phoneNumber}
+                        onClick={() => handleToggleContact(contact.phoneNumber)}
+                        className={`flex items-center justify-between p-3 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs ${
+                          isSelected
+                            ? 'border-emerald-500/70 bg-emerald-50/20 shadow-sm ring-1 ring-emerald-400/30'
+                            : 'border-slate-200/70 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Squircle Avatar with Initials */}
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0">
+                            {getInitials(contact.name)}
                           </div>
-                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {contact.phoneNumber}
-                          </p>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="text-xs font-bold text-slate-900 truncate">
+                                {contact.name}
+                              </h3>
+                              {contact.associations && contact.associations.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold truncate max-w-[120px]">
+                                  {contact.associations[0]}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                              {contact.phoneNumber}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pl-2 shrink-0">
+                          <label
+                            htmlFor={`contact-${contact.phoneNumber}`}
+                            className="cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              id={`contact-${contact.phoneNumber}`}
+                              aria-label={`Pilih ${contact.name}`}
+                              checked={isSelected}
+                              onChange={() => handleToggleContact(contact.phoneNumber)}
+                              className="sr-only"
+                            />
+                            {isSelected ? (
+                              <CheckSquare className="w-5 h-5 text-emerald-600" />
+                            ) : (
+                              <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
+                            )}
+                          </label>
                         </div>
                       </div>
+                    );
+                  })}
 
-                      <div className="pl-2 shrink-0">
-                        <label
-                          htmlFor={`contact-${contact.phoneNumber}`}
-                          className="cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            id={`contact-${contact.phoneNumber}`}
-                            aria-label={`Pilih ${contact.name}`}
-                            checked={isSelected}
-                            onChange={() => handleToggleContact(contact.phoneNumber)}
-                            className="sr-only"
-                          />
-                          {isSelected ? (
-                            <CheckSquare className="w-5 h-5 text-emerald-600" />
-                          ) : (
-                            <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
-                          )}
-                        </label>
-                      </div>
-                    </div>
-                  );
-                })
+                  {/* Load more button when contacts exceed visible limit */}
+                  {filteredContacts.length > visibleLimit && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleLimit((prev) => prev + 50)}
+                      className="w-full py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs transition-colors cursor-pointer"
+                    >
+                      Tampilkan 50 Kontak Lainnya ({filteredContacts.length - visibleLimit} tersisa)
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
             {/* Intentional Care Cadence Selector */}
-            <div className="bg-white border border-slate-200/70 rounded-3xl p-4 space-y-3 shadow-sm">
+            <div className="bg-white border border-slate-200/70 rounded-3xl p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-slate-900">
@@ -492,9 +677,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                       aria-checked={isChecked}
                       data-testid={`cadence-${opt.days}`}
                       onClick={() => setSelectedCadence(opt.days)}
-                      className={`text-left p-3 rounded-2xl border transition-all flex items-center justify-between ${
+                      className={`text-left p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                         isChecked
-                          ? 'border-slate-900 bg-slate-900/5 ring-1 ring-slate-900 text-slate-900 shadow-sm'
+                          ? 'border-slate-900 bg-slate-900/5 ring-1 ring-slate-900 text-slate-900 shadow-xs'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
@@ -522,33 +707,33 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 })}
               </div>
             </div>
-
-            {/* Primary Action Button */}
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={handleImport}
-                disabled={selectedPhones.size === 0 || importing}
-                className="w-full bg-slate-900 text-white rounded-full py-3.5 font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm active:scale-[0.99]"
-              >
-                {importing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                    <span>Menyinkronkan Kontak...</span>
-                  </>
-                ) : (
-                  <span>Sinkronkan {selectedPhones.size} Kontak</span>
-                )}
-              </button>
-
-              <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px]">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>WhatsApp direct launch enabled on due dates</span>
-              </div>
-            </div>
           </>
         )}
-      </main>
+      </div>
+
+      {/* Sticky Bottom Action Bar */}
+      <footer className="shrink-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 space-y-2">
+        <button
+          type="button"
+          onClick={handleImport}
+          disabled={selectedPhones.size === 0 || importing}
+          className="w-full bg-slate-900 text-white rounded-full py-3.5 font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm active:scale-[0.99] cursor-pointer"
+        >
+          {importing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+              <span>Menyinkronkan Kontak...</span>
+            </>
+          ) : (
+            <span>Sinkronkan {selectedPhones.size} Kontak</span>
+          )}
+        </button>
+
+        <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px]">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>WhatsApp direct launch enabled on due dates</span>
+        </div>
+      </footer>
     </div>
   );
 };

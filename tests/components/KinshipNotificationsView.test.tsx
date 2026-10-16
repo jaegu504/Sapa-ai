@@ -198,7 +198,7 @@ describe('KinshipNotificationsView', () => {
     expect(onLogChat).toHaveBeenCalled();
   });
 
-  it('displays Agenda Minggu Ini with upcoming scheduled contacts for the next 7 days', () => {
+  it('displays Agenda Pekan Ini with upcoming scheduled contacts for the next 7 days', () => {
     render(
       <KinshipNotificationsView
         contacts={mockContacts}
@@ -206,7 +206,7 @@ describe('KinshipNotificationsView', () => {
       />
     );
 
-    expect(screen.getByText('Agenda Minggu Ini')).toBeDefined();
+    expect(screen.getByText('Agenda Pekan Ini')).toBeDefined();
     // c3 (Budi Santoso) scheduled for Oct 17
     expect(screen.getByText('Budi Santoso')).toBeDefined();
     expect(screen.getByText(/Casual brunch & review roadmap/i)).toBeDefined();
@@ -222,8 +222,8 @@ describe('KinshipNotificationsView', () => {
       />
     );
 
-    expect(screen.getByText(/Queue & Dispatch Settings/i)).toBeDefined();
-    expect(screen.getByText(/Daily Morning Digest \(08:00 WIB\)/i)).toBeDefined();
+    expect(screen.getByText(/Pengaturan Notifikasi & Antrean/i)).toBeDefined();
+    expect(screen.getByText(/Ringkasan Sapaan Pagi \(08:00 WIB\)/i)).toBeDefined();
 
     const permissionBtn = screen.getByRole('button', { name: /Minta Izin Notifikasi Sistem/i });
     expect(permissionBtn).toBeDefined();
@@ -281,18 +281,18 @@ describe('KinshipNotificationsView', () => {
       />
     );
 
-    // Initial tab: Upcoming Catch-ups is shown
-    expect(screen.getByText('Today\'s Reminders')).toBeDefined();
+    // Initial tab: Jadwal Sapaan is shown
+    expect(screen.getByText('Pengingat Hari Ini')).toBeDefined();
 
     // Click Inbox tab
-    const inboxTab = screen.getByRole('button', { name: /Inbox/i });
+    const inboxTab = screen.getByRole('button', { name: /Kotak Masuk/i });
     fireEvent.click(inboxTab);
-    expect(screen.getByText('Recent System Alerts')).toBeDefined();
+    expect(screen.getByText('Pemberitahuan Sistem Terkini')).toBeDefined();
 
     // Click Cadence tab
-    const cadenceTab = screen.getByRole('button', { name: /Cadence Rules/i });
+    const cadenceTab = screen.getByRole('button', { name: /Aturan Ritme/i });
     fireEvent.click(cadenceTab);
-    expect(screen.getByText(/Cadence Intervals & Rhythms/i)).toBeDefined();
+    expect(screen.getByText(/Interval & Ritme Sapaan/i)).toBeDefined();
     expect(screen.getByText(/Inner Circle/i)).toBeDefined();
   });
 
@@ -329,9 +329,9 @@ describe('KinshipNotificationsView', () => {
       />
     );
 
-    expect(screen.getByText('Daily Morning Digest Sent')).toBeDefined();
+    expect(screen.getByText('Ringkasan Sapaan Pagi Terkirim')).toBeDefined();
     const closeBtn = screen.getByRole('button', { name: /Tutup banner digest/i });
     fireEvent.click(closeBtn);
-    expect(screen.queryByText('Daily Morning Digest Sent')).toBeNull();
+    expect(screen.queryByText('Ringkasan Sapaan Pagi Terkirim')).toBeNull();
   });
 });
