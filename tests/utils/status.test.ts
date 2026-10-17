@@ -85,4 +85,36 @@ describe('calculateContactStatus', () => {
     expect(typeof result.isOverdue).toBe('boolean');
     expect(typeof result.statusText).toBe('string');
   });
+
+  it('calculates daysRemaining accurately for future follow-up and routine cadence', () => {
+    // Tomorrow follow-up
+    const tomorrowContact: Contact = {
+      ...baseContact,
+      nextSpecificFollowUp: '2026-10-19',
+    };
+    const resTomorrow = calculateContactStatus(tomorrowContact, new Date('2026-10-18'));
+    expect(resTomorrow.isOverdue).toBe(false);
+    expect(resTomorrow.daysRemaining).toBe(1);
+
+    // 7 days away follow-up
+    const weekContact: Contact = {
+      ...baseContact,
+      nextSpecificFollowUp: '2026-10-25',
+    };
+    const resWeek = calculateContactStatus(weekContact, new Date('2026-10-18'));
+    expect(resWeek.isOverdue).toBe(false);
+    expect(resWeek.daysRemaining).toBe(7);
+
+    // Routine cadence remaining
+    const routineContact: Contact = {
+      ...baseContact,
+      lastContactedDate: '2026-10-01',
+      followUpCycleDays: 15, // Suggested Oct 16
+      nextSpecificFollowUp: null,
+    };
+    const resRoutine = calculateContactStatus(routineContact, new Date('2026-10-10'));
+    expect(resRoutine.isOverdue).toBe(false);
+    expect(resRoutine.daysRemaining).toBe(6);
+  });
 });
+

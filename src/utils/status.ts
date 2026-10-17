@@ -88,6 +88,7 @@ export function calculateContactStatus(contact: Contact, now?: Date): ContactSta
         statusText: 'Time to reach out!',
         suggestedDate,
         daysOverdue: diffDays,
+        daysRemaining: 0,
       };
     } else {
       return {
@@ -95,6 +96,7 @@ export function calculateContactStatus(contact: Contact, now?: Date): ContactSta
         statusText: 'Aman (👍)',
         suggestedDate,
         daysOverdue: 0,
+        daysRemaining: Math.abs(diffDays),
       };
     }
   }
@@ -110,6 +112,7 @@ export function calculateContactStatus(contact: Contact, now?: Date): ContactSta
         statusText: 'Time to reach out!',
         suggestedDate,
         daysOverdue: diffDays,
+        daysRemaining: 0,
       };
     } else {
       return {
@@ -117,6 +120,7 @@ export function calculateContactStatus(contact: Contact, now?: Date): ContactSta
         statusText: 'Aman (👍)',
         suggestedDate,
         daysOverdue: 0,
+        daysRemaining: Math.abs(diffDays),
       };
     }
   }
@@ -127,5 +131,14 @@ export function calculateContactStatus(contact: Contact, now?: Date): ContactSta
     statusText: 'Time to reach out!',
     suggestedDate: null,
     daysOverdue: 0,
+    daysRemaining: 0,
   };
 }
+
+/**
+ * Returns the effective count of days left or overdue for CadenceBadge display.
+ */
+export function getDaysLeftOrOverdue(status: ContactStatusResult): number {
+  return status.isOverdue ? status.daysOverdue : (status.daysRemaining ?? 0);
+}
+

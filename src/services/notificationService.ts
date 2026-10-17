@@ -313,8 +313,19 @@ export async function scheduleDailyMorningDigest(
       return digest.totalOverdue;
     }
 
-    const hour = options?.hour ?? 8;
-    const minute = options?.minute ?? 0;
+    let defaultHour = 8;
+    let defaultMinute = 0;
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const savedTime = localStorage.getItem('kinship_digest_time');
+      if (savedTime && /^\d{2}:\d{2}$/.test(savedTime)) {
+        const [h, m] = savedTime.split(':').map(Number);
+        if (!isNaN(h)) defaultHour = h;
+        if (!isNaN(m)) defaultMinute = m;
+      }
+    }
+
+    const hour = options?.hour ?? defaultHour;
+    const minute = options?.minute ?? defaultMinute;
     const nextTime = getNextDigestTime(hour, minute);
 
     await plugin.schedule({
@@ -348,6 +359,18 @@ export async function scheduleDailyMorningDigest(
 }
 
 /**
+ * Checks whether an alarm is scheduled for today (calendar day match).
+ */
+export function isAlarmForToday(alarm: AlarmItem, referenceDate?: Date | string): boolean {
+  const ref = referenceDate
+    ? typeof referenceDate === 'string'
+      ? new Date(referenceDate)
+      : referenceDate
+    : new Date();
+  return formatDateKey(alarm.scheduledDate) === formatDateKey(ref);
+}
+
+/**
  * Schedules a targeted exact alarm for a contact on their nextSpecificFollowUp date/time.
  * Generates numeric hash ID from contact.id and assigns channel 'crm_targeted_alarms'.
  */
@@ -361,7 +384,31 @@ export async function scheduleTargetedFollowUpAlarm(contact: Contact): Promise<b
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     const [y, m, d] = dateStr.split('-').map(Number);
-    scheduleDate = new Date(y, m - 1, d, 8, 0, 0);
+    let h = 8;
+    let min = 0;
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const savedTime = localStorage.getItem('kinship_digest_time');
+      if (savedTime && /^\d{2}:\d{2}$/.test(savedTime)) {
+        const [savedH, savedM] = savedTime.split(':').map(Number);
+        if (!isNaN(savedH)) h = savedH;
+        if (!isNaN(savedM)) min = savedM;
+      }
+    }
+    scheduleDate = new Date(y, m - 1, d, h, min, 0);
+  } else if (dateStr.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+    scheduleDate = new Date(dateStr);
+  } else if (/^\d{4}-\d{2}-\d{2}[T\s](\d{2}):(\d{2})/.test(dateStr)) {
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/);
+    if (match) {
+      const y = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10) - 1;
+      const d = parseInt(match[3], 10);
+      const hh = parseInt(match[4], 10);
+      const mm = parseInt(match[5], 10);
+      scheduleDate = new Date(y, m, d, hh, mm, 0);
+    } else {
+      scheduleDate = new Date(dateStr);
+    }
   } else {
     scheduleDate = new Date(dateStr);
   }

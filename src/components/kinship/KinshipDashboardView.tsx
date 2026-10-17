@@ -10,10 +10,11 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Contact } from '../../types/crm';
-import { calculateContactStatus } from '../../utils/status';
+import { calculateContactStatus, getDaysLeftOrOverdue } from '../../utils/status';
 import { KinshipPulseArc } from './KinshipPulseArc';
 import { CadenceBadge } from './CadenceBadge';
 import { DualWhatsAppButton } from './DualWhatsAppButton';
+import sapaLogo from '../../assets/logo.png';
 
 export interface KinshipDashboardViewProps {
   contacts: Contact[];
@@ -141,7 +142,7 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
         <div className="flex items-center gap-3">
           {/* User profile avatar with Sapa Logo */}
           <img
-            src="/logo.png"
+            src={sapaLogo}
             alt="Sapa Logo"
             aria-label="Profil Pengguna"
             className="w-10 h-10 rounded-2xl shadow-md ring-2 ring-white/80 object-cover"
@@ -406,7 +407,7 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
               const badgeClass = getAssociationBadgeClass(contact.associations?.[0] || (contact.isProfessional ? 'profesional' : 'relasi'));
 
               // Approaching or days left calculation
-              const daysLeft = status.isOverdue ? 0 : Math.max(0, cycle - status.daysOverdue);
+              const daysLeftOrOverdue = getDaysLeftOrOverdue(status);
 
               return (
                 <div
@@ -443,7 +444,7 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
                     <CadenceBadge
                       cadenceDays={cycle}
                       isOverdue={status.isOverdue}
-                      daysLeftOrOverdue={status.isOverdue ? status.daysOverdue : daysLeft}
+                      daysLeftOrOverdue={daysLeftOrOverdue}
                     />
 
                     {/* Quick AI Draft Action Button */}

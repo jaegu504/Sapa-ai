@@ -25,7 +25,8 @@ import {
   scheduleTargetedFollowUpAlarm,
   getUpcomingAlarms,
 } from './services/notificationService';
-import { calculateContactStatus } from './utils/status';
+import { calculateContactStatus, getDaysLeftOrOverdue } from './utils/status';
+import sapaLogo from './assets/logo.png';
 import { KinshipDashboardView } from './components/kinship/KinshipDashboardView';
 import { KinshipContactDossierModal } from './components/kinship/KinshipContactDossierModal';
 import { KinshipLogInteractionModal } from './components/kinship/KinshipLogInteractionModal';
@@ -647,7 +648,7 @@ export const App: React.FC = () => {
                 <Menu className="w-5 h-5" />
               </button>
               <img
-                src="/logo.png"
+                src={sapaLogo}
                 alt="Sapa Logo"
                 className="w-8 h-8 rounded-xl shadow-xs object-cover"
               />
@@ -794,7 +795,7 @@ export const App: React.FC = () => {
                           {filteredContacts.map((contact) => {
                             const status = calculateContactStatus(contact);
                             const cycle = contact.followUpCycleDays || 15;
-                            const daysLeft = status.isOverdue ? 0 : Math.max(0, cycle - status.daysOverdue);
+                            const daysLeftOrOverdue = getDaysLeftOrOverdue(status);
                             const primaryAssoc =
                               contact.associations?.[0] || (contact.isProfessional ? 'Profesional' : 'Relasi');
                             const badgeClass = getAssociationBadgeClass(
@@ -833,7 +834,7 @@ export const App: React.FC = () => {
                                   <CadenceBadge
                                     cadenceDays={cycle}
                                     isOverdue={status.isOverdue}
-                                    daysLeftOrOverdue={status.isOverdue ? status.daysOverdue : daysLeft}
+                                    daysLeftOrOverdue={daysLeftOrOverdue}
                                   />
                                 </div>
 

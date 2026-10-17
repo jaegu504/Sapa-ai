@@ -110,6 +110,7 @@ describe('NavigationDrawer', () => {
         interactions={sampleInteractions}
         onExportBackup={vi.fn()}
         onImportBackup={vi.fn()}
+        now={new Date('2026-10-14T00:00:00Z')}
       />
     );
 

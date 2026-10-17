@@ -20,6 +20,7 @@ import {
   getUpcomingAlarms,
   requestNotificationPermission,
   scheduleDailyMorningDigest,
+  formatDateKey,
 } from '../../services/notificationService';
 import { CadenceBadge } from './CadenceBadge';
 import { DualWhatsAppButton } from './DualWhatsAppButton';
@@ -139,24 +140,31 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
     }
   };
 
+  const [hasReadInbox, setHasReadInbox] = useState(false);
+
   // 1. Calculate Today's Catch-ups
   const { todayCatchUps, overdueCount, alarmsCount } = useMemo(() => {
     const dailyDigest = getDailyDigestItems(contacts, now);
     const upcomingAlarms = getUpcomingAlarms(contacts, 24, now);
 
     const overdueContacts = dailyDigest.contacts;
+    const todayDateKey = formatDateKey(now);
 
     // Map unique contacts for today, preventing duplicate IDs or identical phone numbers
     const map = new Map<string, { contact: Contact; isAlarm: boolean; alarmTopic?: string }>();
     const seenPhones = new Set<string>();
 
+    // ONLY alarms scheduled strictly for TODAY (calendar match) belong in "Pengingat Hari Ini"
     upcomingAlarms.forEach((alarm) => {
-      const c = contacts.find((item) => item.id === alarm.contactId);
-      if (c) {
-        const phone = c.phoneNumber?.replace(/\D/g, '');
-        if (!phone || !seenPhones.has(phone)) {
-          if (phone) seenPhones.add(phone);
-          map.set(c.id, { contact: c, isAlarm: true, alarmTopic: alarm.topic });
+      const alarmDateKey = formatDateKey(alarm.scheduledDate);
+      if (alarmDateKey === todayDateKey) {
+        const c = contacts.find((item) => item.id === alarm.contactId);
+        if (c) {
+          const phone = c.phoneNumber?.replace(/\D/g, '');
+          if (!phone || !seenPhones.has(phone)) {
+            if (phone) seenPhones.add(phone);
+            map.set(c.id, { contact: c, isAlarm: true, alarmTopic: alarm.topic });
+          }
         }
       }
     });
@@ -195,10 +203,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
     };
   }, [contacts, now, snoozedContactIds]);
 
-  // 2. Calculate This Week's Agenda (Next 7 days)
+  // 2. Calculate This Week's Agenda (Next 7 days, excluding today's catch-ups)
   const weeklyAgenda = useMemo(() => {
-    const startMs = now.getTime();
-    const endMs = startMs + 7 * 24 * 60 * 60 * 1000;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const endOfWeek = startOfToday + 8 * 24 * 60 * 60 * 1000;
     const todayIdSet = new Set(todayCatchUps.map((i) => i.contact.id));
 
     interface AgendaItem {
@@ -217,9 +225,9 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
       if (contact.nextSpecificFollowUp && contact.nextSpecificFollowUp.trim()) {
         const d = new Date(contact.nextSpecificFollowUp);
         if (!isNaN(d.getTime())) {
-          const t = d.getTime();
+          const targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
           // Check if strictly after today and within next 7 days
-          if (t > startMs && t <= endMs) {
+          if (targetDay > startOfToday && targetDay < endOfWeek) {
             items.push({
               contact,
               targetDate: d,
@@ -239,8 +247,8 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
       if (!status.isOverdue && status.suggestedDate) {
         const d = new Date(status.suggestedDate);
         if (!isNaN(d.getTime())) {
-          const t = d.getTime();
-          if (t > startMs && t <= endMs) {
+          const targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+          if (targetDay > startOfToday && targetDay < endOfWeek) {
             items.push({
               contact,
               targetDate: d,
@@ -304,7 +312,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 hidden sm:inline-block">
+            <span className="text-xs font-semibold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-1 rounded-full shadow-2xs">
               {todayCatchUps.length} Pending Hari Ini
             </span>
           </div>
@@ -327,7 +335,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('inbox')}
+            onClick={() => {
+              setActiveTab('inbox');
+              setHasReadInbox(true);
+            }}
             className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold text-center transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'inbox'
                 ? 'bg-white text-slate-900 shadow-sm'
@@ -335,7 +346,9 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
             }`}
           >
             <span>Kotak Masuk</span>
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            {!hasReadInbox && (todayCatchUps.length > 0 || alarmsCount > 0) && (
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            )}
           </button>
           <button
             type="button"
@@ -461,7 +474,11 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                                 <CadenceBadge
                                   cadenceDays={contact.followUpCycleDays}
                                   isOverdue={item.status.isOverdue}
-                                  daysLeftOrOverdue={item.status.daysOverdue}
+                                  daysLeftOrOverdue={
+                                    item.status.isOverdue
+                                      ? item.status.daysOverdue
+                                      : (item.status.daysRemaining ?? 0)
+                                  }
                                 />
                                 {item.isAlarm && (
                                   <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
@@ -769,40 +786,87 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
         {/* Tab 2: Inbox View */}
         {activeTab === 'inbox' && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Pemberitahuan Sistem Terkini</h3>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Pemberitahuan Sistem Terkini</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Aktivitas pengingat, jadwal sapaan, dan status sistem
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => showToast('Semua notifikasi ditandai telah dibaca')}
-                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                onClick={() => {
+                  setHasReadInbox(true);
+                  showToast('Semua notifikasi ditandai telah dibaca');
+                }}
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
               >
                 Tandai sudah dibaca
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 mt-1">
-              <div className="p-3 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
+            <div className="flex flex-col gap-3 mt-1">
+              {/* Daily digest status */}
+              <div className="p-3.5 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-900">Ringkasan Sapaan Pagi Terkirim</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {overdueCount} relasi disarankan untuk disapa pagi ini sesuai ritme intim.
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-bold text-slate-900">Ringkasan Sapaan Pagi Terkirim</p>
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      Aktif {digestTime} WIB
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    {overdueCount > 0
+                      ? `${overdueCount} relasi disarankan untuk disapa pagi ini sesuai ritme intim.`
+                      : 'Semua relasi dalam status aman dan harmonis.'}
                   </p>
-                  <span className="text-[10px] text-slate-400 mt-1 block">Hari ini, 08:00 WIB</span>
+                  <span className="text-[10px] text-slate-400 mt-1 block font-mono">
+                    Hari ini, disetel jam {digestTime} WIB
+                  </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
+              {/* Active scheduled alarms */}
+              <div className="p-3.5 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
                 <Sparkles className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-900">Kalender & Alarm Aktif</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {alarmsCount} jadwal alarm sapaan spesifik telah disinkronkan ke sistem lokal.
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-bold text-slate-900">Kalender & Alarm Aktif</p>
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                      {alarmsCount} Terjadwal
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    {alarmsCount > 0
+                      ? `${alarmsCount} jadwal alarm sapaan spesifik telah disinkronkan ke sistem lokal.`
+                      : 'Belum ada jadwal alarm sapaan spesifik.'}
                   </p>
-                  <span className="text-[10px] text-slate-400 mt-1 block">Kemarin, 21:00 WIB</span>
                 </div>
               </div>
+
+              {/* Quick links to today catch ups */}
+              {todayCatchUps.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-100 flex flex-col gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
+                    <Bell className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Perlu Disapa Hari Ini ({todayCatchUps.length} Kontak)</span>
+                  </div>
+                  <div className="flex flex-col gap-1.5 mt-0.5">
+                    {todayCatchUps.slice(0, 3).map((item) => (
+                      <div
+                        key={item.contact.id}
+                        onClick={() => onSelectContact?.(item.contact)}
+                        className="flex items-center justify-between p-2 rounded-lg bg-white border border-rose-100 text-xs cursor-pointer hover:bg-rose-50/50 transition-colors"
+                      >
+                        <span className="font-semibold text-slate-800">{item.contact.name}</span>
+                        <span className="text-[10px] text-rose-600 font-medium">Buka Profil &rarr;</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -821,7 +885,9 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                 <div>
                   <p className="text-xs font-bold text-slate-900">Inner Circle (Keluarga & Sahabat)</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Weekly nudge (Setiap 7 hari)</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Weekly nudge (Setiap 7 hari) · {contacts.filter((c) => (c.followUpCycleDays || 15) <= 7).length} kontak
+                  </p>
                 </div>
                 <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
                   Aktif
@@ -831,7 +897,9 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                 <div>
                   <p className="text-xs font-bold text-slate-900">Key Collaborators & Mentors</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Bi-weekly / Monthly (Setiap 14-21 hari)</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Bi-weekly / Monthly (Setiap 14-21 hari) · {contacts.filter((c) => (c.followUpCycleDays || 15) > 7 && (c.followUpCycleDays || 15) <= 21).length} kontak
+                  </p>
                 </div>
                 <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
                   Aktif
@@ -841,7 +909,9 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                 <div>
                   <p className="text-xs font-bold text-slate-900">Extended Network & Alumni</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Quarterly (Setiap 60-90 hari)</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Quarterly (Setiap 60-90 hari) · {contacts.filter((c) => (c.followUpCycleDays || 15) > 21).length} kontak
+                  </p>
                 </div>
                 <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
                   Aktif

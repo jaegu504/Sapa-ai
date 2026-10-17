@@ -19,7 +19,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Contact, InteractionLog } from '../../types/crm';
-import { calculateContactStatus } from '../../utils/status';
+import { calculateContactStatus, getDaysLeftOrOverdue } from '../../utils/status';
 import { CadenceBadge } from './CadenceBadge';
 import { DualWhatsAppButton } from './DualWhatsAppButton';
 
@@ -134,6 +134,16 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
   const [nextSpecificFollowUp, setNextSpecificFollowUp] = useState<string>(
     contact.nextSpecificFollowUp || ''
   );
+  const [followUpTime, setFollowUpTime] = useState<string>(() => {
+    if (contact.nextSpecificFollowUp && contact.nextSpecificFollowUp.includes('T')) {
+      return contact.nextSpecificFollowUp.split('T')[1].slice(0, 5);
+    }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kinship_digest_time');
+      if (saved) return saved;
+    }
+    return '09:00';
+  });
   const [lastContactedDate, setLastContactedDate] = useState<string>(
     contact.lastContactedDate || ''
   );
@@ -151,6 +161,9 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
       setLastUpdateNotes(contact.lastUpdateNotes || '');
       setMetContext(contact.metContext || '');
       setNextSpecificFollowUp(contact.nextSpecificFollowUp || '');
+      if (contact.nextSpecificFollowUp && contact.nextSpecificFollowUp.includes('T')) {
+        setFollowUpTime(contact.nextSpecificFollowUp.split('T')[1].slice(0, 5));
+      }
       setLastContactedDate(contact.lastContactedDate || '');
       setFollowUpCycleDays(contact.followUpCycleDays ?? 15);
     }
@@ -227,22 +240,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
 
   const status = calculateContactStatus(contact, now);
   const initials = getInitials(contact.name);
-
-  // Calculate days left for cadence badge
-  let daysLeft = 0;
-  if (!status.isOverdue) {
-    const today = now ? new Date(now) : new Date();
-    const targetStr = contact.nextSpecificFollowUp || status.suggestedDate;
-    if (targetStr) {
-      const targetDate = new Date(targetStr);
-      const diffMs = targetDate.getTime() - today.getTime();
-      daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    } else {
-      daysLeft = contact.followUpCycleDays ?? 15;
-    }
-  }
-
-  const daysLeftOrOverdue = status.isOverdue ? status.daysOverdue : daysLeft;
+  const daysLeftOrOverdue = getDaysLeftOrOverdue(status);
 
   return (
     <div
@@ -582,18 +580,44 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 Jadwal Follow Up Khusus
               </label>
-              <input
-                id="dossier-next-followup"
-                type="date"
-                aria-label="Jadwal Follow Up Khusus"
-                value={nextSpecificFollowUp ? nextSpecificFollowUp.split('T')[0] : ''}
-                onChange={(e) => {
-                  const val = e.target.value || null;
-                  setNextSpecificFollowUp(val || '');
-                  handleUpdate({ nextSpecificFollowUp: val });
-                }}
-                className="w-full text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  id="dossier-next-followup"
+                  type="date"
+                  aria-label="Jadwal Follow Up Khusus"
+                  value={nextSpecificFollowUp ? nextSpecificFollowUp.split('T')[0] : ''}
+                  onChange={(e) => {
+                    const dateVal = e.target.value;
+                    if (!dateVal) {
+                      setNextSpecificFollowUp('');
+                      handleUpdate({ nextSpecificFollowUp: null });
+                      return;
+                    }
+                    const timePart = followUpTime || '09:00';
+                    const combined = `${dateVal}T${timePart}`;
+                    setNextSpecificFollowUp(combined);
+                    handleUpdate({ nextSpecificFollowUp: combined });
+                  }}
+                  className="sm:col-span-2 text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+                <input
+                  id="dossier-next-followup-time"
+                  type="time"
+                  aria-label="Jam Follow Up"
+                  value={followUpTime}
+                  onChange={(e) => {
+                    const timeVal = e.target.value;
+                    setFollowUpTime(timeVal);
+                    const datePart = nextSpecificFollowUp
+                      ? nextSpecificFollowUp.split('T')[0]
+                      : computeDateOffset(now, 1) || '';
+                    const combined = timeVal ? `${datePart}T${timeVal}` : datePart;
+                    setNextSpecificFollowUp(combined);
+                    handleUpdate({ nextSpecificFollowUp: combined });
+                  }}
+                  className="sm:col-span-1 text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
 
               {/* Quick schedule chips */}
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -602,10 +626,16 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     key={chip.label}
                     type="button"
                     onClick={() => {
-                      const newDate =
-                        chip.days === null ? null : computeDateOffset(now, chip.days);
-                      setNextSpecificFollowUp(newDate || '');
-                      handleUpdate({ nextSpecificFollowUp: newDate });
+                      if (chip.days === null) {
+                        setNextSpecificFollowUp('');
+                        handleUpdate({ nextSpecificFollowUp: null });
+                      } else {
+                        const newDate = computeDateOffset(now, chip.days);
+                        const timePart = followUpTime || '09:00';
+                        const combined = newDate ? `${newDate}T${timePart}` : null;
+                        setNextSpecificFollowUp(combined || '');
+                        handleUpdate({ nextSpecificFollowUp: combined });
+                      }
                     }}
                     className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-all active:scale-95 ${
                       chip.days === null

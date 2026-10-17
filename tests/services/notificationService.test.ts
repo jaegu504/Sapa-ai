@@ -11,6 +11,7 @@ import {
   CHANNEL_TARGETED_ALARMS,
   MORNING_DIGEST_NOTIFICATION_ID,
   hashContactId,
+  isAlarmForToday,
 } from '../../src/services/notificationService';
 import { Contact } from '../../src/types/crm';
 
@@ -444,6 +445,67 @@ describe('notificationService', () => {
         expect(scheduledNotif.schedule.at.getDate()).toBe(1);
         expect(scheduledNotif.schedule.at.getHours()).toBe(8);
       });
+
+      it('handles datetime strings with custom hour and minute (YYYY-MM-DDTHH:mm)', async () => {
+        const contact: Contact = {
+          ...sampleContacts[2],
+          id: 'test-custom-time',
+          name: 'Pak Budi Sore',
+          nextSpecificFollowUp: '2026-11-01T15:30',
+          possibleFollowUpTopic: 'Kopi sore',
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(true);
+
+        const scheduledNotif = mockSchedule.mock.calls[0][0].notifications[0];
+        expect(scheduledNotif.schedule.at).toBeInstanceOf(Date);
+        expect(scheduledNotif.schedule.at.getFullYear()).toBe(2026);
+        expect(scheduledNotif.schedule.at.getMonth()).toBe(10);
+        expect(scheduledNotif.schedule.at.getDate()).toBe(1);
+        expect(scheduledNotif.schedule.at.getHours()).toBe(15);
+        expect(scheduledNotif.schedule.at.getMinutes()).toBe(30);
+      });
+
+      it('respects kinship_digest_time in localStorage for date-only follow-ups', async () => {
+        localStorage.setItem('kinship_digest_time', '10:15');
+        const contact: Contact = {
+          ...sampleContacts[2],
+          id: 'test-pref-time',
+          name: 'Pak Budi Pagi',
+          nextSpecificFollowUp: '2026-11-01',
+          possibleFollowUpTopic: 'Diskusi pagi',
+        };
+        const success = await scheduleTargetedFollowUpAlarm(contact);
+        expect(success).toBe(true);
+
+        const scheduledNotif = mockSchedule.mock.calls[0][0].notifications[0];
+        expect(scheduledNotif.schedule.at.getHours()).toBe(10);
+        expect(scheduledNotif.schedule.at.getMinutes()).toBe(15);
+        localStorage.removeItem('kinship_digest_time');
+      });
+
+      it('correctly identifies whether an alarm is for today with isAlarmForToday', () => {
+        const todayAlarm = {
+          contactId: '1',
+          contactName: 'Test',
+          phoneNumber: '+628',
+          scheduledDate: '2026-10-17T14:00',
+          topic: '',
+          message: '',
+        };
+        const tomorrowAlarm = {
+          contactId: '2',
+          contactName: 'Test 2',
+          phoneNumber: '+628',
+          scheduledDate: '2026-10-18T09:00',
+          topic: '',
+          message: '',
+        };
+
+        expect(isAlarmForToday(todayAlarm, new Date('2026-10-17T10:00:00'))).toBe(true);
+        expect(isAlarmForToday(tomorrowAlarm, new Date('2026-10-17T10:00:00'))).toBe(false);
+      });
+
 
       it('returns false when contact has no nextSpecificFollowUp', async () => {
         const contact: Contact = {

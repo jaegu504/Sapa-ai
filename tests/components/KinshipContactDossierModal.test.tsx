@@ -246,7 +246,7 @@ describe('KinshipContactDossierModal', () => {
       fireEvent.click(besokChip);
     });
     expect(onUpdateContact).toHaveBeenCalledWith('contact-1', {
-      nextSpecificFollowUp: '2026-10-11',
+      nextSpecificFollowUp: '2026-10-11T09:00',
     });
 
     // Click "+1 Minggu" (+7 days from 2026-10-10 -> 2026-10-17)
@@ -255,7 +255,16 @@ describe('KinshipContactDossierModal', () => {
       fireEvent.click(mingguChip);
     });
     expect(onUpdateContact).toHaveBeenCalledWith('contact-1', {
-      nextSpecificFollowUp: '2026-10-17',
+      nextSpecificFollowUp: '2026-10-17T09:00',
+    });
+
+    // Change time directly via time picker
+    const timeInput = screen.getByLabelText(/Jam Follow Up/i);
+    await act(async () => {
+      fireEvent.change(timeInput, { target: { value: '14:30' } });
+    });
+    expect(onUpdateContact).toHaveBeenCalledWith('contact-1', {
+      nextSpecificFollowUp: '2026-10-17T14:30',
     });
 
     // Click "Hapus Jadwal"

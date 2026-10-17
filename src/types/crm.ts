@@ -31,6 +31,7 @@ export interface ContactStatusResult {
   statusText: string; // 'Time to reach out!' | 'Aman (👍)'
   suggestedDate: string | null; // YYYY-MM-DD or null
   daysOverdue: number; // 0 if not overdue, or number of days overdue
+  daysRemaining?: number; // Days remaining until next scheduled follow-up or cadence suggested date
 }
 
 export interface RawPhoneContact {
