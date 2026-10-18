@@ -135,20 +135,20 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-contact-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 dark:bg-black/85 animate-fade-in"
     >
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl border border-slate-200 dark:border-white/12 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white transition-colors">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#2F54EB] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/20 text-[#2F54EB] dark:text-cyan-400 flex items-center justify-center shrink-0">
               {isEditing ? <Edit3 className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
             </div>
             <div>
-              <h2 id="edit-contact-modal-title" className="text-lg font-bold text-slate-800">
+              <h2 id="edit-contact-modal-title" className="text-lg font-bold text-slate-800 dark:text-white">
                 {isEditing ? 'Edit Kontak' : 'Tambah Kontak Baru'}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {isEditing
                   ? 'Perbarui informasi dan siklus silaturahmi kontak'
                   : 'Tambahkan data relasi baru ke dalam CRM'}
@@ -159,17 +159,17 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
           {/* Name Field */}
           <div>
-            <label htmlFor="contact-name" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="contact-name" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Nama Lengkap *
             </label>
             <input
@@ -181,10 +181,10 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                 if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
               }}
               placeholder="Contoh: Ustadz Danu, Bunda Sarah..."
-              className={`w-full px-3.5 py-2 text-sm bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 transition-all ${
+              className={`w-full px-3.5 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
                 errors.name
                   ? 'border-rose-400 focus:border-rose-500 bg-rose-50/20'
-                  : 'border-slate-200 focus:border-[#2F54EB]'
+                  : 'border-slate-200 dark:border-white/10 focus:border-[#2F54EB] dark:focus:border-cyan-400'
               }`}
             />
             {errors.name && (
@@ -197,7 +197,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
 
           {/* Phone Field */}
           <div>
-            <label htmlFor="contact-phone" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="contact-phone" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Nomor WhatsApp / Telepon *
             </label>
             <input
@@ -209,10 +209,10 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                 if (errors.phoneNumber) setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
               }}
               placeholder="Contoh: 081234567890 atau +6281234567890"
-              className={`w-full px-3.5 py-2 text-sm bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 transition-all ${
+              className={`w-full px-3.5 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
                 errors.phoneNumber
                   ? 'border-rose-400 focus:border-rose-500 bg-rose-50/20'
-                  : 'border-slate-200 focus:border-[#2F54EB]'
+                  : 'border-slate-200 dark:border-white/10 focus:border-[#2F54EB] dark:focus:border-cyan-400'
               }`}
             />
             {errors.phoneNumber && (
@@ -225,7 +225,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
 
           {/* Association Pills */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Asosiasi Relasi
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -238,8 +238,8 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                     onClick={() => handleToggleAssociation(assoc)}
                     className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                       active
-                        ? 'bg-[#2F54EB] text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-[#2F54EB] dark:bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20'
                     }`}
                   >
                     {assoc}
@@ -256,11 +256,11 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
               type="checkbox"
               checked={isProfessional}
               onChange={(e) => setIsProfessional(e.target.checked)}
-              className="w-4 h-4 text-[#2F54EB] rounded border-slate-300 focus:ring-[#2F54EB]"
+              className="w-4 h-4 text-[#2F54EB] rounded border-slate-300 dark:border-slate-600 focus:ring-[#2F54EB]"
             />
             <label
               htmlFor="contact-is-professional"
-              className="text-xs font-semibold text-slate-700 select-none cursor-pointer"
+              className="text-xs font-semibold text-slate-700 dark:text-slate-300 select-none cursor-pointer"
             >
               Kontak Profesional
             </label>
@@ -271,7 +271,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
             <div>
               <label
                 htmlFor="contact-cycle"
-                className="block text-xs font-semibold text-slate-700 mb-1"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
               >
                 Siklus Follow Up (Hari)
               </label>
@@ -281,14 +281,14 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                 min="1"
                 value={followUpCycleDays}
                 onChange={(e) => setFollowUpCycleDays(parseInt(e.target.value, 10) || 1)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] transition-all"
+                className="w-full px-3 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all text-slate-900 dark:text-white"
               />
             </div>
 
             <div>
               <label
                 htmlFor="contact-last-contacted"
-                className="block text-xs font-semibold text-slate-700 mb-1"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
               >
                 Terakhir Dihubungi
               </label>
@@ -297,7 +297,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                 type="date"
                 value={lastContactedDate}
                 onChange={(e) => setLastContactedDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] transition-all"
+                className="w-full px-3 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all text-slate-900 dark:text-white"
               />
             </div>
           </div>
@@ -306,7 +306,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
           <div>
             <label
               htmlFor="contact-next-followup"
-              className="block text-xs font-semibold text-slate-700 mb-1"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
             >
               Jadwal Next Follow Up Khusus (Alarm Target)
             </label>
@@ -315,7 +315,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
               type="date"
               value={nextSpecificFollowUp}
               onChange={(e) => setNextSpecificFollowUp(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] transition-all"
+              className="w-full px-3 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all text-slate-900 dark:text-white"
             />
           </div>
 
@@ -323,7 +323,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
           <div>
             <label
               htmlFor="contact-met-context"
-              className="block text-xs font-semibold text-slate-700 mb-1"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
             >
               Ketemu di mana & bagaimana
             </label>
@@ -333,7 +333,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
               value={metContext}
               onChange={(e) => setMetContext(e.target.value)}
               placeholder="Contoh: Dikenalkan oleh Ustadz Hasan di kajian bulanan..."
-              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] transition-all resize-none"
+              className="w-full px-3.5 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
 
@@ -341,7 +341,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
           <div>
             <label
               htmlFor="contact-last-notes"
-              className="block text-xs font-semibold text-slate-700 mb-1"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
             >
               Pembaruan Terakhir
             </label>
@@ -351,7 +351,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
               value={lastUpdateNotes}
               onChange={(e) => setLastUpdateNotes(e.target.value)}
               placeholder="Kabar terakhir, update kondisi keluarga atau pekerjaan..."
-              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] transition-all resize-none"
+              className="w-full px-3.5 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
 
@@ -359,7 +359,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
           <div>
             <label
               htmlFor="contact-next-topic"
-              className="block text-xs font-semibold text-slate-700 mb-1"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
             >
               Possible Follow Up Topic
             </label>
@@ -369,21 +369,21 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
               value={possibleFollowUpTopic}
               onChange={(e) => setPossibleFollowUpTopic(e.target.value)}
               placeholder="Ide obrolan / topik silaturahmi yang pas untuk follow-up..."
-              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] transition-all resize-none"
+              className="w-full px-3.5 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
 
           {/* Delete Action (if editing) */}
           {isEditing && (
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
               {confirmDelete ? (
                 <div className="flex items-center gap-2 w-full justify-between">
-                  <span className="text-xs text-rose-600 font-medium">Yakin ingin menghapus?</span>
+                  <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">Yakin ingin menghapus?</span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(false)}
-                      className="px-3 py-1 text-xs text-slate-500 hover:text-slate-700"
+                      className="px-3 py-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white"
                     >
                       Batal
                     </button>
@@ -400,7 +400,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="text-xs font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
+                  className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Hapus Kontak</span>
@@ -410,18 +410,18 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
           )}
 
           {/* Footer Submit Buttons */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-100 dark:border-white/10 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 text-sm font-semibold text-white bg-[#2F54EB] hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all flex items-center gap-2"
+              className="px-5 py-2 text-sm font-semibold text-white bg-[#2F54EB] dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all flex items-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Simpan</span>

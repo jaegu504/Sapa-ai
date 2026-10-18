@@ -33,7 +33,7 @@ export const CadenceBadge: React.FC<CadenceBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border backdrop-blur-xs transition-colors ${badgeClasses} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${badgeClasses} ${className}`}
     >
       <span
         data-testid="cadence-dot"

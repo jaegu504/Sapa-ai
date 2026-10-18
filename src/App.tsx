@@ -679,7 +679,7 @@ export const App: React.FC = () => {
 
   return (
     <DeviceEmulatorFrame>
-      <div className="min-h-screen bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans pb-28 selection:bg-blue-600 selection:text-white transition-colors">
+      <div className="min-h-screen max-w-full w-full overflow-x-hidden bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans pb-28 selection:bg-blue-600 selection:text-white transition-colors">
         {/* Top Application Navbar */}
         <header className="sticky top-0 z-30 bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 pt-[env(safe-area-inset-top,0px)] transition-colors">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -732,7 +732,7 @@ export const App: React.FC = () => {
         </header>
 
         {/* Main Tab Content */}
-        <main className="flex-1 w-full">
+        <main className="flex-1 w-full max-w-full overflow-x-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 gap-3">
               <RefreshCw className="w-8 h-8 animate-spin text-slate-600" />

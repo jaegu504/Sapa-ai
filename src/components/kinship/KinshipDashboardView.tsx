@@ -136,11 +136,13 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
   }, [contacts, activeTab, searchQuery]);
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto px-4 pt-1.5 sm:pt-3 pb-28 space-y-4 text-slate-900 dark:text-white transition-colors">
+    <div className="relative w-full max-w-2xl mx-auto px-4 pt-1.5 sm:pt-3 pb-28 space-y-4 text-slate-900 dark:text-white transition-colors overflow-x-hidden max-w-full">
       
-      {/* Ambient Fluid Blur Blobs for Glassmorphism Depth */}
-      <div className="absolute -top-16 -left-16 w-64 h-64 bg-blue-500/15 dark:bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-64 -right-16 w-72 h-72 bg-emerald-500/10 dark:bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
+      {/* Ambient Fluid Blur Blobs for Glassmorphism Depth (strictly clipped to prevent horizontal overflow) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10 rounded-3xl">
+        <div className="absolute -top-16 -left-16 w-64 h-64 bg-blue-500/15 dark:bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-64 -right-16 w-72 h-72 bg-emerald-500/10 dark:bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
+      </div>
 
       {/* Top Header Bar */}
       <header className="relative z-10 flex items-center justify-between py-1">

@@ -75,33 +75,45 @@ function getInitials(name: string): string {
 function getAssociationBadgeClass(assoc?: string): string {
   switch (assoc?.toLowerCase()) {
     case 'ihvan':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30';
     case 'hoca':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
+      return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30';
     case 'keluarga':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30';
     case 'zahiri':
-      return 'bg-sky-50 text-sky-700 border-sky-200';
+      return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/30';
     case 'teman':
-      return 'bg-teal-50 text-teal-700 border-teal-200';
+      return 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/20 dark:text-teal-300 dark:border-teal-500/30';
     case 'profesional':
-      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30';
     default:
-      return 'bg-slate-50 text-slate-700 border-slate-200';
+      return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-white/10 dark:text-slate-300 dark:border-white/15';
   }
 }
 
 function getInteractionTypeBadge(type: string) {
   switch (type?.toLowerCase()) {
     case 'meetup':
-      return { label: 'Kopi / Makan', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+      return {
+        label: 'Kopi / Makan',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30',
+      };
     case 'whatsapp':
-      return { label: 'WhatsApp', color: 'bg-green-50 text-green-700 border-green-200' };
+      return {
+        label: 'WhatsApp',
+        color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30',
+      };
     case 'call':
-      return { label: 'Telepon', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+      return {
+        label: 'Telepon',
+        color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30',
+      };
     case 'other':
     default:
-      return { label: 'Acara / Majelis', color: 'bg-purple-50 text-purple-700 border-purple-200' };
+      return {
+        label: 'Acara / Majelis',
+        color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30',
+      };
   }
 }
 
@@ -247,14 +259,14 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
       role="dialog"
       aria-modal="true"
       aria-labelledby="dossier-contact-name"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 dark:bg-black/85"
     >
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl border border-slate-200/90 dark:border-white/12 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white transition-colors">
         {/* Header Bar */}
-        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+        <div className="px-5 py-3.5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-slate-50/80 dark:bg-white/5">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
               Profil Relasi
             </h2>
           </div>
@@ -267,8 +279,8 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
               onClick={() => setIsStarred(!isStarred)}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                 isStarred
-                  ? 'text-amber-500 bg-amber-50'
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/60'
+                  ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/20'
+                  : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10'
               }`}
             >
               <Star
@@ -284,7 +296,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 type="button"
                 onClick={() => onEditContact(contact)}
                 aria-label="Edit Relasi"
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-white rounded-full border border-transparent hover:border-slate-200 transition-all"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-white dark:hover:bg-white/10 rounded-full border border-transparent hover:border-slate-200 dark:hover:border-white/15 transition-all"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Edit</span>
@@ -296,7 +308,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
               type="button"
               onClick={onClose}
               aria-label="Tutup"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -304,21 +316,19 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
         </div>
 
         {/* Scrollable Modal Body */}
-        <div className="overflow-y-auto px-5 py-4 space-y-4 flex-1">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4 text-slate-900 dark:text-white">
           {/* Profile Dossier Hero Card */}
-          <div className="relative bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 overflow-hidden shadow-xs">
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-emerald-500/10 blur-xl pointer-events-none" />
-
+          <div className="relative bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 overflow-hidden shadow-xs">
             <div className="flex items-start gap-3.5 relative z-10">
               {/* Squircle Avatar with initials */}
               <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-700 text-white font-bold text-lg flex items-center justify-center shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-700 dark:from-cyan-700 dark:to-blue-700 text-white font-bold text-lg flex items-center justify-center shadow-sm">
                   {initials}
                 </div>
                 {status.isOverdue && (
                   <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 ring-2 ring-white" />
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
                   </span>
                 )}
               </div>
@@ -328,7 +338,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 <div className="flex items-center justify-between gap-1 flex-wrap">
                   <h3
                     id="dossier-contact-name"
-                    className="font-bold text-slate-900 text-base sm:text-lg tracking-tight truncate"
+                    className="font-bold text-slate-900 dark:text-white text-base sm:text-lg tracking-tight truncate"
                   >
                     {contact.name}
                   </h3>
@@ -352,7 +362,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     </span>
                   ))}
                   {contact.isProfessional && !contact.associations?.includes('Profesional') && (
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200">
+                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
                       Profesional
                     </span>
                   )}
@@ -360,7 +370,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     type="button"
                     aria-label="Ubah Asosiasi Kontak"
                     onClick={() => setIsEditingAssociations((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 bg-blue-50/60 hover:bg-blue-100/60 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-cyan-400 hover:text-blue-700 dark:hover:text-cyan-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-cyan-500/30 bg-blue-50/60 dark:bg-cyan-500/15 hover:bg-blue-100/60 dark:hover:bg-cyan-500/25 transition-colors cursor-pointer"
                   >
                     <Tag className="w-2.5 h-2.5" />
                     <span>{isEditingAssociations ? 'Tutup' : 'Ubah Label'}</span>
@@ -369,8 +379,8 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
 
                 {/* Interactive Association Selector Drawer/Panel */}
                 {isEditingAssociations && (
-                  <div className="mt-2.5 p-2.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-1.5">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <div className="mt-2.5 p-2.5 bg-white dark:bg-[#2C2C2E] border border-slate-200 dark:border-white/15 rounded-xl shadow-xs space-y-1.5">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Pilih Label / Hubungan:
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -387,8 +397,8 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                             onClick={() => handleToggleAssociation(assoc)}
                             className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer font-medium ${
                               isSelected
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                                ? 'bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-xs'
+                                : 'bg-slate-50 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/20'
                             }`}
                           >
                             <span>{isSelected ? '✓' : '+'}</span>
@@ -401,14 +411,14 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 )}
 
                 {/* Phone & Met details */}
-                <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
-                  <span className="flex items-center gap-1 font-mono text-[11px] text-slate-600">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                  <span className="flex items-center gap-1 font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     {contact.phoneNumber}
                   </span>
                   {contact.lastContactedDate && (
-                    <span className="flex items-center gap-1 text-[11px]">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                       Terakhir: {contact.lastContactedDate}
                     </span>
                   )}
@@ -417,17 +427,17 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             </div>
 
             {/* Quick Status Pill Banner */}
-            <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-slate-600">
-                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>
                   Jadwal Sapa:{' '}
-                  <strong className={status.isOverdue ? 'text-rose-600' : 'text-emerald-700'}>
+                  <strong className={status.isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}>
                     {status.isOverdue ? 'Perlu Disapa' : 'Sesuai Siklus'}
                   </strong>
                 </span>
               </div>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">
                 Siklus: {contact.followUpCycleDays || 15} Hari
               </span>
             </div>
@@ -446,7 +456,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
               <button
                 type="button"
                 onClick={() => onOpenLogEncounter?.(contact)}
-                className="min-h-[42px] bg-slate-900 text-white hover:bg-slate-800 rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-xs font-semibold active:scale-[0.98] transition-all"
+                className="min-h-[42px] bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-xs font-semibold active:scale-[0.98] transition-all"
               >
                 <Plus className="w-4 h-4 text-emerald-400" />
                 <span>+ Catat Interaksi</span>
@@ -455,45 +465,45 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
               <button
                 type="button"
                 onClick={() => onOpenAiDraft?.(contact)}
-                className="min-h-[42px] bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/70 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
+                className="min-h-[42px] bg-blue-50 dark:bg-cyan-500/15 text-blue-700 dark:text-cyan-300 hover:bg-blue-100 dark:hover:bg-cyan-500/25 border border-blue-200/70 dark:border-cyan-500/30 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
               >
-                <Sparkles className="w-4 h-4 text-blue-600" />
+                <Sparkles className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
                 <span>Draf AI</span>
               </button>
 
               <a
                 href={`tel:${contact.phoneNumber}`}
-                className="min-h-[42px] bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
+                className="min-h-[42px] bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200 dark:border-white/15 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
               >
-                <Phone className="w-4 h-4 text-slate-500" />
+                <Phone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 <span>Panggil</span>
               </a>
             </div>
           </div>
 
           {/* Notion-Style Structured Key Information / 10-Properties Grid */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-1.5 text-slate-800">
-                <FileText className="w-4 h-4 text-slate-500" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+          <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200/90 dark:border-white/10 p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-white/10 flex-wrap">
+              <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 min-w-0">
+                <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
                   Profil & Properti Relasi
                 </h4>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 {saveStatus === 'saving' && (
-                  <span className="text-[10px] font-semibold text-blue-600 flex items-center gap-1 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
+                  <span className="text-[10px] font-semibold text-blue-600 dark:text-cyan-400 flex items-center gap-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-ping" />
                     Menyimpan...
                   </span>
                 )}
                 {saveStatus === 'saved' && (
-                  <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     Tersimpan
                   </span>
                 )}
-                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                   SINKRON OTOMATIS
                 </span>
               </div>
@@ -503,9 +513,9 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             <div className="space-y-1">
               <label
                 htmlFor="dossier-met-context"
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600"
+                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
               >
-                <Compass className="w-3.5 h-3.5 text-slate-400" />
+                <Compass className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 Pertama Ketemu & Konteks
               </label>
               <textarea
@@ -519,7 +529,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 }}
                 onBlur={() => handleUpdate({ metContext })}
                 placeholder="Misal: Tech conference booth, rekomendasi teman..."
-                className="w-full text-xs text-slate-800 bg-slate-50/70 border border-slate-200 rounded-xl p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
+                className="w-full text-xs text-slate-800 dark:text-white bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -527,9 +537,9 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             <div className="space-y-1">
               <label
                 htmlFor="dossier-last-notes"
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600"
+                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
               >
-                <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                <MessageSquare className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 Pembaruan Kabar Terakhir
               </label>
               <textarea
@@ -543,17 +553,17 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 }}
                 onBlur={() => handleUpdate({ lastUpdateNotes })}
                 placeholder="Pembaruan kabar, keluarga, karir, atau project terakhir..."
-                className="w-full text-xs text-slate-800 bg-slate-50/70 border border-slate-200 rounded-xl p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
+                className="w-full text-xs text-slate-800 dark:text-white bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
             {/* Notion Grid Row 3: Bahan Obrolan Follow Up (possibleFollowUpTopic) */}
-            <div className="space-y-1 bg-emerald-50/40 p-2.5 rounded-xl border border-emerald-100">
+            <div className="space-y-1 bg-emerald-50/40 dark:bg-emerald-950/25 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
               <label
                 htmlFor="dossier-topic"
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800"
+                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 Bahan Obrolan Follow Up Berikutnya
               </label>
               <textarea
@@ -567,7 +577,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 }}
                 onBlur={() => handleUpdate({ possibleFollowUpTopic: followUpTopic })}
                 placeholder="Topik atau bahan sapaan untuk silaturahmi berikutnya..."
-                className="w-full text-xs text-slate-800 bg-white border border-emerald-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
+                className="w-full text-xs text-slate-800 dark:text-white bg-white dark:bg-[#1C1C1E]/80 border border-emerald-200 dark:border-emerald-500/30 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -575,9 +585,9 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             <div className="space-y-1.5 pt-1">
               <label
                 htmlFor="dossier-next-followup"
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600"
+                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
               >
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 Jadwal Follow Up Khusus
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -598,7 +608,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     setNextSpecificFollowUp(combined);
                     handleUpdate({ nextSpecificFollowUp: combined });
                   }}
-                  className="sm:col-span-2 text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="sm:col-span-2 text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
                 />
                 <input
                   id="dossier-next-followup-time"
@@ -615,7 +625,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     setNextSpecificFollowUp(combined);
                     handleUpdate({ nextSpecificFollowUp: combined });
                   }}
-                  className="sm:col-span-1 text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="sm:col-span-1 text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
                 />
               </div>
 
@@ -639,8 +649,8 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     }}
                     className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-all active:scale-95 ${
                       chip.days === null
-                        ? 'border-rose-200 bg-rose-50/50 text-rose-600 hover:bg-rose-100 hover:border-rose-300'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                        ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/25 hover:border-rose-300'
+                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20'
                     }`}
                   >
                     {chip.label}
@@ -654,9 +664,9 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
               <div className="space-y-1">
                 <label
                   htmlFor="dossier-last-contact"
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-600"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
                 >
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   Terakhir Sapa
                 </label>
                 <input
@@ -669,16 +679,16 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     setLastContactedDate(val || '');
                     handleUpdate({ lastContactedDate: val });
                   }}
-                  className="w-full text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
                 />
               </div>
 
               <div className="space-y-1">
                 <label
                   htmlFor="dossier-cycle-days"
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-600"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
                 >
-                  <Repeat className="w-3.5 h-3.5 text-slate-400" />
+                  <Repeat className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   Ritme Sapa (Hari)
                 </label>
                 <input
@@ -693,40 +703,40 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                     setFollowUpCycleDays(val);
                     handleUpdate({ followUpCycleDays: val });
                   }}
-                  className="w-full text-xs font-mono bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
                 />
               </div>
             </div>
 
             {/* Notion Grid Row 7-10: Quick Read-Only Properties */}
-            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px]">
-              <div className="flex items-center gap-1 text-slate-500">
-                <Tag className="w-3 h-3 text-slate-400" />
+            <div className="pt-2 border-t border-slate-100 dark:border-white/10 grid grid-cols-2 gap-2 text-[11px]">
+              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <Tag className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                 <span>Asosiasi:</span>
-                <span className="font-semibold text-slate-700 truncate">
+                <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">
                   {contact.associations?.join(', ') || 'Umum'}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-slate-500">
-                <ShieldCheck className="w-3 h-3 text-slate-400" />
+              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <ShieldCheck className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                 <span>Kategori:</span>
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-slate-700 dark:text-slate-200">
                   {contact.isProfessional ? 'Profesional' : 'Personal'}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-slate-500">
-                <Hash className="w-3 h-3 text-slate-400" />
+              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <Hash className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                 <span>ID:</span>
-                <span className="font-mono text-slate-600 truncate">{contact.id}</span>
+                <span className="font-mono text-slate-600 dark:text-slate-300 truncate">{contact.id}</span>
               </div>
-              <div className="flex items-center gap-1 text-slate-500">
+              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                 <AlertCircle
                   className={`w-3 h-3 ${status.isOverdue ? 'text-rose-500' : 'text-emerald-500'}`}
                 />
                 <span>Status:</span>
                 <span
                   className={`font-semibold ${
-                    status.isOverdue ? 'text-rose-600' : 'text-emerald-600'
+                    status.isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                   }`}
                 >
                   {status.isOverdue ? 'Perlu Disapa' : 'Aman'}
@@ -736,18 +746,18 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
           </div>
 
           {/* Warm Editorial Relationship Timeline */}
-          <div className="bg-slate-50/70 rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+          <div className="bg-slate-50/70 dark:bg-white/5 rounded-2xl border border-slate-200/80 dark:border-white/10 p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-slate-800">
-                <Clock className="w-4 h-4 text-emerald-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Interaction Timeline
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => onOpenLogEncounter?.(contact)}
-                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Catat Interaksi</span>
@@ -755,24 +765,24 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             </div>
 
             {interactions.length > 0 ? (
-              <div className="relative pl-5 space-y-3 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
+              <div className="relative pl-5 space-y-3 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-white/15">
                 {interactions.map((log) => {
                   const typeBadge = getInteractionTypeBadge(log.type);
                   return (
                     <div key={log.id} className="relative group">
                       {/* Marker dot */}
-                      <div className="absolute -left-5 top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white" />
-                      <div className="bg-white rounded-xl border border-slate-200/70 p-3 shadow-xs hover:border-slate-300 transition-colors">
+                      <div className="absolute -left-5 top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
+                      <div className="bg-white dark:bg-[#1C1C1E]/80 rounded-xl border border-slate-200/70 dark:border-white/10 p-3 shadow-xs hover:border-slate-300 dark:hover:border-white/20 transition-colors">
                         <div className="flex items-center justify-between gap-1 flex-wrap">
                           <span
                             className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${typeBadge.color}`}
                           >
                             {typeBadge.label}
                           </span>
-                          <span className="text-[11px] text-slate-400 font-mono">{log.date}</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{log.date}</span>
                         </div>
                         {log.notes && (
-                          <p className="text-xs text-slate-700 mt-1.5 leading-relaxed">
+                          <p className="text-xs text-slate-700 dark:text-slate-200 mt-1.5 leading-relaxed">
                             {log.notes}
                           </p>
                         )}
@@ -782,9 +792,9 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 })}
               </div>
             ) : (
-              <div className="py-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+              <div className="py-6 text-center text-xs text-slate-400 dark:text-slate-500 bg-white dark:bg-white/5 rounded-xl border border-dashed border-slate-200 dark:border-white/15">
                 <p>Belum ada riwayat interaksi tercatat.</p>
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   Klik &apos;+ Catat Interaksi&apos; untuk menambahkan catatan temu.
                 </p>
               </div>
