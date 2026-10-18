@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Users,
-  Calendar as CalendarIcon,
   Settings as SettingsIcon,
   Plus,
   Download,
@@ -13,9 +12,22 @@ import {
   RefreshCw,
   Search,
   Menu,
-  Radio,
   Smartphone,
+  SunMoon,
 } from 'lucide-react';
+import {
+  RadarNavIcon,
+  ContactsNavIcon,
+  ScheduleNavIcon,
+  SettingsNavIcon,
+} from './components/ui/NavIcons';
+import {
+  initTheme,
+  setThemePreference,
+  getThemePreference,
+  applyTheme,
+  type ThemePreference,
+} from './services/themeService';
 import { crmDb } from './db/crmDatabase';
 import type { Contact, InteractionLog, InteractionType } from './types/crm';
 import { markChatCompleted } from './services/contactService';
@@ -248,18 +260,37 @@ export const App: React.FC = () => {
     return getUpcomingAlarms(contacts, 48);
   }, [contacts]);
 
-  // Tab definitions with dynamic badge
+  // Theme state: 'light' | 'dark' | 'system'
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => getThemePreference());
+
+  // Initialize theme on mount
+  useEffect(() => {
+    const cleanup = initTheme();
+    return cleanup;
+  }, []);
+
+  const handleThemeChange = (newTheme: ThemePreference) => {
+    setThemePreference(newTheme);
+    setThemePreferenceState(newTheme);
+    applyTheme(newTheme);
+    showToast(
+      `Tema diubah ke ${newTheme === 'light' ? 'Terang (iOS 18 Glass)' : newTheme === 'dark' ? 'Gelap (VisionOS Glass)' : 'Otomatis (Sistem)'}`,
+      'success'
+    );
+  };
+
+  // Tab definitions with dynamic badge and pure vector SVG icons
   const navTabs: NavTabItem[] = useMemo(
     () => [
-      { id: 'radar', label: 'Radar', icon: <Radio size={20} /> },
-      { id: 'contacts', label: 'Kontak', icon: <Users size={20} /> },
+      { id: 'radar', label: 'Radar', icon: <RadarNavIcon size={20} /> },
+      { id: 'contacts', label: 'Kontak', icon: <ContactsNavIcon size={20} /> },
       {
         id: 'notifications',
         label: 'Jadwal',
-        icon: <CalendarIcon size={20} />,
+        icon: <ScheduleNavIcon size={20} />,
         badge: upcomingAlarms.length > 0 ? upcomingAlarms.length : undefined,
       },
-      { id: 'settings', label: 'Pengaturan', icon: <SettingsIcon size={20} /> },
+      { id: 'settings', label: 'Pengaturan', icon: <SettingsNavIcon size={20} /> },
     ],
     [upcomingAlarms.length]
   );
@@ -634,16 +665,16 @@ export const App: React.FC = () => {
 
   return (
     <DeviceEmulatorFrame>
-      <div className="min-h-screen bg-[#f8f9ff] flex flex-col font-sans pb-24 selection:bg-[#2F54EB] selection:text-white">
+      <div className="min-h-screen bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans pb-28 selection:bg-blue-600 selection:text-white transition-colors">
         {/* Top Application Navbar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 pt-[env(safe-area-inset-top,0px)]">
+        <header className="sticky top-0 z-30 bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 pt-[env(safe-area-inset-top,0px)] transition-colors">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 aria-label="Buka Menu Analitik"
                 onClick={() => setIsDrawerOpen(true)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -653,10 +684,10 @@ export const App: React.FC = () => {
                 className="w-8 h-8 rounded-xl shadow-xs object-cover"
               />
               <div>
-                <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
+                <span className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
                   Sapa
                 </span>
-                <span className="hidden sm:inline-block text-xs text-slate-400 ml-2 font-medium">
+                <span className="hidden sm:inline-block text-xs text-slate-400 dark:text-slate-500 ml-2 font-medium">
                   Rawat & jaga ritme silaturahmi
                 </span>
               </div>
@@ -668,7 +699,7 @@ export const App: React.FC = () => {
                 type="button"
                 onClick={() => setIsSyncOpen(true)}
                 aria-label="Impor Kontak Telepon"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Impor HP</span>
@@ -677,7 +708,7 @@ export const App: React.FC = () => {
                 type="button"
                 onClick={handleOpenAddContact}
                 aria-label="Tambah Kontak Baru"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 shadow-sm transition-all"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tambah Kontak</span>
@@ -712,26 +743,26 @@ export const App: React.FC = () => {
                 <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                        <Users className="w-5 h-5 text-slate-900" />
+                      <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                        <Users className="w-5 h-5 text-slate-900 dark:text-white" />
                         <span>Semua Kontak ({filteredContacts.length})</span>
                       </h2>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         Kelola relasi personal & pantau ritme silaturahmi berkala
                       </p>
                     </div>
 
                     {/* View Switcher Toggle & Search */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center bg-slate-200/80 p-1 rounded-full shadow-inner">
+                      <div className="flex items-center bg-slate-200/80 dark:bg-white/10 p-1 rounded-full shadow-inner">
                         <button
                           type="button"
                           aria-label="Tampilan Kartu"
                           onClick={() => setContactsViewMode('cards')}
                           className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
                             contactsViewMode === 'cards'
-                              ? 'bg-white text-slate-900 shadow-sm'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
                           Kartu Sapa
@@ -742,8 +773,8 @@ export const App: React.FC = () => {
                           onClick={() => setContactsViewMode('table')}
                           className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
                             contactsViewMode === 'table'
-                              ? 'bg-white text-slate-900 shadow-sm'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
                           Tabel Notion
@@ -757,7 +788,7 @@ export const App: React.FC = () => {
                           value={contactsSearch}
                           onChange={(e) => setContactsSearch(e.target.value)}
                           placeholder="Cari kontak..."
-                          className="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900"
+                          className="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white/30"
                         />
                       </div>
                     </div>
@@ -766,25 +797,25 @@ export const App: React.FC = () => {
                   {contactsViewMode === 'cards' ? (
                     <div className="space-y-3">
                       {filteredContacts.length === 0 ? (
-                        <div className="p-8 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-                          <p className="text-sm font-semibold text-slate-700">
+                        <div className="p-8 text-center bg-white dark:bg-[#1C1C1E]/80 backdrop-blur-xl rounded-3xl border border-dashed border-slate-200 dark:border-white/15">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                             Tidak ada kontak ditemukan
                           </p>
-                          <p className="text-xs text-slate-400 mt-1">
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                             Mulai dengan menambahkan kontak baru atau impor dari buku telepon.
                           </p>
                           <div className="mt-4 flex items-center justify-center gap-2">
                             <button
                               type="button"
                               onClick={handleOpenAddContact}
-                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 text-white"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 dark:bg-blue-600 text-white"
                             >
                               + Tambah Kontak
                             </button>
                             <button
                               type="button"
                               onClick={() => setIsSyncOpen(true)}
-                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/20"
                             >
                               📱 Impor Buku Telepon
                             </button>
@@ -807,16 +838,16 @@ export const App: React.FC = () => {
                                 key={contact.id}
                                 data-testid={`kinship-card-${contact.id}`}
                                 onClick={() => setSelectedContact(contact)}
-                                className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between gap-3"
+                                className="bg-white dark:bg-[#1C1C1E]/80 backdrop-blur-xl rounded-2xl p-4 border border-slate-200 dark:border-white/12 shadow-xs hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3"
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0">
+                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-white/10 dark:to-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-200 shrink-0">
                                       {getInitials(contact.name)}
                                     </div>
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-1.5 flex-wrap">
-                                        <h3 className="font-bold text-slate-900 text-sm truncate">
+                                        <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate">
                                           {contact.name}
                                         </h3>
                                         <span
@@ -825,7 +856,7 @@ export const App: React.FC = () => {
                                           {primaryAssoc}
                                         </span>
                                       </div>
-                                      <p className="text-xs text-slate-500 font-mono truncate mt-0.5">
+                                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate mt-0.5">
                                         {contact.phoneNumber}
                                       </p>
                                     </div>
@@ -839,13 +870,13 @@ export const App: React.FC = () => {
                                 </div>
 
                                 {contact.possibleFollowUpTopic && (
-                                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-xs text-slate-600 line-clamp-2">
-                                    <span className="font-semibold text-slate-800">Topik:</span>{' '}
+                                  <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl p-2.5 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                                    <span className="font-semibold text-slate-800 dark:text-white">Topik:</span>{' '}
                                     {contact.possibleFollowUpTopic}
                                   </div>
                                 )}
 
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/10 gap-2">
                                   <button
                                     type="button"
                                     aria-label={`Draf WA untuk ${contact.name}`}
@@ -853,7 +884,7 @@ export const App: React.FC = () => {
                                       e.stopPropagation();
                                       setDraftContact(contact);
                                     }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-colors"
                                   >
                                     <Sparkles className="w-3.5 h-3.5" />
                                     <span>Sapa WA</span>
@@ -866,7 +897,7 @@ export const App: React.FC = () => {
                                       e.stopPropagation();
                                       setLogEncounterContact(contact);
                                     }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
                                   >
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                     <span>Catat Interaksi</span>
@@ -904,33 +935,97 @@ export const App: React.FC = () => {
               {activeTab === 'settings' && (
                 <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                      <SettingsIcon className="w-5 h-5 text-slate-900" />
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                      <SettingsIcon className="w-5 h-5 text-slate-900 dark:text-white" />
                       <span>Pengaturan & Konfigurasi</span>
                     </h2>
-                    <p className="text-xs text-slate-500">
-                      Konfigurasi Google Gemini AI, basis data offline, dan sinkronisasi buku telepon
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Konfigurasi tema tampilan Liquid Glass, AI API Key, dan basis data offline
                     </p>
                   </div>
 
+                  {/* Card 0: Theme & Appearance (Liquid Glass) */}
+                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <SunMoon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                          Tampilan & Tema (Liquid Glass)
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Pilih gaya antarmuka terang, gelap, atau ikuti tema perangkat Anda
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        aria-label="Mode Terang"
+                        onClick={() => handleThemeChange('light')}
+                        className={`p-3 rounded-2xl text-center border transition-all active:scale-95 ${
+                          themePreference === 'light'
+                            ? 'bg-blue-500/10 border-blue-500 text-blue-600 font-bold shadow-xs'
+                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="block text-lg mb-1">🍏</span>
+                        <span className="text-xs font-semibold block">Terang</span>
+                        <span className="text-[10px] text-slate-400 block">iOS 18 Glass</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        aria-label="Mode Gelap"
+                        onClick={() => handleThemeChange('dark')}
+                        className={`p-3 rounded-2xl text-center border transition-all active:scale-95 ${
+                          themePreference === 'dark'
+                            ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400 font-bold shadow-xs'
+                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="block text-lg mb-1">🌌</span>
+                        <span className="text-xs font-semibold block">Gelap</span>
+                        <span className="text-[10px] text-slate-400 block">VisionOS Glass</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        aria-label="Mode Otomatis"
+                        onClick={() => handleThemeChange('system')}
+                        className={`p-3 rounded-2xl text-center border transition-all active:scale-95 ${
+                          themePreference === 'system'
+                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
+                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="block text-lg mb-1">⚙️</span>
+                        <span className="text-xs font-semibold block">Otomatis</span>
+                        <span className="text-[10px] text-slate-400 block">Ikuti HP</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Card 1: Gemini API Key */}
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
+                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                           <Key className="w-5 h-5" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-slate-800">
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-white">
                             Google Gemini AI API Key & Groq
                           </h3>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             Default menggunakan Groq AI kilat via cloud proxy. Masukkan kunci pribadi (Groq / Gemini) jika ingin kuota khusus.
                           </p>
                         </div>
                       </div>
                       {isApiKeySaved && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
                           Aktif
                         </span>
                       )}
@@ -942,14 +1037,14 @@ export const App: React.FC = () => {
                         value={apiKeyInput}
                         onChange={(e) => setApiKeyInput(e.target.value)}
                         placeholder="Masukkan Google Gemini API Key (AIza...) atau Groq Key (gsk_...)"
-                        className="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                        className="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white/30"
                       />
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                         <span>Kunci API disimpan secara aman di browser lokal Anda.</span>
                         <button
                           type="button"
                           onClick={handleSaveApiKey}
-                          className="px-4 py-1.5 rounded-full bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors"
+                          className="px-4 py-1.5 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-semibold hover:bg-slate-800 dark:hover:bg-blue-500 transition-colors"
                         >
                           Simpan Kunci
                         </button>
@@ -958,45 +1053,45 @@ export const App: React.FC = () => {
                   </div>
 
                   {/* Card 2: Database Stats & Management */}
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-4">
+                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                         <Database className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-slate-800">
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">
                           Basis Data Offline (IndexedDB Dexie)
                         </h3>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Penyimpanan lokal di perangkat Anda (100% aman & privat)
                         </p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 py-1">
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                        <span className="block text-xl font-extrabold text-slate-800">
+                      <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 text-center">
+                        <span className="block text-xl font-extrabold text-slate-800 dark:text-white">
                           {contacts.length}
                         </span>
-                        <span className="text-[11px] text-slate-500 font-medium">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                           Total Relasi Tersimpan
                         </span>
                       </div>
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                        <span className="block text-xl font-extrabold text-slate-900">
+                      <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 text-center">
+                        <span className="block text-xl font-extrabold text-slate-900 dark:text-white">
                           {interactionsCount}
                         </span>
-                        <span className="text-[11px] text-slate-500 font-medium">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                           Log Riwayat Interaksi
                         </span>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 justify-between">
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex flex-wrap items-center gap-2 justify-between">
                       <button
                         type="button"
                         onClick={() => setIsSyncOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-colors"
                       >
                         <Smartphone className="w-3.5 h-3.5" />
                         <span>Sinkronisasi Buku Telepon</span>
@@ -1005,7 +1100,7 @@ export const App: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleSeedContacts}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>Isi Data Contoh (Demo Seed)</span>
@@ -1014,7 +1109,7 @@ export const App: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleExportBackup}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>Ekspor Backup JSON</span>
@@ -1023,7 +1118,7 @@ export const App: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleResetData}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/15 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Hapus Semua Data</span>
@@ -1032,15 +1127,15 @@ export const App: React.FC = () => {
                   </div>
 
                   {/* Card 3: About Application */}
-                  <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-2 text-xs text-slate-600">
-                    <h3 className="font-bold text-slate-800 text-sm">
+                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                    <h3 className="font-bold text-slate-800 dark:text-white text-sm">
                       Tentang Sapa v2.0
                     </h3>
                     <p>
                       Aplikasi manajemen relasi dan silaturahmi personal yang dirancang dengan filosofi
                       Denyut Sapa & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
                     </p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
                       Didukung arsitektur Local-First Dexie.js, Capacitor Native Plugins, Tailwind CSS, dan Google Gemini AI.
                     </p>
                   </div>

@@ -5,7 +5,6 @@ import {
   resolveEffectiveTheme,
   applyTheme,
   initTheme,
-  type ThemePreference,
 } from '../../src/services/themeService';
 
 describe('themeService', () => {
