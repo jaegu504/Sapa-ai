@@ -226,6 +226,37 @@ export function getUpcomingAlarms(
 }
 
 /**
+ * Checks whether system notification permission has already been granted without re-prompting.
+ */
+export async function checkNotificationPermission(): Promise<boolean> {
+  try {
+    if (!isNativePlatform()) {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        return Notification.permission === 'granted';
+      }
+      return false;
+    }
+
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin) {
+      return false;
+    }
+
+    if (typeof plugin.checkPermissions === 'function') {
+      const checkRes = await plugin.checkPermissions();
+      return checkRes?.display === 'granted';
+    }
+
+    return false;
+  } catch {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission === 'granted';
+    }
+    return false;
+  }
+}
+
+/**
  * Requests runtime notification permission on Android/native devices.
  * Checks permissions via LocalNotifications.checkPermissions(); if not 'granted', calls requestPermissions().
  * Provides safe fallback for desktop web mode.

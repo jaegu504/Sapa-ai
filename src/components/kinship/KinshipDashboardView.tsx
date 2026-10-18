@@ -136,31 +136,31 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
   }, [contacts, activeTab, searchQuery]);
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto px-4 py-4 space-y-6 pb-28 text-slate-900 dark:text-white transition-colors">
+    <div className="relative w-full max-w-2xl mx-auto px-4 pt-1.5 sm:pt-3 pb-28 space-y-4 text-slate-900 dark:text-white transition-colors">
       
       {/* Ambient Fluid Blur Blobs for Glassmorphism Depth */}
       <div className="absolute -top-16 -left-16 w-64 h-64 bg-blue-500/15 dark:bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-64 -right-16 w-72 h-72 bg-emerald-500/10 dark:bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <header className="relative z-10 flex items-center justify-between pt-1">
-        <div className="flex items-center gap-3">
+      <header className="relative z-10 flex items-center justify-between py-1">
+        <div className="flex items-center gap-2.5">
           {/* User profile avatar with Sapa Logo */}
           <div className="relative">
             <img
               src={sapaLogo}
               alt="Sapa Logo"
               aria-label="Profil Pengguna"
-              className="w-10 h-10 rounded-2xl shadow-md ring-2 ring-white/80 dark:ring-white/20 object-cover"
+              className="w-9 h-9 rounded-xl shadow-xs ring-1 ring-white/80 dark:ring-white/20 object-cover"
             />
           </div>
           <div>
             <div className="flex items-baseline gap-1.5 leading-none">
-              <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Sapa</span>
+              <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Sapa</span>
               <span className="text-slate-400 dark:text-slate-600 font-normal">·</span>
-              <h1 className="text-xl font-bold text-slate-600 dark:text-slate-400">Radar</h1>
+              <h1 className="text-lg font-bold text-slate-600 dark:text-slate-400">Radar</h1>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
               Pantau & rawat ritme silaturahmi
             </p>
           </div>
@@ -172,9 +172,9 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
             type="button"
             aria-label="Sinkronisasi Buku Telepon"
             onClick={onOpenSync}
-            className="w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/80 dark:border-white/15 text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 shadow-xs transition-all active:scale-95 flex items-center justify-center"
+            className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/80 dark:border-white/15 text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 shadow-xs transition-all active:scale-95 flex items-center justify-center"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </button>
 
           {/* Notification Bell Button */}
@@ -182,13 +182,13 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
             type="button"
             aria-label="Notifikasi"
             onClick={onOpenNotifications}
-            className="relative w-9 h-9 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/80 dark:border-white/15 text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 shadow-xs transition-all active:scale-95 flex items-center justify-center"
+            className="relative w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/80 dark:border-white/15 text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 shadow-xs transition-all active:scale-95 flex items-center justify-center"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5" />
             {dueCount > 0 && (
               <span
                 data-testid="notification-badge"
-                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center shadow-xs ring-2 ring-white dark:ring-slate-900 animate-pulse"
+                className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-extrabold flex items-center justify-center shadow-xs ring-2 ring-white dark:ring-slate-900 animate-pulse"
               >
                 {dueCount}
               </span>

@@ -29,9 +29,9 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
   const isCoral = clampedScore < 60;
 
   const content = (
-    <div className="flex flex-col items-center">
-      {/* Apple Activity / Fitness Style Glowing Ring */}
-      <div className="relative flex items-center justify-center w-[148px] h-[148px]">
+    <div className="flex flex-row items-center justify-between gap-4 sm:gap-6">
+      {/* Left: Apple Activity / Fitness Style Glowing Ring */}
+      <div className="relative flex items-center justify-center w-[128px] h-[128px] sm:w-[140px] sm:h-[140px] shrink-0">
         <svg
           className="w-full h-full transform -rotate-90"
           viewBox="0 0 144 144"
@@ -80,32 +80,71 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
 
         {/* Center label & percentage */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
-          <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+          <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
             {Math.round(clampedScore)}%
           </span>
-          <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-widest mt-1">
+          <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider mt-1">
             Denyut Sapa
           </span>
         </div>
       </div>
 
-      {/* Bento Stat Pills */}
-      <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
-        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-white/10 shadow-xs">
-          {activeCount} Aktif
-        </span>
-        <span
-          className={`px-3 py-1 rounded-full text-xs transition-colors ${
+      {/* Right: Stacked Bento Stat Pills */}
+      <div className="flex flex-col justify-center gap-2 flex-1 min-w-0">
+        {/* Active Pill */}
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-white/10 shadow-xs transition-all">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs" />
+            <span className="text-xs font-semibold truncate">
+              {activeCount} Aktif
+            </span>
+          </div>
+          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 hidden sm:inline">
+            Aman
+          </span>
+        </div>
+
+        {/* Due Pill */}
+        <div
+          className={`flex items-center justify-between px-3.5 py-2 rounded-2xl transition-all ${
             dueCount > 0
-              ? 'bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/20 dark:border-rose-500/30 font-bold shadow-xs'
+              ? 'bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/20 dark:border-rose-500/30 shadow-xs font-bold'
               : 'bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-white/10 font-semibold'
           }`}
         >
-          {dueCount} Perlu Disapa
-        </span>
-        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/70 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-white/80 dark:border-white/10">
-          {pausedCount} Dijeda
-        </span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 shadow-xs ${
+                dueCount > 0 ? 'bg-rose-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            />
+            <span
+              className={`text-xs truncate ${
+                dueCount > 0 ? 'text-rose-600 dark:text-rose-300 font-bold' : ''
+              }`}
+            >
+              {dueCount} Perlu Disapa
+            </span>
+          </div>
+          {dueCount > 0 && (
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-500 text-white shrink-0">
+              Hari ini
+            </span>
+          )}
+        </div>
+
+        {/* Paused Pill */}
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-white/80 dark:border-white/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
+            <span className="text-xs font-medium truncate">
+              {pausedCount} Dijeda
+            </span>
+          </div>
+          <span className="text-[10px] text-slate-400 hidden sm:inline">
+            Nonaktif
+          </span>
+        </div>
       </div>
     </div>
   );

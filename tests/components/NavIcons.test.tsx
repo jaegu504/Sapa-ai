@@ -5,6 +5,9 @@ import {
   ContactsNavIcon,
   ScheduleNavIcon,
   SettingsNavIcon,
+  AppleThemeIcon,
+  VisionOsThemeIcon,
+  SystemThemeIcon,
 } from '../../src/components/ui/NavIcons';
 
 describe('NavIcons', () => {
@@ -35,5 +38,16 @@ describe('NavIcons', () => {
     const svg = container.querySelector('svg');
     expect(svg).toBeDefined();
     expect(svg?.getAttribute('viewBox')).toBe('0 0 24 24');
+  });
+
+  it('renders AppleThemeIcon, VisionOsThemeIcon, and SystemThemeIcon as valid SVGs', () => {
+    const { container: appleContainer } = render(<AppleThemeIcon className="w-5 h-5" />);
+    expect(appleContainer.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 24 24');
+
+    const { container: visionContainer } = render(<VisionOsThemeIcon className="w-5 h-5" />);
+    expect(visionContainer.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 24 24');
+
+    const { container: systemContainer } = render(<SystemThemeIcon className="w-5 h-5" />);
+    expect(systemContainer.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 24 24');
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Bell,
   Clock,
@@ -18,6 +18,7 @@ import { calculateContactStatus } from '../../utils/status';
 import {
   getDailyDigestItems,
   getUpcomingAlarms,
+  checkNotificationPermission,
   requestNotificationPermission,
   scheduleDailyMorningDigest,
   formatDateKey,
@@ -119,6 +120,13 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
     }
     return '08:00';
   });
+
+  // Check system notification permission on mount so it doesn't repeatedly ask when granted
+  useEffect(() => {
+    checkNotificationPermission().then((granted) => {
+      setPermissionGranted(granted);
+    });
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -297,22 +305,22 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
   };
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-slate-50 text-slate-900 pb-28">
+    <div className="flex flex-col w-full min-h-screen bg-transparent text-slate-900 dark:text-white pb-28 transition-colors">
       {/* 1. Header Bar (in-flow to cleanly align below application topbar) */}
       <header className="pt-2 pb-1">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="flex flex-col">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Jadwal & Pengingat</h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Jadwal & Pengingat</h1>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
                 🔔 Jam {digestTime} WIB Aktif
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">Sapaan terencana & agenda minggu ini</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sapaan terencana & agenda minggu ini</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-1 rounded-full shadow-2xs">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-white/10 border border-slate-200/80 dark:border-white/12 px-2.5 py-1 rounded-full shadow-2xs backdrop-blur-md">
               {todayCatchUps.length} Pending Hari Ini
             </span>
           </div>
@@ -321,14 +329,14 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
       <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col gap-5 w-full">
         {/* Interactive Segmented Tabs */}
-        <div className="w-full bg-slate-200/80 p-1 rounded-full flex items-center justify-between shadow-inner">
+        <div className="w-full bg-slate-200/80 dark:bg-white/10 p-1 rounded-full flex items-center justify-between shadow-inner">
           <button
             type="button"
             onClick={() => setActiveTab('upcoming')}
             className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold text-center transition-all ${
               activeTab === 'upcoming'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Jadwal Sapaan
@@ -341,8 +349,8 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
             }}
             className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold text-center transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'inbox'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>Kotak Masuk</span>
@@ -355,8 +363,8 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
             onClick={() => setActiveTab('cadence')}
             className={`flex-1 py-2 px-3 rounded-full text-xs font-semibold text-center transition-all ${
               activeTab === 'cadence'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Aturan Ritme
@@ -368,27 +376,27 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
           <div className="flex flex-col gap-5 w-full">
             {/* Daily Morning Digest Banner */}
             {!dismissedBanner && (
-              <div className="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-4 shadow-sm relative overflow-hidden flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-700 shrink-0">
+              <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden flex items-start gap-3 backdrop-blur-md">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100/80 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 dark:text-emerald-300">
                       Status Ringkasan
                     </span>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   </div>
-                  <p className="text-sm font-semibold text-slate-900">Ringkasan Sapaan Pagi Terkirim</p>
-                  <p className="text-xs text-slate-600 truncate">
-                    Ringkasan sapaan harian dikirim setiap <span className="font-medium text-slate-800">08:00 WIB</span>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Ringkasan Sapaan Pagi Terkirim</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 truncate">
+                    Ringkasan sapaan harian dikirim setiap <span className="font-medium text-slate-800 dark:text-white">08:00 WIB</span>
                   </p>
                 </div>
                 <button
                   type="button"
                   aria-label="Tutup banner digest"
                   onClick={() => setDismissedBanner(true)}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full transition-colors"
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -400,24 +408,24 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-rose-500" />
-                  <h2 className="text-lg font-bold text-slate-900">Pengingat Hari Ini</h2>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Pengingat Hari Ini</h2>
                 </div>
-                <span className="bg-slate-200/70 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <span className="bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-slate-300 text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   {todayCatchUps.length} Pending
                 </span>
               </div>
 
               {/* Empty State */}
               {todayCatchUps.length === 0 ? (
-                <div className="bg-white rounded-2xl p-6 text-center border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl rounded-2xl p-6 text-center border border-white/80 dark:border-white/12 shadow-xs flex flex-col items-center justify-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl">
                     🌟
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800 text-base">
+                    <h3 className="font-semibold text-slate-800 dark:text-white text-base">
                       Semua hubungan dalam ritme harmonis hari ini 🌟
                     </h3>
-                    <p className="text-slate-500 text-sm mt-1">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                       Tidak ada relasi yang terlambat disapa atau jadwal alarm mendesak untuk hari ini.
                     </p>
                   </div>
@@ -432,8 +440,8 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                     return (
                       <div
                         key={contact.id}
-                        className={`bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col gap-3.5 relative overflow-hidden transition-all ${
-                          isTopHero ? 'ring-1 ring-emerald-500/20' : ''
+                        className={`bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl rounded-2xl p-4 shadow-xs border border-white/80 dark:border-white/12 flex flex-col gap-3.5 relative overflow-hidden transition-all ${
+                          isTopHero ? 'ring-1 ring-emerald-500/20 dark:ring-emerald-400/30' : ''
                         }`}
                       >
                         {/* Glow bar marker on the left */}
@@ -459,12 +467,12 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <h3
                                   onClick={() => onSelectContact?.(contact)}
-                                  className="text-base font-bold text-slate-900 truncate hover:text-emerald-700 cursor-pointer transition-colors"
+                                  className="text-base font-bold text-slate-900 dark:text-white truncate hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-colors"
                                 >
                                   {contact.name}
                                 </h3>
                                 {contact.associations && contact.associations[0] && (
-                                  <span className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+                                  <span className="bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 text-[10px] font-medium px-2 py-0.5 rounded-full">
                                     {contact.associations[0]}
                                   </span>
                                 )}
@@ -481,7 +489,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                                   }
                                 />
                                 {item.isAlarm && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-500/30">
                                     <Clock className="w-3 h-3" />
                                     Alarm Hari Ini
                                   </span>
@@ -490,17 +498,17 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                             </div>
                           </div>
 
-                          <span className="shrink-0 text-right text-[11px] font-bold uppercase bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full border border-rose-200">
+                          <span className="shrink-0 text-right text-[11px] font-bold uppercase bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-500/30">
                             Today
                           </span>
                         </div>
 
                         {/* AI Icebreaker Box */}
-                        <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-100/80 ml-1.5 flex flex-col gap-1.5">
+                        <div className="bg-slate-50/90 dark:bg-white/5 rounded-xl p-3 border border-slate-100/80 dark:border-white/10 ml-1.5 flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 text-slate-600 text-xs font-semibold">
+                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 text-xs font-semibold">
                               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                              <span className="uppercase tracking-wide text-[10px] font-bold text-slate-500">
+                              <span className="uppercase tracking-wide text-[10px] font-bold text-slate-500 dark:text-slate-400">
                                 Rekomendasi Icebreaker
                               </span>
                             </div>
@@ -508,42 +516,42 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                               <button
                                 type="button"
                                 onClick={() => onOpenAiDraft(contact)}
-                                className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-0.5"
+                                className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline flex items-center gap-0.5"
                               >
                                 <span>AI Draft</span>
                                 <ChevronRight className="w-3 h-3" />
                               </button>
                             )}
                           </div>
-                          <p className="text-xs text-slate-700 italic leading-relaxed">
+                          <p className="text-xs text-slate-700 dark:text-slate-200 italic leading-relaxed">
                             "{icebreaker}"
                           </p>
                         </div>
 
                         {/* Snooze Options Bar */}
                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 ml-1.5">
-                          <span className="text-[11px] font-semibold text-slate-400 mr-1 shrink-0 flex items-center gap-1">
+                          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-400 mr-1 shrink-0 flex items-center gap-1">
                             <Clock className="w-3 h-3 text-slate-400" />
                             Tunda:
                           </span>
                           <button
                             type="button"
                             onClick={() => handleSnooze(contact, 3)}
-                            className="shrink-0 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all border border-slate-200/60"
+                            className="shrink-0 px-2.5 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 active:scale-95 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-full transition-all border border-slate-200/60 dark:border-white/10"
                           >
                             +3 Hari
                           </button>
                           <button
                             type="button"
                             onClick={() => handleSnooze(contact, calculateDaysUntilWeekend(now))}
-                            className="shrink-0 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all border border-slate-200/60"
+                            className="shrink-0 px-2.5 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 active:scale-95 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-full transition-all border border-slate-200/60 dark:border-white/10"
                           >
                             Akhir Pekan
                           </button>
                           <button
                             type="button"
                             onClick={() => handleSnooze(contact, 7)}
-                            className="shrink-0 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium rounded-full transition-all border border-slate-200/60"
+                            className="shrink-0 px-2.5 py-1 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 active:scale-95 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-full transition-all border border-slate-200/60 dark:border-white/10"
                           >
                             Minggu Depan (+7 hr)
                           </button>
@@ -570,31 +578,31 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
             <div className="flex flex-col gap-3 mt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-emerald-600" />
-                  <h2 className="text-lg font-bold text-slate-900">Agenda Pekan Ini</h2>
+                  <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Agenda Pekan Ini</h2>
                 </div>
-                <span className="text-xs text-slate-500 font-medium">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {weeklyAgenda.length} Sapaan Terjadwal
                 </span>
               </div>
 
               {weeklyAgenda.length === 0 ? (
-                <div className="bg-white rounded-2xl p-5 text-center border border-slate-100 shadow-sm text-slate-500 text-xs">
+                <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl rounded-2xl p-5 text-center border border-white/80 dark:border-white/12 shadow-xs text-slate-500 dark:text-slate-400 text-xs">
                   Tidak ada jadwal follow-up khusus dalam 7 hari ke depan.
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col gap-3">
+                <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl rounded-2xl p-4 shadow-xs border border-white/80 dark:border-white/12 flex flex-col gap-3">
                   {weeklyAgenda.map((item) => {
                     const contact = item.contact;
                     return (
                       <div
                         key={contact.id}
-                        className="p-3 bg-slate-50/70 hover:bg-slate-50 rounded-xl flex items-center justify-between gap-3 border border-slate-100 transition-colors"
+                        className="p-3 bg-slate-50/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 rounded-xl flex items-center justify-between gap-3 border border-slate-100 dark:border-white/10 transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
                             onClick={() => onSelectContact?.(contact)}
-                            className="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0 cursor-pointer"
+                            className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xs font-bold shrink-0 cursor-pointer"
                           >
                             {getInitials(contact.name)}
                           </div>
@@ -602,15 +610,15 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4
                                 onClick={() => onSelectContact?.(contact)}
-                                className="text-sm font-semibold text-slate-900 truncate hover:text-emerald-700 cursor-pointer"
+                                className="text-sm font-semibold text-slate-900 dark:text-white truncate hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
                               >
                                 {contact.name}
                               </h4>
-                              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 shrink-0">
+                              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-500/30 shrink-0">
                                 {item.formattedDate}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-500 truncate mt-0.5">{item.topic}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{item.topic}</p>
                           </div>
                         </div>
 
@@ -633,29 +641,29 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
             </div>
 
             {/* Section: Queue & Dispatch Settings */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4 mt-2">
+            <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl rounded-2xl p-5 shadow-xs border border-white/80 dark:border-white/12 flex flex-col gap-4 mt-2 text-slate-900 dark:text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-slate-600" />
-                  <h3 className="text-base font-bold text-slate-900">Pengaturan Notifikasi & Antrean</h3>
+                  <Zap className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Pengaturan Notifikasi & Antrean</h3>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/30">
                   Sinkron Otomatis ON
                 </span>
               </div>
 
               <div className="flex flex-col gap-2.5">
                 {/* Toggle 1: Daily Morning Digest */}
-                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 hover:bg-slate-50 border border-slate-100/80 cursor-pointer transition-colors">
+                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-100/80 dark:border-white/10 cursor-pointer transition-colors">
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100/80 text-emerald-700 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100/80 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
                       <Mail className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-900 truncate">
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                         Ringkasan Sapaan Pagi ({digestTime} WIB)
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                         Ringkasan sapaan harian dikirim setiap jam {digestTime} WIB
                       </p>
                     </div>
@@ -670,13 +678,13 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
                 {/* Custom Time Selector & Presets */}
                 {morningDigestEnabled && (
-                  <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col gap-2">
+                  <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-500/20 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
-                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                        <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Atur Jam Notifikasi Harian</span>
                       </div>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/30 text-emerald-800 dark:text-emerald-200">
                         {digestTime} WIB
                       </span>
                     </div>
@@ -690,7 +698,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                           className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
                             digestTime === preset
                               ? 'bg-emerald-600 text-white shadow-xs'
-                              : 'bg-white border border-emerald-200/80 text-emerald-800 hover:bg-emerald-100/60'
+                              : 'bg-white dark:bg-white/10 border border-emerald-200/80 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/60 dark:hover:bg-emerald-500/20'
                           }`}
                         >
                           {preset} WIB
@@ -698,13 +706,13 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                       ))}
 
                       <div className="flex items-center gap-1 ml-auto">
-                        <span className="text-[10px] text-slate-500 font-medium">Kustom:</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Kustom:</span>
                         <input
                           type="time"
                           aria-label="Waktu kustom pengingat"
                           value={digestTime}
                           onChange={(e) => handleDigestTimeChange(e.target.value)}
-                          className="px-2 py-0.5 text-xs font-semibold bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          className="px-2 py-0.5 text-xs font-semibold bg-white dark:bg-[#1C1C1E] border border-slate-200 dark:border-white/15 rounded-lg text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         />
                       </div>
                     </div>
@@ -712,16 +720,16 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 )}
 
                 {/* Toggle 2: Receive Push Notifications */}
-                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 hover:bg-slate-50 border border-slate-100/80 cursor-pointer transition-colors">
+                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-100/80 dark:border-white/10 cursor-pointer transition-colors">
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                       <Bell className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-900 truncate">
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                         Terima Notifikasi Sistem
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                         Pengingat langsung untuk relasi yang melewati batas siklus
                       </p>
                     </div>
@@ -735,16 +743,16 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 </label>
 
                 {/* Toggle 3: Auto-open WhatsApp */}
-                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 hover:bg-slate-50 border border-slate-100/80 cursor-pointer transition-colors">
+                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-100/80 dark:border-white/10 cursor-pointer transition-colors">
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="w-8 h-8 rounded-lg bg-teal-100/80 text-teal-700 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-teal-100/80 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
                       <Send className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-900 truncate">
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                         Buka WhatsApp Otomatis
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                         Langsung buka template pesan saat tombol sapa ditekan
                       </p>
                     </div>
@@ -763,9 +771,17 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 <button
                   type="button"
                   onClick={handleRequestPermission}
-                  className="flex-1 min-h-[42px] px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 border border-slate-200 transition-all"
+                  className={`flex-1 min-h-[42px] px-4 py-2 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 border transition-all active:scale-98 ${
+                    permissionGranted
+                      ? 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 dark:border-emerald-500/30'
+                      : 'bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-800 dark:text-white border-slate-200 dark:border-white/15'
+                  }`}
                 >
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  {permissionGranted ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  )}
                   <span>
                     {permissionGranted ? 'Izin Notifikasi Aktif' : 'Minta Izin Notifikasi Sistem'}
                   </span>
@@ -786,11 +802,11 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
         {/* Tab 2: Inbox View */}
         {activeTab === 'inbox' && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+          <div className="bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl rounded-2xl p-5 shadow-xs border border-white/80 dark:border-white/12 flex flex-col gap-4 text-slate-900 dark:text-white">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Pemberitahuan Sistem Terkini</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Pemberitahuan Sistem Terkini</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Aktivitas pengingat, jadwal sapaan, dan status sistem
                 </p>
               </div>
@@ -800,7 +816,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                   setHasReadInbox(true);
                   showToast('Semua notifikasi ditandai telah dibaca');
                 }}
-                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline cursor-pointer"
               >
                 Tandai sudah dibaca
               </button>
@@ -808,37 +824,37 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
             <div className="flex flex-col gap-3 mt-1">
               {/* Daily digest status */}
-              <div className="p-3.5 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 flex items-start gap-3 border border-slate-100 dark:border-white/10">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-bold text-slate-900">Ringkasan Sapaan Pagi Terkirim</p>
-                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Ringkasan Sapaan Pagi Terkirim</p>
+                    <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-500/30">
                       Aktif {digestTime} WIB
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
                     {overdueCount > 0
                       ? `${overdueCount} relasi disarankan untuk disapa pagi ini sesuai ritme intim.`
                       : 'Semua relasi dalam status aman dan harmonis.'}
                   </p>
-                  <span className="text-[10px] text-slate-400 mt-1 block font-mono">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-400 mt-1 block font-mono">
                     Hari ini, disetel jam {digestTime} WIB
                   </span>
                 </div>
               </div>
 
               {/* Active scheduled alarms */}
-              <div className="p-3.5 rounded-xl bg-slate-50 flex items-start gap-3 border border-slate-100">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 flex items-start gap-3 border border-slate-100 dark:border-white/10">
                 <Sparkles className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-bold text-slate-900">Kalender & Alarm Aktif</p>
-                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Kalender & Alarm Aktif</p>
+                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-500/30">
                       {alarmsCount} Terjadwal
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
                     {alarmsCount > 0
                       ? `${alarmsCount} jadwal alarm sapaan spesifik telah disinkronkan ke sistem lokal.`
                       : 'Belum ada jadwal alarm sapaan spesifik.'}
@@ -848,9 +864,9 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
               {/* Quick links to today catch ups */}
               {todayCatchUps.length > 0 && (
-                <div className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-100 flex flex-col gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
-                    <Bell className="w-3.5 h-3.5 text-rose-600" />
+                <div className="p-3.5 rounded-xl bg-rose-50/60 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 flex flex-col gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
+                    <Bell className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                     <span>Perlu Disapa Hari Ini ({todayCatchUps.length} Kontak)</span>
                   </div>
                   <div className="flex flex-col gap-1.5 mt-0.5">
@@ -858,10 +874,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                       <div
                         key={item.contact.id}
                         onClick={() => onSelectContact?.(item.contact)}
-                        className="flex items-center justify-between p-2 rounded-lg bg-white border border-rose-100 text-xs cursor-pointer hover:bg-rose-50/50 transition-colors"
+                        className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-white/10 border border-rose-100 dark:border-white/10 text-xs cursor-pointer hover:bg-rose-50/50 dark:hover:bg-white/15 transition-colors"
                       >
-                        <span className="font-semibold text-slate-800">{item.contact.name}</span>
-                        <span className="text-[10px] text-rose-600 font-medium">Buka Profil &rarr;</span>
+                        <span className="font-semibold text-slate-800 dark:text-white">{item.contact.name}</span>
+                        <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">Buka Profil &rarr;</span>
                       </div>
                     ))}
                   </div>
@@ -873,19 +889,19 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
 
         {/* Tab 3: Cadence Rules View */}
         {activeTab === 'cadence' && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+          <div className="bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl rounded-2xl p-5 shadow-xs border border-white/80 dark:border-white/12 flex flex-col gap-4 text-slate-900 dark:text-white">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Interval & Ritme Sapaan</h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Interval & Ritme Sapaan</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Frekuensi sapaan berkala default yang menjaga ritme silaturahmi tetap harmonis.
               </p>
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/10">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Inner Circle (Keluarga & Sahabat)</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Inner Circle (Keluarga & Sahabat)</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Weekly nudge (Setiap 7 hari) · {contacts.filter((c) => (c.followUpCycleDays || 15) <= 7).length} kontak
                   </p>
                 </div>
@@ -894,10 +910,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/10">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Key Collaborators & Mentors</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Key Collaborators & Mentors</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Bi-weekly / Monthly (Setiap 14-21 hari) · {contacts.filter((c) => (c.followUpCycleDays || 15) > 7 && (c.followUpCycleDays || 15) <= 21).length} kontak
                   </p>
                 </div>
@@ -906,10 +922,10 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/10">
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Extended Network & Alumni</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Extended Network & Alumni</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Quarterly (Setiap 60-90 hari) · {contacts.filter((c) => (c.followUpCycleDays || 15) > 21).length} kontak
                   </p>
                 </div>

@@ -8,6 +8,7 @@ describe('App Integration', () => {
     await crmDb.contacts.clear();
     await crmDb.interactions.clear();
     localStorage.clear();
+    localStorage.setItem('sapa_onboarding_completed', 'true');
     vi.restoreAllMocks();
   });
 
@@ -361,5 +362,34 @@ describe('App Integration', () => {
       expect(within(draftModal).getByRole('button', { name: /kirim via whatsapp$/i })).toBeDefined();
       expect(within(draftModal).getByRole('button', { name: /kirim via whatsapp business/i })).toBeDefined();
     });
+  });
+
+  it('shows first-time onboarding modal when sapa_onboarding_completed is not set, and hides it when completed', async () => {
+    localStorage.removeItem('sapa_onboarding_completed');
+    render(<App />);
+
+    expect(screen.getByTestId('onboarding-modal')).toBeDefined();
+    expect(screen.getByText('Pantau Denyut Silaturahmi')).toBeDefined();
+
+    // Click Lewati
+    fireEvent.click(screen.getByText('Lewati'));
+
+    expect(localStorage.getItem('sapa_onboarding_completed')).toBe('true');
+    await waitFor(() => {
+      expect(screen.queryByTestId('onboarding-modal')).toBeNull();
+    });
+  });
+
+  it('can open onboarding guide from Settings tab', async () => {
+    render(<App />);
+
+    const settingsTabBtn = screen.getByRole('button', { name: /^pengaturan$/i });
+    fireEvent.click(settingsTabBtn);
+
+    const tutorialBtn = await screen.findByRole('button', { name: /Panduan Tutorial/i });
+    fireEvent.click(tutorialBtn);
+
+    expect(screen.getByTestId('onboarding-modal')).toBeDefined();
+    expect(screen.getByText('Pantau Denyut Silaturahmi')).toBeDefined();
   });
 });

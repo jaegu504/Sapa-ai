@@ -14,12 +14,17 @@ import {
   Menu,
   Smartphone,
   SunMoon,
+  HelpCircle,
 } from 'lucide-react';
+import { OnboardingModal, ONBOARDING_STORAGE_KEY } from './components/onboarding/OnboardingModal';
 import {
   RadarNavIcon,
   ContactsNavIcon,
   ScheduleNavIcon,
   SettingsNavIcon,
+  AppleThemeIcon,
+  VisionOsThemeIcon,
+  SystemThemeIcon,
 } from './components/ui/NavIcons';
 import {
   initTheme,
@@ -170,6 +175,15 @@ export const App: React.FC = () => {
   const [isSyncOpen, setIsSyncOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
+  // First-time Onboarding Tutorial State
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // Contacts search state
   const [contactsSearch, setContactsSearch] = useState<string>('');
@@ -933,7 +947,7 @@ export const App: React.FC = () => {
 
               {/* TAB 4: SETTINGS */}
               {activeTab === 'settings' && (
-                <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+                <div className="max-w-3xl mx-auto px-4 pt-6 pb-36 space-y-6">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                       <SettingsIcon className="w-5 h-5 text-slate-900 dark:text-white" />
@@ -965,13 +979,15 @@ export const App: React.FC = () => {
                         type="button"
                         aria-label="Mode Terang"
                         onClick={() => handleThemeChange('light')}
-                        className={`p-3 rounded-2xl text-center border transition-all active:scale-95 ${
+                        className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center border transition-all active:scale-95 ${
                           themePreference === 'light'
                             ? 'bg-blue-500/10 border-blue-500 text-blue-600 font-bold shadow-xs'
                             : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        <span className="block text-lg mb-1">🍏</span>
+                        <div className="w-7 h-7 mb-1.5 flex items-center justify-center">
+                          <AppleThemeIcon className="w-5 h-5 text-current" />
+                        </div>
                         <span className="text-xs font-semibold block">Terang</span>
                         <span className="text-[10px] text-slate-400 block">iOS 18 Glass</span>
                       </button>
@@ -980,13 +996,15 @@ export const App: React.FC = () => {
                         type="button"
                         aria-label="Mode Gelap"
                         onClick={() => handleThemeChange('dark')}
-                        className={`p-3 rounded-2xl text-center border transition-all active:scale-95 ${
+                        className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center border transition-all active:scale-95 ${
                           themePreference === 'dark'
                             ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400 font-bold shadow-xs'
                             : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        <span className="block text-lg mb-1">🌌</span>
+                        <div className="w-7 h-7 mb-1.5 flex items-center justify-center">
+                          <VisionOsThemeIcon className="w-5 h-5 text-current" />
+                        </div>
                         <span className="text-xs font-semibold block">Gelap</span>
                         <span className="text-[10px] text-slate-400 block">VisionOS Glass</span>
                       </button>
@@ -995,13 +1013,15 @@ export const App: React.FC = () => {
                         type="button"
                         aria-label="Mode Otomatis"
                         onClick={() => handleThemeChange('system')}
-                        className={`p-3 rounded-2xl text-center border transition-all active:scale-95 ${
+                        className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center border transition-all active:scale-95 ${
                           themePreference === 'system'
                             ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
                             : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        <span className="block text-lg mb-1">⚙️</span>
+                        <div className="w-7 h-7 mb-1.5 flex items-center justify-center">
+                          <SystemThemeIcon className="w-5 h-5 text-current" />
+                        </div>
                         <span className="text-xs font-semibold block">Otomatis</span>
                         <span className="text-[10px] text-slate-400 block">Ikuti HP</span>
                       </button>
@@ -1126,18 +1146,34 @@ export const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Card 3: About Application */}
-                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                    <h3 className="font-bold text-slate-800 dark:text-white text-sm">
-                      Tentang Sapa v2.0
-                    </h3>
-                    <p>
-                      Aplikasi manajemen relasi dan silaturahmi personal yang dirancang dengan filosofi
-                      Denyut Sapa & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
-                    </p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      Didukung arsitektur Local-First Dexie.js, Capacitor Native Plugins, Tailwind CSS, dan Google Gemini AI.
-                    </p>
+                  {/* Card 3: About Application & Tutorial */}
+                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-slate-800 dark:text-white text-sm">
+                        Tentang Sapa v2.0
+                      </h3>
+                      <p>
+                        Aplikasi manajemen relasi dan silaturahmi personal yang dirancang dengan filosofi
+                        Denyut Sapa & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
+                      </p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                        Didukung arsitektur Local-First Dexie.js, Capacitor Native Plugins, Tailwind CSS, dan Google Gemini AI.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        Ingin mengulang panduan awal?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsOnboardingOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-colors"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        <span>Panduan Tutorial</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1231,6 +1267,12 @@ export const App: React.FC = () => {
           onSelectFilter={handleDrawerSelectFilter}
           onExportBackup={handleExportBackup}
           onImportBackup={handleImportBackup}
+        />
+
+        {/* First-time Onboarding Modal */}
+        <OnboardingModal
+          isOpen={isOnboardingOpen}
+          onClose={() => setIsOnboardingOpen(false)}
         />
 
         {/* Global Toast Notification */}
