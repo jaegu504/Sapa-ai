@@ -8,4 +8,5 @@ android/build/
 android/app/build/
 *.apk
 .DS_Store
-
+.agent/
+.agents/
