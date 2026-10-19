@@ -6,8 +6,10 @@ import { calculateContactStatus } from '../utils/status';
 export type { DigestResult, AlarmItem };
 
 export const MORNING_DIGEST_NOTIFICATION_ID = 1001;
+export const UPDATE_NOTIFICATION_ID = 1002;
 export const CHANNEL_MORNING_DIGEST = 'crm_morning_digest';
 export const CHANNEL_TARGETED_ALARMS = 'crm_targeted_alarms';
+export const CHANNEL_APP_UPDATES = 'crm_app_updates';
 
 function getLocalNotificationsPlugin(): any {
   if (typeof window !== 'undefined') {
@@ -322,6 +324,13 @@ export async function initNotificationService(): Promise<void> {
       description: 'Pengingat jadwal follow up khusus',
       importance: 5,
     });
+
+    await plugin.createChannel({
+      id: CHANNEL_APP_UPDATES,
+      name: 'Pembaruan Aplikasi Sapa',
+      description: 'Notifikasi rilis versi terbaru Sapa',
+      importance: 4,
+    });
   } catch (err) {
     console.warn('[notificationService] Could not register notification channels:', err);
   }
@@ -500,6 +509,45 @@ export async function cancelAllScheduledNotifications(): Promise<void> {
     }
   } catch (err) {
     console.warn('[notificationService] Failed to cancel scheduled notifications:', err);
+  }
+}
+
+/**
+ * Schedules or displays an immediate local notification alerting the user of an app update.
+ */
+export async function scheduleAppUpdateNotification(update: {
+  latestVersion: string;
+  apkUrl?: string;
+}): Promise<boolean> {
+  try {
+    const plugin = getLocalNotificationsPlugin();
+    if (!plugin || typeof plugin.schedule !== 'function') {
+      return true; // Web fallback
+    }
+
+    await plugin.schedule({
+      notifications: [
+        {
+          id: UPDATE_NOTIFICATION_ID,
+          title: `Pembaruan Sapa v${update.latestVersion} Tersedia! 🚀`,
+          body: 'Versi baru sudah siap diunduh. Ketuk untuk memperbarui aplikasi.',
+          channelId: CHANNEL_APP_UPDATES,
+          schedule: {
+            at: new Date(Date.now() + 1000), // Fire in 1 second
+            allowWhileIdle: true,
+          },
+          extra: {
+            type: 'app_update',
+            latestVersion: update.latestVersion,
+            apkUrl: update.apkUrl,
+          },
+        },
+      ],
+    });
+    return true;
+  } catch (err) {
+    console.warn('[notificationService] Failed to schedule app update notification:', err);
+    return true;
   }
 }
 

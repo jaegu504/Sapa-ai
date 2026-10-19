@@ -7,9 +7,12 @@ import {
   scheduleDailyMorningDigest,
   scheduleTargetedFollowUpAlarm,
   cancelAllScheduledNotifications,
+  scheduleAppUpdateNotification,
   CHANNEL_MORNING_DIGEST,
   CHANNEL_TARGETED_ALARMS,
+  CHANNEL_APP_UPDATES,
   MORNING_DIGEST_NOTIFICATION_ID,
+  UPDATE_NOTIFICATION_ID,
   hashContactId,
   isAlarmForToday,
 } from '../../src/services/notificationService';
@@ -315,10 +318,10 @@ describe('notificationService', () => {
     });
 
     describe('initNotificationService', () => {
-      it('creates morning digest and targeted alarms notification channels on Android', async () => {
+      it('creates morning digest, targeted alarms, and app updates notification channels on Android', async () => {
         await initNotificationService();
 
-        expect(mockCreateChannel).toHaveBeenCalledTimes(2);
+        expect(mockCreateChannel).toHaveBeenCalledTimes(3);
         expect(mockCreateChannel).toHaveBeenCalledWith(
           expect.objectContaining({
             id: CHANNEL_MORNING_DIGEST,
@@ -333,6 +336,13 @@ describe('notificationService', () => {
             name: 'Pengingat Jadwal Sapa',
             description: 'Pengingat jadwal follow up khusus',
             importance: 5,
+          })
+        );
+        expect(mockCreateChannel).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: CHANNEL_APP_UPDATES,
+            name: 'Pembaruan Aplikasi Sapa',
+            importance: 4,
           })
         );
       });
@@ -537,6 +547,40 @@ describe('notificationService', () => {
       it('handles unsupported environment without throwing error', async () => {
         delete (window as any).Capacitor;
         await expect(cancelAllScheduledNotifications()).resolves.not.toThrow();
+      });
+    });
+
+    describe('scheduleAppUpdateNotification', () => {
+      it('schedules app update notification with UPDATE_NOTIFICATION_ID and CHANNEL_APP_UPDATES', async () => {
+        const result = await scheduleAppUpdateNotification({
+          latestVersion: '1.1.0',
+          apkUrl: 'https://example.com/sapa-1.1.0.apk',
+        });
+
+        expect(result).toBe(true);
+        expect(mockSchedule).toHaveBeenCalledWith(
+          expect.objectContaining({
+            notifications: [
+              expect.objectContaining({
+                id: UPDATE_NOTIFICATION_ID,
+                title: expect.stringContaining('1.1.0'),
+                channelId: CHANNEL_APP_UPDATES,
+                extra: expect.objectContaining({
+                  type: 'app_update',
+                  latestVersion: '1.1.0',
+                }),
+              }),
+            ],
+          })
+        );
+      });
+
+      it('returns true fallback when Capacitor is not present', async () => {
+        delete (window as any).Capacitor;
+        const result = await scheduleAppUpdateNotification({
+          latestVersion: '1.1.0',
+        });
+        expect(result).toBe(true);
       });
     });
 

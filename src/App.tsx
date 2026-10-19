@@ -15,8 +15,16 @@ import {
   Smartphone,
   SunMoon,
   HelpCircle,
+  Rocket,
 } from 'lucide-react';
 import { OnboardingModal, ONBOARDING_STORAGE_KEY } from './components/onboarding/OnboardingModal';
+import { AppUpdateModal } from './components/ui/AppUpdateModal';
+import {
+  checkForAppUpdate,
+  dismissUpdate,
+  CURRENT_APP_VERSION,
+  type UpdateCheckResult,
+} from './services/updateService';
 import {
   RadarNavIcon,
   ContactsNavIcon,
@@ -185,6 +193,11 @@ export const App: React.FC = () => {
     }
   });
 
+  // In-App Software Update State
+  const [appUpdate, setAppUpdate] = useState<UpdateCheckResult | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
+
   // Contacts search state
   const [contactsSearch, setContactsSearch] = useState<string>('');
 
@@ -282,6 +295,38 @@ export const App: React.FC = () => {
     const cleanup = initTheme();
     return cleanup;
   }, []);
+
+  // Check for app update in the background on startup
+  useEffect(() => {
+    checkForAppUpdate()
+      .then((res) => {
+        if (res.hasUpdate) {
+          setAppUpdate(res);
+          setIsUpdateModalOpen(true);
+        }
+      })
+      .catch((err) => {
+        console.warn('Startup app update check failed:', err);
+      });
+  }, []);
+
+  const handleCheckAppUpdate = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      const res = await checkForAppUpdate({ force: true });
+      setAppUpdate(res);
+      if (res.hasUpdate) {
+        setIsUpdateModalOpen(true);
+        showToast(`Versi baru v${res.latestVersion} tersedia!`, 'success');
+      } else {
+        showToast(`Aplikasi Sapa sudah versi terbaru (v${CURRENT_APP_VERSION}) ✨`, 'info');
+      }
+    } catch {
+      showToast('Gagal memeriksa pembaruan. Pastikan perangkat terhubung internet.', 'error');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   const handleThemeChange = (newTheme: ThemePreference) => {
     setThemePreference(newTheme);
@@ -1146,7 +1191,65 @@ export const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Card 3: About Application & Tutorial */}
+                  {/* Card 3: Software Update (Pembaruan Perangkat Lunak) */}
+                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-2xl bg-cyan-50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                          <Rocket className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                            Pembaruan Aplikasi (Software Update)
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Versi saat ini v{CURRENT_APP_VERSION} · Distribusi Rilis GitHub
+                          </p>
+                        </div>
+                      </div>
+                      {appUpdate?.hasUpdate ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
+                          Update Siap!
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+                          Terbaru
+                        </span>
+                      )}
+                    </div>
+
+                    {appUpdate?.hasUpdate && (
+                      <div className="p-3 bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/60 dark:border-amber-500/20 rounded-2xl flex items-center justify-between">
+                        <div className="text-xs text-amber-900 dark:text-amber-200">
+                          <span className="font-bold">Sapa-ai v{appUpdate.latestVersion}</span> tersedia untuk diinstal!
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsUpdateModalOpen(true)}
+                          className="px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 transition-colors"
+                        >
+                          Lihat Update
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Cek ketersediaan file rilis APK terbaru dari GitHub
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCheckAppUpdate}
+                        disabled={isCheckingUpdate}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 disabled:opacity-50 transition-colors active:scale-95"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                        <span>{isCheckingUpdate ? 'Memeriksa...' : 'Periksa Pembaruan'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card 4: About Application & Tutorial */}
                   <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-3 text-xs text-slate-600 dark:text-slate-300">
                     <div className="space-y-1">
                       <h3 className="font-bold text-slate-800 dark:text-white text-sm">
@@ -1273,6 +1376,14 @@ export const App: React.FC = () => {
         <OnboardingModal
           isOpen={isOnboardingOpen}
           onClose={() => setIsOnboardingOpen(false)}
+        />
+
+        {/* In-App Auto Update Modal */}
+        <AppUpdateModal
+          isOpen={isUpdateModalOpen}
+          update={appUpdate}
+          onClose={() => setIsUpdateModalOpen(false)}
+          onDismissForever={(ver) => dismissUpdate(ver)}
         />
 
         {/* Global Toast Notification */}
