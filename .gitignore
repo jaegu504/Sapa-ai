@@ -10,3 +10,4 @@ android/app/build/
 .DS_Store
 .agent/
 .agents/
+.codebase-memory/
