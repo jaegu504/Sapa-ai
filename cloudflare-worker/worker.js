@@ -86,6 +86,7 @@ export default {
       // =====================================================================
       // 2. CADANGAN OTOMATIS: Google Gemini (jika Groq sedang sibuk)
       // =====================================================================
+      if (geminiKey) {
         const geminiModels = [
           "gemini-2.5-flash-lite",
           "gemini-2.5-flash",
