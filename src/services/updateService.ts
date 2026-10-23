@@ -1,6 +1,6 @@
 import { scheduleAppUpdateNotification } from './notificationService';
 
-export const CURRENT_APP_VERSION = '1.2.1';
+export const CURRENT_APP_VERSION = '1.2.2';
 export const GITHUB_REPO = 'jaegu504/Sapa-ai';
 export const UPDATE_STORAGE_KEY = 'sapa_last_update_check';
 export const UPDATE_DISMISSED_KEY = 'sapa_dismissed_update_version';
