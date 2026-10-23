@@ -9,6 +9,7 @@ import {
   Sparkles,
   Phone,
   Plus,
+  Mic,
   Compass,
   Repeat,
   Tag,
@@ -30,6 +31,7 @@ export interface KinshipContactDossierModalProps {
   onEditContact?: (contact: Contact) => void;
   onOpenAiDraft?: (contact: Contact) => void;
   onOpenLogEncounter?: (contact: Contact) => void;
+  onOpenVoiceNote?: (contact: Contact) => void;
   onUpdateContact?: (contactId: string, updates: Partial<Contact>) => Promise<void> | void;
   interactions?: InteractionLog[];
   now?: Date;
@@ -133,6 +135,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
   onEditContact,
   onOpenAiDraft,
   onOpenLogEncounter,
+  onOpenVoiceNote,
   onUpdateContact,
   interactions = [],
   now,
@@ -481,6 +484,16 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                 <span>Panggil</span>
               </a>
             </div>
+
+            <button
+              type="button"
+              data-tour="dossier-voice"
+              onClick={() => onOpenVoiceNote?.(contact)}
+              className="w-full min-h-[42px] bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-xs font-bold active:scale-[0.98] transition-all"
+            >
+              <Mic className="w-4 h-4" />
+              <span>Catat Kabar dengan Suara</span>
+            </button>
           </div>
 
           {/* Notion-Style Structured Key Information / 10-Properties Grid */}
@@ -509,6 +522,29 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                   SINKRON OTOMATIS
                 </span>
               </div>
+            </div>
+
+            {/* Fakta Penting: durable facts about the person, newest last */}
+            <div className="space-y-1" data-tour="field-facts">
+              <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Fakta Penting</p>
+              {contact.facts && contact.facts.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {contact.facts.map((f) => (
+                    <span
+                      key={`${f.text}-${f.date}`}
+                      title={`Dicatat ${f.date}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/25"
+                    >
+                      {f.text}
+                      <span className="text-[9px] text-blue-400 dark:text-blue-400/70">{f.date.slice(0, 7)}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Belum ada. Fakta seperti "punya anak" atau "punya toko" akan muncul di sini.
+                </p>
+              )}
             </div>
 
             {/* Notion Grid Row 1: Pertama Ketemu (metContext) */}

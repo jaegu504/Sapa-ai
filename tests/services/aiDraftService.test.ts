@@ -3,6 +3,7 @@ import {
   generateDeterministicFallbackDraft,
   generateWhatsAppDraft,
   generateSapaDrafts,
+  describeFollowUpTiming,
 } from '../../src/services/aiDraftService';
 import { Contact } from '../../src/types/crm';
 
@@ -554,5 +555,16 @@ describe('generateSapaDrafts', () => {
     expect(result.drafts[0].text).toBe('Hai Fatih! Lama tak jumpa, gimana kabarmu?');
     expect(result.drafts[1].text).toBe('Yo Fatih! Apa kabar bro? Proyek aplikasi gimana?');
     expect(result.drafts[2].text).toBe('Halo Fatih! Kapan nih ada waktu ngopi bareng?');
+  });
+});
+
+describe('describeFollowUpTiming', () => {
+  const today = new Date(2026, 9, 31);
+  it('labels today, upcoming and past follow-up dates', () => {
+    expect(describeFollowUpTiming('2026-10-31', today)).toContain('HARI INI');
+    expect(describeFollowUpTiming('2026-11-03T09:00', today)).toContain('3 hari lagi');
+    expect(describeFollowUpTiming('2026-10-30', today)).toContain('KEMARIN');
+    expect(describeFollowUpTiming('2026-10-25', today)).toContain('sudah lewat 6 hari');
+    expect(describeFollowUpTiming(null, today)).toBe('-');
   });
 });

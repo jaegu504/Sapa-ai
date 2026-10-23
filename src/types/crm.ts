@@ -12,9 +12,15 @@ export interface Contact {
   metContext: string; // Ketemu di mana & bagaimana
   lastUpdateNotes: string; // Pembaruan kabar terakhir
   possibleFollowUpTopic: string; // Bahan obrolan follow-up berikutnya
+  facts?: ContactFact[]; // Fakta penting yang menetap (punya anak, punya toko, hobi...)
   userId?: string; // Owner user ID (optional for local-first)
   createdAt: string; // ISO datetime
   updatedAt: string; // ISO datetime
+}
+
+export interface ContactFact {
+  text: string;
+  date: string; // YYYY-MM-DD when the fact was recorded
 }
 
 export interface InteractionLog {

@@ -4,6 +4,7 @@ import {
   Settings as SettingsIcon,
   Plus,
   Download,
+  Mic,
   Key,
   Database,
   Sparkles,
@@ -20,6 +21,8 @@ import {
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { TourSpotlight } from './components/tutorial/TourSpotlight';
 import { useTutorial } from './components/tutorial/useTutorial';
+import { VoiceNoteModal } from './components/kinship/VoiceNoteModal';
+import { applyVoiceNote, VoiceNoteResult } from './services/voiceNoteService';
 import { AppUpdateModal } from './components/ui/AppUpdateModal';
 import {
   checkForAppUpdate,
@@ -185,6 +188,7 @@ export const App: React.FC = () => {
   const [isSyncOpen, setIsSyncOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [voiceNote, setVoiceNote] = useState<{ open: boolean; contact: Contact | null }>({ open: false, contact: null });
 
 
   // In-App Software Update State
@@ -223,7 +227,9 @@ export const App: React.FC = () => {
   // First-run guided tutorial (intro + spotlight tour over the real UI)
   const contactExists = useCallback((id: string) => contacts.some((c) => c.id === id), [contacts]);
   const tutorial = useTutorial({
-    context: draftContact
+    context: voiceNote.open
+      ? 'other'
+      : draftContact
       ? 'draft'
       : selectedContact
         ? 'dossier'
@@ -536,6 +542,14 @@ export const App: React.FC = () => {
         if (encounter.talkingPoints) {
           contactUpdates.lastUpdateNotes = encounter.talkingPoints;
         }
+        if (encounter.newFacts && encounter.newFacts.length > 0) {
+          const date = contactUpdates.lastContactedDate as string;
+          const known = new Set((contact.facts ?? []).map((f) => f.text.toLowerCase()));
+          contactUpdates.facts = [
+            ...(contact.facts ?? []),
+            ...encounter.newFacts.filter((t) => !known.has(t.toLowerCase())).map((text) => ({ text, date })),
+          ];
+        }
         await crmDb.contacts.update(contact.id, contactUpdates);
         const updatedContact = { ...contact, ...contactUpdates };
         await scheduleTargetedFollowUpAlarm(updatedContact);
@@ -547,6 +561,31 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to save encounter', err);
       showToast('Gagal mencatat interaksi', 'error');
+    }
+  };
+
+  // Save a reviewed voice note: old kabar goes to the timeline, then the contact is updated.
+  const handleSaveVoiceNote = async (
+    contact: Contact,
+    note: Pick<VoiceNoteResult, 'kabar' | 'facts' | 'topic' | 'followUpDate'>
+  ) => {
+    try {
+      const { updates, archivedKabar } = applyVoiceNote(contact, note);
+      const nowIso = new Date().toISOString();
+      await crmDb.interactions.add({
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `int_${Date.now()}`,
+        contactId: contact.id,
+        date: updates.lastContactedDate as string,
+        type: 'other',
+        notes: archivedKabar ? `Catatan suara • Kabar sebelumnya: ${archivedKabar}` : 'Catatan suara',
+        createdAt: nowIso,
+      });
+      await handleUpdateContact(contact.id, updates);
+      setVoiceNote({ open: false, contact: null });
+      showToast(`Kabar ${contact.name} diperbarui`, 'success');
+    } catch (err) {
+      console.error('Failed to save voice note', err);
+      showToast('Gagal menyimpan catatan suara', 'error');
     }
   };
 
@@ -769,6 +808,16 @@ export const App: React.FC = () => {
             </div>
 
             {/* Quick Header Actions */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setVoiceNote({ open: true, contact: null })}
+                aria-label="Catat Kabar dengan Suara"
+                data-tour="voice-global"
+                className="p-2 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-colors"
+              >
+                <Mic className="w-4 h-4" />
+              </button>
             <div className="flex items-center gap-2" data-tour="add-actions">
               <button
                 type="button"
@@ -788,6 +837,7 @@ export const App: React.FC = () => {
                 <Plus className="w-4 h-4" />
                 <span>Tambah Kontak</span>
               </button>
+            </div>
             </div>
           </div>
         </header>
@@ -1326,6 +1376,7 @@ export const App: React.FC = () => {
             setSelectedContact(null);
             setLogEncounterContact(c);
           }}
+          onOpenVoiceNote={(c) => setVoiceNote({ open: true, contact: c })}
           onUpdateContact={handleUpdateContact}
           interactions={activeInteractionsForSelected}
         />
@@ -1392,6 +1443,13 @@ export const App: React.FC = () => {
         />
 
         {/* First-time Onboarding Modal */}
+        <VoiceNoteModal
+          isOpen={voiceNote.open}
+          contact={voiceNote.contact}
+          contacts={contacts}
+          onClose={() => setVoiceNote({ open: false, contact: null })}
+          onSave={handleSaveVoiceNote}
+        />
         <OnboardingModal
           isOpen={tutorial.showIntro}
           onClose={tutorial.skip}

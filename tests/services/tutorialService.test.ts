@@ -46,8 +46,8 @@ describe('tutorialService', () => {
     expect(nextStepId('whatsapp')).toBeNull();
   });
 
-  it('TOUR_STEPS has 12 steps and field-topic body mentions Draf AI', () => {
-    expect(TOUR_STEPS).toHaveLength(12);
+  it('TOUR_STEPS has 13 steps and field-topic body mentions Draf AI', () => {
+    expect(TOUR_STEPS).toHaveLength(13);
     const topic = TOUR_STEPS.find((s) => s.id === 'field-topic');
     expect(topic?.body).toContain('Draf AI');
     expect(TOUR_STEPS.find((s) => s.id === 'pick-contact')?.hideNext).toBe(true);

@@ -4,6 +4,7 @@ import { normalizePhoneNumber } from './phone';
 export interface WhatsAppLauncherPluginType {
   openWhatsApp(options: { phone: string; text?: string; appType: 'regular' | 'business' }): Promise<void>;
   openAppSettings(): Promise<void>;
+  recognizeSpeech(options?: { language?: string; prompt?: string }): Promise<{ text: string }>;
 }
 
 export const WhatsAppLauncher = registerPlugin<WhatsAppLauncherPluginType>('WhatsAppLauncher');

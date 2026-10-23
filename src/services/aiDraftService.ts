@@ -325,6 +325,24 @@ export function generateDeterministicFallbackDraft(
 /**
  * Returns title label for each sapa angle
  */
+/**
+ * Computed in code (not by the AI) so the draft knows whether the follow-up event is upcoming, today, or past.
+ */
+export function describeFollowUpTiming(nextSpecificFollowUp: string | null | undefined, today: Date = new Date()): string {
+  if (!nextSpecificFollowUp) return '-';
+  const datePart = nextSpecificFollowUp.split('T')[0];
+  const [y, m, d] = datePart.split('-').map(Number);
+  if (!y || !m || !d) return '-';
+  const target = Date.UTC(y, m - 1, d);
+  const base = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.round((target - base) / 86400000);
+  if (diff === 0) return `${datePart}: HARI INI adalah hari H (ucapkan/tanyakan untuk hari ini).`;
+  if (diff === 1) return `${datePart}: BESOK (doakan kelancaran persiapan).`;
+  if (diff > 1) return `${datePart}: ${diff} hari lagi (masih akan datang, doakan kelancaran).`;
+  if (diff === -1) return `${datePart}: KEMARIN (sudah lewat, tanyakan bagaimana hasilnya).`;
+  return `${datePart}: sudah lewat ${-diff} hari (tanyakan bagaimana hasilnya).`;
+}
+
 export function getAngleTitle(angle: SapaAngle, language: SapaLanguage = 'id'): string {
   if (language === 'tr') {
     switch (angle) {
@@ -358,6 +376,7 @@ export async function generateSapaDrafts(
 ): Promise<{ drafts: SapaDraftOption[]; source: 'worker' | 'gemini_direct' | 'groq_direct' | 'offline_rule' }> {
   const { contact, language, previousDrafts = [] } = options;
   const variationIndex = previousDrafts.length;
+  const today = new Date();
 
   const fallbackDrafts: SapaDraftOption[] = [
     {
@@ -396,6 +415,14 @@ export async function generateSapaDrafts(
     `- Konteks Pertemuan: ${contact.metContext || '-'}`,
     `- Catatan Kabar Terakhir: ${contact.lastUpdateNotes || '-'}`,
     `- Catatan Follow-Up / Topik dari Pengguna: ${contact.possibleFollowUpTopic || '-'}`,
+    `- Fakta Penting tentang ${contact.name}: ${contact.facts?.map((f) => f.text).join(', ') || '-'}`,
+    `- Hari ini: ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+    `- Jadwal Follow Up: ${describeFollowUpTiming(contact.nextSpecificFollowUp, today)}`,
+    ``,
+    `PERAN (WAJIB): Pengirim pesan = PENGGUNA. Penerima = ${contact.name}. Semua catatan di atas ditulis pengguna TENTANG ${contact.name}: "dia/beliau" = ${contact.name}, "aku/saya" = pengguna. Tulis pesan dari pengguna LANGSUNG kepada ${contact.name} sebagai lawan bicara, jangan pernah menyebut ${contact.name} sebagai orang ketiga.`,
+    `Contoh: catatan "dia baru buka toko, aku janji mampir" untuk Ahmad menjadi "Ahmad, selamat ya atas toko barunya! Insya Allah saya mampir dalam waktu dekat."`,
+    ``,
+    `WAKTU (WAJIB): Kata waktu di catatan ("minggu depan", "besok") ditulis pada masa lalu dan bisa sudah tidak berlaku. Selalu ikuti baris "Hari ini" dan "Jadwal Follow Up" di atas untuk menentukan apakah acaranya akan datang, hari ini, atau sudah lewat.`,
     ``,
     `ATURAN EMAS INTENT & BAHASA (SANGAT KRUSIAL):`,
     `1. PENGOLAHAN INTENSI (JANGAN SALIN MENTAH-MENTAH): Catatan follow-up / kabar di atas ditulis secara singkat atau kasar oleh pengguna sebagai pengingat pribadinya (sering kali dalam Bahasa Indonesia). JANGAN PERNAH menyalin, mengutip, atau menempelkan kata-kata catatan tersebut mentah-mentah ke dalam draf!`,

@@ -4,14 +4,44 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.Settings;
+import android.speech.RecognizerIntent;
+import androidx.activity.result.ActivityResult;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 
 @CapacitorPlugin(name = "WhatsAppLauncher")
 public class WhatsAppLauncherPlugin extends Plugin {
+
+    // Uses the phone's own speech recognizer UI: free, no RECORD_AUDIO permission needed in Sapa.
+    @PluginMethod
+    public void recognizeSpeech(PluginCall call) {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, call.getString("language", "id-ID"));
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, call.getString("prompt", "Ceritakan kabarnya..."));
+        try {
+            startActivityForResult(call, intent, "speechResult");
+        } catch (ActivityNotFoundException e) {
+            call.reject("Speech recognition not available", "UNAVAILABLE");
+        }
+    }
+
+    @ActivityCallback
+    private void speechResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        Intent data = result.getData();
+        ArrayList<String> matches =
+            data != null ? data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS) : null;
+        JSObject ret = new JSObject();
+        ret.put("text", matches != null && !matches.isEmpty() ? matches.get(0) : "");
+        call.resolve(ret);
+    }
 
     @PluginMethod
     public void openAppSettings(PluginCall call) {

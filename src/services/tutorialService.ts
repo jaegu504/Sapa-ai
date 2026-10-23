@@ -9,6 +9,7 @@ export type TourStepId =
   | 'field-notes'
   | 'field-topic'
   | 'field-schedule'
+  | 'voice-note'
   | 'jadwal-tab'
   | 'draft-ai'
   | 'draft-pick'
@@ -107,6 +108,14 @@ export const TOUR_STEPS: TourStep[] = [
     advance: 'next',
     title: 'Jadwal & Ritme Sapa',
     body: 'Atur tanggal follow up khusus untuk mendapat alarm, dan Ritme Sapa (hari) supaya Sapa mengingatkan Anda secara berkala.',
+  },
+  {
+    id: 'voice-note',
+    target: 'dossier-voice',
+    context: 'dossier',
+    advance: 'next',
+    title: 'Catat Kabar dengan Suara',
+    body: 'Habis ngobrol dan dapat kabar baru? Ketuk tombol ini lalu cukup bercerita, misalnya "anaknya baru lahir, tanggal 31 dia buka toko". Sapa merapikannya ke kolom kabar, Fakta Penting, bahan obrolan, dan jadwal follow up. Anda periksa dulu, lalu ketuk Perbarui. Tombol mikrofon juga ada di bagian atas layar utama.',
   },
   {
     id: 'jadwal-tab',

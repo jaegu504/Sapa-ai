@@ -52,7 +52,7 @@ describe('useTutorial', () => {
   });
 
   it('jadwal-tab closes the open contact and draft-ai reopens it', () => {
-    saveTutorialState({ status: 'tour', stepId: 'field-schedule', contactId: 'c1' });
+    saveTutorialState({ status: 'tour', stepId: 'voice-note', contactId: 'c1' });
     const { result, opts, rerender } = setup({ context: 'dossier', selectedContactId: 'c1' });
     act(() => result.current.next());
     expect(result.current.currentStep?.id).toBe('jadwal-tab');
