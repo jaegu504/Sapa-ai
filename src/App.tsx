@@ -344,7 +344,7 @@ export const App: React.FC = () => {
         showToast(`Aplikasi Sapa sudah versi terbaru (v${CURRENT_APP_VERSION}) ✨`, 'info');
       }
     } catch {
-      showToast('Gagal memeriksa pembaruan. Pastikan perangkat terhubung internet.', 'error');
+      showToast('Gagal memeriksa pembaruan. Periksa internet, lalu coba lagi beberapa saat lagi.', 'error');
     } finally {
       setIsCheckingUpdate(false);
     }

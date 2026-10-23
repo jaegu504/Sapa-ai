@@ -109,17 +109,27 @@ export async function checkForAppUpdate(
   }
 
   try {
-    const res = await fetcher(`https://api.github.com/repos/${repo}/releases/latest`, {
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
-
-    if (!res.ok) {
-      return defaultResult;
+    // latest.json on raw.githubusercontent.com has no API rate limit (the API allows only 60 checks/hour
+    // per IP, which shared mobile/WiFi IPs exhaust). Same shape as the releases API, which stays as fallback.
+    let data: any = null;
+    for (const url of [
+      `https://raw.githubusercontent.com/${repo}/main/latest.json`,
+      `https://api.github.com/repos/${repo}/releases/latest`,
+    ]) {
+      try {
+        const res = await fetcher(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (res.ok) {
+          data = await res.json();
+          if (data?.tag_name) break;
+        }
+      } catch {
+        // try the next source
+      }
+    }
+    if (!data?.tag_name) {
+      throw new Error('Update check failed');
     }
 
-    const data = await res.json();
     const tagName = (data.tag_name || '').trim();
     const cleanLatest = tagName.replace(/^v/i, '');
 
@@ -174,8 +184,9 @@ export async function checkForAppUpdate(
 
     return result;
   } catch (err) {
+    // Surface the failure so the UI does not wrongly claim the app is up to date.
     console.warn('[updateService] Failed to check for app updates:', err);
-    return defaultResult;
+    throw err;
   }
 }
 

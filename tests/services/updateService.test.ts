@@ -178,17 +178,29 @@ describe('updateService', () => {
       expect(notifModule.scheduleAppUpdateNotification).not.toHaveBeenCalled();
     });
 
-    it('handles network error safely', async () => {
+    it('reports a failed check instead of claiming the app is up to date', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'));
+      await expect(
+        checkForAppUpdate({ currentVersion: '1.0.0', fetchFn: mockFetch as any, force: true })
+      ).rejects.toThrow();
+    });
 
-      const result = await checkForAppUpdate({
-        currentVersion: '1.0.0',
-        fetchFn: mockFetch as any,
-        force: true,
-      });
+    it('reads latest.json first and falls back to the releases API when it is missing', async () => {
+      const release = { tag_name: 'v2.0.0', body: 'notes', assets: [] };
+      const okJson = (data: unknown) => ({ ok: true, json: async () => data });
+      const rawOnly = vi.fn().mockResolvedValueOnce(okJson(release));
+      const fromRaw = await checkForAppUpdate({ currentVersion: '1.0.0', fetchFn: rawOnly as any, force: true, notify: false });
+      expect(fromRaw.latestVersion).toBe('2.0.0');
+      expect(rawOnly).toHaveBeenCalledTimes(1);
+      expect(rawOnly.mock.calls[0][0]).toContain('raw.githubusercontent.com');
 
-      expect(result.hasUpdate).toBe(false);
-      expect(result.currentVersion).toBe('1.0.0');
+      const apiFallback = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) })
+        .mockResolvedValueOnce(okJson(release));
+      const fromApi = await checkForAppUpdate({ currentVersion: '1.0.0', fetchFn: apiFallback as any, force: true, notify: false });
+      expect(fromApi.hasUpdate).toBe(true);
+      expect(apiFallback.mock.calls[1][0]).toContain('api.github.com');
     });
   });
 
