@@ -307,6 +307,37 @@ describe('KinshipContactDossierModal', () => {
     });
   });
 
+  it('lets the cycle days input be cleared and retyped without snapping back', async () => {
+    const onUpdateContact = vi.fn().mockResolvedValue(undefined);
+    render(
+      <KinshipContactDossierModal
+        contact={mockContact}
+        isOpen={true}
+        onClose={vi.fn()}
+        onUpdateContact={onUpdateContact}
+      />
+    );
+
+    const cycleInput = screen.getByLabelText(/Ritme Sapa/i) as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(cycleInput, { target: { value: '' } });
+    });
+    expect(cycleInput.value).toBe('');
+    expect(onUpdateContact).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.change(cycleInput, { target: { value: '30' } });
+    });
+    expect(onUpdateContact).toHaveBeenCalledWith('contact-1', { followUpCycleDays: 30 });
+
+    // Leaving the field empty restores the saved value
+    await act(async () => {
+      fireEvent.change(cycleInput, { target: { value: '' } });
+      fireEvent.blur(cycleInput);
+    });
+    expect(cycleInput.value).toBe(String(mockContact.followUpCycleDays ?? 15));
+  });
+
   it('renders recent interaction timeline entries', () => {
     render(
       <KinshipContactDossierModal

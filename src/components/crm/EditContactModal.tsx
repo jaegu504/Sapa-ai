@@ -25,7 +25,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [associations, setAssociations] = useState<string[]>(['Teman']);
   const [isProfessional, setIsProfessional] = useState<boolean>(false);
-  const [followUpCycleDays, setFollowUpCycleDays] = useState<number>(15);
+  const [followUpCycleDays, setFollowUpCycleDays] = useState<number | ''>(15);
   const [lastContactedDate, setLastContactedDate] = useState<string>('');
   const [nextSpecificFollowUp, setNextSpecificFollowUp] = useState<string>('');
   const [metContext, setMetContext] = useState<string>('');
@@ -280,7 +280,10 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
                 type="number"
                 min="1"
                 value={followUpCycleDays}
-                onChange={(e) => setFollowUpCycleDays(parseInt(e.target.value, 10) || 1)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setFollowUpCycleDays(isNaN(val) ? '' : Math.max(1, val));
+                }}
                 className="w-full px-3 py-2 text-sm bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2F54EB]/20 focus:border-[#2F54EB] dark:focus:border-cyan-400 transition-all text-slate-900 dark:text-white"
               />
             </div>

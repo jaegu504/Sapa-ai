@@ -159,7 +159,8 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
   const [lastContactedDate, setLastContactedDate] = useState<string>(
     contact.lastContactedDate || ''
   );
-  const [followUpCycleDays, setFollowUpCycleDays] = useState<number>(
+  // '' lets the user clear the field while typing; only valid numbers are saved
+  const [followUpCycleDays, setFollowUpCycleDays] = useState<number | ''>(
     contact.followUpCycleDays ?? 15
   );
   const [isStarred, setIsStarred] = useState<boolean>(false);
@@ -699,9 +700,19 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                   aria-label="Ritme Sapa"
                   value={followUpCycleDays}
                   onChange={(e) => {
-                    const val = parseInt(e.target.value, 10) || 15;
-                    setFollowUpCycleDays(val);
-                    handleUpdate({ followUpCycleDays: val });
+                    const val = parseInt(e.target.value, 10);
+                    if (isNaN(val)) {
+                      setFollowUpCycleDays('');
+                      return;
+                    }
+                    const valid = Math.min(365, Math.max(1, val));
+                    setFollowUpCycleDays(valid);
+                    handleUpdate({ followUpCycleDays: valid });
+                  }}
+                  onBlur={() => {
+                    if (followUpCycleDays === '') {
+                      setFollowUpCycleDays(contact.followUpCycleDays ?? 15);
+                    }
                   }}
                   className="w-full text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
                 />
