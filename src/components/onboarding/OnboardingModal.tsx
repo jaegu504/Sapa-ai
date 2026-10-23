@@ -11,10 +11,16 @@ import {
   Layers,
 } from 'lucide-react';
 
+import { PermissionStep } from './PermissionStep';
+import sapaLogo from '../../assets/logo.png';
+
 export interface OnboardingModalProps {
   isOpen: boolean;
+  /** Lewati: closes the intro and skips the guided tour. */
   onClose: () => void;
   onComplete?: () => void;
+  /** Called after the permission screen's "Mulai Tutorial"; defaults to the skip path. */
+  onFinish?: () => void;
 }
 
 export const ONBOARDING_STORAGE_KEY = 'sapa_onboarding_completed';
@@ -23,12 +29,28 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   isOpen,
   onClose,
   onComplete,
+  onFinish,
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showPermissions, setShowPermissions] = useState(false);
 
   if (!isOpen) return null;
 
   const slides = [
+    {
+      id: 'welcome',
+      badge: 'Selamat Datang',
+      title: "Assalamu'alaikum, Selamat Datang di Sapa",
+      description:
+        'Sapa membantu Anda menjaga silaturahmi: mengingatkan siapa yang sudah waktunya disapa, mencatat kabar mereka, dan membantu menyusun pesan WhatsApp yang santun.',
+      visual: (
+        <img src={sapaLogo} alt="Sapa Logo" className="w-28 h-28 mx-auto rounded-[28px] shadow-xl object-cover" />
+      ),
+      highlights: [
+        { icon: Heart, label: 'Ingat Siapa Disapa', desc: 'Pengingat sesuai ritme tiap relasi' },
+        { icon: Sparkles, label: 'Pesan Lebih Santun', desc: 'Draf AI dari catatan Anda' },
+      ],
+    },
     {
       id: 'radar',
       badge: 'Denyut & Radar Sapa',
@@ -163,8 +185,21 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     if (currentSlide < slides.length - 1) {
       setCurrentSlide((prev) => prev + 1);
     } else {
-      handleFinish();
+      setShowPermissions(true);
     }
+  };
+
+  const handleStartTour = () => {
+    if (!onFinish) {
+      handleFinish();
+      return;
+    }
+    try {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    } catch {
+      // Ignore localStorage failures
+    }
+    onFinish();
   };
 
   const handlePrev = () => {
@@ -187,7 +222,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         {/* Top Header Actions */}
         <div className="flex items-center justify-between pb-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400">
-            {activeSlide.badge}
+            {showPermissions ? 'Izin Akses' : activeSlide.badge}
           </span>
           <button
             type="button"
@@ -198,6 +233,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           </button>
         </div>
 
+        {showPermissions ? (
+          <PermissionStep onContinue={handleStartTour} />
+        ) : (
+        <>
         {/* Slide Visual Graphic */}
         <div className="my-auto py-2">
           {activeSlide.visual}
@@ -284,15 +323,17 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             ) : (
               <button
                 type="button"
-                onClick={handleFinish}
+                onClick={handleNext}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all active:scale-95"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Mulai Bersilaturahmi</span>
+                <span>Lanjutkan</span>
               </button>
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
