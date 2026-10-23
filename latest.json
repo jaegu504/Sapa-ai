@@ -1,13 +1,13 @@
 {
-  "tag_name": "v1.2.2",
-  "name": "Sapa-ai v1.2.2 — Pemeriksa Pembaruan Lebih Andal",
-  "body": "## 🛠️ Sapa-ai v1.2.2 — Pemeriksa Pembaruan Lebih Andal\n\n### 🐞 Perbaikan Bug\n- **Pemeriksa pembaruan kini lebih andal**: sebelumnya, kalau banyak HP memakai jaringan yang sama (WiFi kantor/kampus atau sinyal operator tertentu), pengecekan update bisa gagal tanpa ketahuan, dan aplikasi malah menulis \"sudah versi terbaru\". Sekarang Sapa memakai sumber pembaruan yang tidak dibatasi, dan kalau pengecekan benar-benar gagal, Sapa akan bilang gagal dengan jujur.\n\n### 📱 Download Android APK\nDownload file **`sapa-ai-v1.2.2.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.2.2",
-  "published_at": "2026-10-23T14:35:46Z",
+  "tag_name": "v1.3.0",
+  "name": "Sapa-ai v1.3.0 — Tombol Suara di Tengah & Label Sendiri",
+  "body": "## ✨ Sapa-ai v1.3.0 — Tombol Suara di Tengah & Label Sendiri\n\n### 🎙️ Tombol Mikrofon di Tengah\n- Tombol **Catat Kabar dengan Suara** kini besar di **tengah bawah layar**, di antara Kontak dan Jadwal. Tinggal buka aplikasi, ketuk tombol tengah, lalu bercerita.\n\n### 🏷️ Label Relasi Buatan Sendiri\n- Buka menu **☰** (kiri atas). Di bagian **Label Relasi**, Anda bisa **menambah label sendiri** (misalnya _Tetangga_, _Alumni Pesantren_), **mengubah nama**, atau **menghapus** label.\n- Label baru langsung muncul di semua pilihan label kontak. Mengubah nama atau menghapus label ikut memperbarui semua kontak yang memakainya.\n\n### 🔎 Filter yang Benar-Benar Berfungsi\n- **Ketuk sebuah label** di menu ☰ untuk langsung melihat daftar kontak berlabel itu.\n- **Pintasan Filter Pintar** (Perlu Disapa, Jadwal 7 Hari ke Depan, Belum Pernah Disapa) kini benar-benar menyaring daftar kontak. Ketuk ✕ pada label filter untuk kembali ke semua kontak.\n- Tombol 🔔 di Radar kini langsung membuka **kontak yang perlu disapa**.\n\n### 🧹 Lebih Rapi\n- Tombol sinkronisasi kecil di Radar yang dobel dengan **Impor HP** dihapus.\n\n### 📱 Download Android APK\nDownload file **`sapa-ai-v1.3.0.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.3.0",
+  "published_at": "2026-10-23T15:24:23Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.2.2.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.2.2/sapa-ai-v1.2.2.apk"
+      "name": "sapa-ai-v1.3.0.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.3.0/sapa-ai-v1.3.0.apk"
     }
   ]
 }
