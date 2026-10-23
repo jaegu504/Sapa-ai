@@ -124,7 +124,7 @@ function isNativePlatform(): boolean {
   );
 }
 
-function getContactsPlugin(): any {
+export function getContactsPlugin(): any {
   if (typeof window !== 'undefined') {
     const custom = (window as any).Capacitor?.Plugins?.Contacts || (window as any).Contacts;
     if (custom) {

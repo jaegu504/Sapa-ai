@@ -3,6 +3,7 @@ import { normalizePhoneNumber } from './phone';
 
 export interface WhatsAppLauncherPluginType {
   openWhatsApp(options: { phone: string; text?: string; appType: 'regular' | 'business' }): Promise<void>;
+  openAppSettings(): Promise<void>;
 }
 
 export const WhatsAppLauncher = registerPlugin<WhatsAppLauncherPluginType>('WhatsAppLauncher');
