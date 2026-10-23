@@ -91,9 +91,16 @@ export async function checkForAppUpdate(
       const cachedStr = localStorage.getItem(UPDATE_STORAGE_KEY);
       if (cachedStr) {
         const cached: UpdateCheckResult = JSON.parse(cachedStr);
-        if (Date.now() - cached.checkedAt < FOUR_HOURS_MS) {
-          // If cached check already knows there's an update, check if user dismissed it
-          return cached;
+        // The cache survives an APK upgrade, so only trust it if it was
+        // produced by this same installed version.
+        if (
+          cached.currentVersion === currentVersion &&
+          Date.now() - cached.checkedAt < FOUR_HOURS_MS
+        ) {
+          return {
+            ...cached,
+            hasUpdate: compareVersions(cached.latestVersion, currentVersion) > 0,
+          };
         }
       }
     } catch {
