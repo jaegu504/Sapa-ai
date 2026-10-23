@@ -115,7 +115,7 @@ export const TOUR_STEPS: TourStep[] = [
     context: 'dossier',
     advance: 'next',
     title: 'Catat Kabar dengan Suara',
-    body: 'Habis ngobrol dan dapat kabar baru? Ketuk tombol ini lalu cukup bercerita, misalnya "anaknya baru lahir, tanggal 31 dia buka toko". Sapa merapikannya ke kolom kabar, Fakta Penting, bahan obrolan, dan jadwal follow up. Anda periksa dulu, lalu ketuk Perbarui. Tombol mikrofon juga ada di bagian atas layar utama.',
+    body: 'Habis ngobrol dan dapat kabar baru? Ketuk tombol ini lalu cukup bercerita, misalnya "anaknya baru lahir, tanggal 31 dia buka toko". Sapa merapikannya ke kolom kabar, Fakta Penting, bahan obrolan, dan jadwal follow up. Anda periksa dulu, lalu ketuk Perbarui. Tombol mikrofon besar juga ada di tengah bawah layar, jadi bisa langsung dipakai dari mana saja.',
   },
   {
     id: 'jadwal-tab',

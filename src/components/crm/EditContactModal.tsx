@@ -1,3 +1,4 @@
+import { getLabels } from '../../services/labelService';
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Edit3, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import type { Contact } from '../../types/crm';
@@ -10,7 +11,6 @@ export interface EditContactModalProps {
   onDelete?: (contactId: string) => void;
 }
 
-const ASSOCIATION_OPTIONS = ['Ihvan', 'Hoca', 'Keluarga', 'Zahiri', 'Teman'];
 
 export const EditContactModal: React.FC<EditContactModalProps> = ({
   contact,
@@ -229,7 +229,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
               Asosiasi Relasi
             </label>
             <div className="flex flex-wrap gap-1.5">
-              {ASSOCIATION_OPTIONS.map((assoc) => {
+              {getLabels().filter((l) => l !== 'Profesional').map((assoc) => {
                 const active = associations.includes(assoc);
                 return (
                   <button

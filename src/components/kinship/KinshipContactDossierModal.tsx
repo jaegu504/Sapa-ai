@@ -23,6 +23,7 @@ import { Contact, InteractionLog } from '../../types/crm';
 import { calculateContactStatus, getDaysLeftOrOverdue } from '../../utils/status';
 import { CadenceBadge } from './CadenceBadge';
 import { DualWhatsAppButton } from './DualWhatsAppButton';
+import { getLabels } from '../../services/labelService';
 
 export interface KinshipContactDossierModalProps {
   contact: Contact | null;
@@ -128,14 +129,6 @@ function getInteractionTypeBadge(type: string) {
   }
 }
 
-const AVAILABLE_ASSOCIATIONS = [
-  'Ihvan',
-  'Hoca',
-  'Keluarga',
-  'Zahiri',
-  'Teman',
-  'Profesional',
-] as const;
 
 export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProps> = ({
   contact,
@@ -397,7 +390,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                       Pilih Label / Hubungan:
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {AVAILABLE_ASSOCIATIONS.map((assoc) => {
+                      {getLabels().map((assoc) => {
                         const isSelected =
                           assoc === 'Profesional'
                             ? Boolean(contact.isProfessional || contact.associations?.includes('Profesional'))

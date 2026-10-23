@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   X,
   Activity,
@@ -11,7 +11,11 @@ import {
   MessageSquare,
   ShieldCheck,
   Tag,
+  Pencil,
+  Trash2,
+  Plus,
 } from 'lucide-react';
+import { getLabels, addLabel, saveLabels } from '../../services/labelService';
 import { Contact, InteractionLog } from '../../types/crm';
 import { calculateContactStatus } from '../../utils/status';
 
@@ -21,12 +25,15 @@ export interface NavigationDrawerProps {
   contacts: Contact[];
   interactions: InteractionLog[];
   onSelectFilter?: (filterType: 'all' | 'overdue' | 'week' | 'never_contacted') => void;
+  /** Open Kontak filtered by this label. */
+  onSelectLabel?: (label: string) => void;
+  /** Rename (to = new name) or remove (to = null) a label on every contact. */
+  onRemapLabel?: (from: string, to: string | null) => Promise<void> | void;
   onExportBackup: () => void;
   onImportBackup: (jsonData: string) => Promise<void>;
   now?: Date;
 }
 
-const CATEGORIES = ['Ihvan', 'Hoca', 'Keluarga', 'Zahiri', 'Teman', 'Profesional'] as const;
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   isOpen,
@@ -34,11 +41,16 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   contacts,
   interactions,
   onSelectFilter,
+  onSelectLabel,
+  onRemapLabel,
   onExportBackup,
   onImportBackup,
   now = new Date(),
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [labels, setLabels] = useState<string[]>(getLabels);
+  const [newLabel, setNewLabel] = useState('');
+  const [labelError, setLabelError] = useState('');
 
   // Health and overdue calculation
   const { overdueCount, healthScore, activeCount } = useMemo(() => {
@@ -56,7 +68,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   // Category counts
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    CATEGORIES.forEach((cat) => {
+    labels.forEach((cat) => {
       if (cat === 'Profesional') {
         counts[cat] = contacts.filter(
           (c) => c.isProfessional || c.associations.some((a) => a.toLowerCase() === 'profesional')
@@ -68,7 +80,45 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       }
     });
     return counts;
-  }, [contacts]);
+  }, [contacts, labels]);
+
+  const handleAddLabel = () => {
+    const next = addLabel(labels, newLabel);
+    if (!next) {
+      setLabelError('Nama label kosong atau sudah ada.');
+      return;
+    }
+    saveLabels(next);
+    setLabels(next);
+    setNewLabel('');
+    setLabelError('');
+  };
+
+  const handleRenameLabel = async (label: string) => {
+    const to = window.prompt(`Ubah nama label "${label}" menjadi:`, label)?.trim();
+    if (!to || to === label) return;
+    if (labels.some((l) => l !== label && l.toLowerCase() === to.toLowerCase())) {
+      setLabelError(`Label "${to}" sudah ada.`);
+      return;
+    }
+    const next = labels.map((l) => (l === label ? to : l));
+    saveLabels(next);
+    setLabels(next);
+    setLabelError('');
+    await onRemapLabel?.(label, to);
+  };
+
+  const handleRemoveLabel = async (label: string) => {
+    const count = categoryCounts[label] || 0;
+    const msg = count
+      ? `Hapus label "${label}"? Label ini juga akan dilepas dari ${count} kontak.`
+      : `Hapus label "${label}"?`;
+    if (!window.confirm(msg)) return;
+    const next = labels.filter((l) => l !== label);
+    saveLabels(next);
+    setLabels(next);
+    await onRemapLabel?.(label, null);
+  };
 
   // Sorted recent interaction logs
   const recentLogs = useMemo(() => {
@@ -169,24 +219,69 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <div className="space-y-2 pt-1">
               <span className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                 <Tag className="w-3.5 h-3.5 text-slate-400" />
-                <span>Distribusi Kategori Relasi</span>
+                <span>Label Relasi (ketuk untuk melihat kontaknya)</span>
               </span>
-              <div className="grid grid-cols-2 gap-2">
-                {CATEGORIES.map((cat) => (
+              <div className="space-y-1.5">
+                {labels.map((cat) => (
                   <div
                     key={cat}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 hover:bg-slate-100/70 dark:hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-1.5 p-1.5 pl-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10"
                   >
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{cat}</span>
-                    <span
-                      data-testid={`category-count-${cat.toLowerCase()}`}
-                      className="px-2 py-0.5 rounded-full text-xs font-bold bg-white dark:bg-white/15 text-[#2F54EB] dark:text-blue-400 border border-blue-100 dark:border-white/15 shadow-2xs"
+                    <button
+                      type="button"
+                      aria-label={`Lihat kontak berlabel ${cat}`}
+                      onClick={() => {
+                        onSelectLabel?.(cat);
+                        onClose();
+                      }}
+                      className="flex-1 min-w-0 flex items-center justify-between gap-2 text-left"
                     >
-                      {categoryCounts[cat] || 0}
-                    </span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{cat}</span>
+                      <span
+                        data-testid={`category-count-${cat.toLowerCase()}`}
+                        className="px-2 py-0.5 rounded-full text-xs font-bold bg-white dark:bg-white/15 text-[#2F54EB] dark:text-blue-400 border border-blue-100 dark:border-white/15 shadow-2xs"
+                      >
+                        {categoryCounts[cat] || 0}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Ubah nama label ${cat}`}
+                      onClick={() => handleRenameLabel(cat)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-white/10"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Hapus label ${cat}`}
+                      onClick={() => handleRemoveLabel(cat)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-white/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>
+              <div className="flex items-center gap-1.5 pt-1">
+                <input
+                  aria-label="Nama Label Baru"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddLabel()}
+                  placeholder="Tambah label, misal: Tetangga"
+                  className="flex-1 min-w-0 text-xs px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+                <button
+                  type="button"
+                  aria-label="Tambah Label"
+                  onClick={handleAddLabel}
+                  className="p-2 rounded-xl bg-slate-900 dark:bg-blue-600 text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              {labelError && <p className="text-[11px] text-rose-600 dark:text-rose-400">{labelError}</p>}
             </div>
           </section>
 

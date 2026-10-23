@@ -82,16 +82,14 @@ describe('KinshipDashboardView', () => {
     vi.clearAllMocks();
   });
 
-  it('renders top header bar with avatar, title, notification bell with badge, and sync button', () => {
+  it('renders top header bar with avatar, title and the overdue shortcut badge', () => {
     const onOpenNotifications = vi.fn();
-    const onOpenSync = vi.fn();
 
     render(
       <KinshipDashboardView
         contacts={mockContacts}
         onSelectContact={vi.fn()}
         onOpenNotifications={onOpenNotifications}
-        onOpenSync={onOpenSync}
         now={referenceDate}
       />
     );
@@ -104,18 +102,15 @@ describe('KinshipDashboardView', () => {
     expect(screen.getByLabelText('Profil Pengguna')).toBeDefined();
 
     // Notification bell button with overdue count badge (2 due contacts)
-    const bellBtn = screen.getByRole('button', { name: /notifikasi/i });
+    const bellBtn = screen.getByRole('button', { name: /perlu disapa/i });
     expect(bellBtn).toBeDefined();
     expect(screen.getByTestId('notification-badge')).toHaveTextContent('2');
 
     fireEvent.click(bellBtn);
     expect(onOpenNotifications).toHaveBeenCalledTimes(1);
 
-    // Sync button
-    const syncBtn = screen.getByRole('button', { name: /sinkronisasi|impor/i });
-    expect(syncBtn).toBeDefined();
-    fireEvent.click(syncBtn);
-    expect(onOpenSync).toHaveBeenCalledTimes(1);
+    // Duplicate sync button was removed (Impor HP lives in the app header)
+    expect(screen.queryByRole('button', { name: /sinkronisasi/i })).toBeNull();
   });
 
   it('renders Kinship Pulse card with calculated health score and stat pills', () => {

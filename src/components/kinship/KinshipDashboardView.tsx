@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
   Bell,
-  RefreshCw,
   Search,
   X,
   Flame,
@@ -19,7 +18,6 @@ import sapaLogo from '../../assets/logo.png';
 export interface KinshipDashboardViewProps {
   contacts: Contact[];
   onSelectContact: (contact: Contact) => void;
-  onOpenSync?: () => void;
   onOpenNotifications?: () => void;
   onOpenAiDraft?: (contact: Contact) => void;
   onLogChat?: (contact: Contact) => void;
@@ -57,7 +55,6 @@ function getAssociationBadgeClass(assoc?: string): string {
 export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
   contacts,
   onSelectContact,
-  onOpenSync,
   onOpenNotifications,
   onOpenAiDraft,
   onLogChat,
@@ -169,20 +166,10 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick Sync Button */}
-          <button
-            type="button"
-            aria-label="Sinkronisasi Buku Telepon"
-            onClick={onOpenSync}
-            className="w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/80 dark:border-white/15 text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 shadow-xs transition-all active:scale-95 flex items-center justify-center"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-
           {/* Notification Bell Button */}
           <button
             type="button"
-            aria-label="Notifikasi"
+            aria-label="Lihat kontak yang perlu disapa"
             onClick={onOpenNotifications}
             className="relative w-8 h-8 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white/80 dark:border-white/15 text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 shadow-xs transition-all active:scale-95 flex items-center justify-center"
           >

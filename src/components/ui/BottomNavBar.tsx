@@ -17,6 +17,8 @@ export interface BottomNavBarProps {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   tabs?: NavTabItem[];
+  /** Raised main action shown in the middle of the dock (e.g. voice note). */
+  centerAction?: { label: string; icon: React.ReactNode; onClick: () => void; tourId?: string };
 }
 
 const DEFAULT_TABS: NavTabItem[] = [
@@ -30,17 +32,30 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   activeTab,
   onTabChange,
   tabs = DEFAULT_TABS,
+  centerAction,
 }) => {
+  const middle = Math.ceil(tabs.length / 2);
   return (
     <nav
       aria-label="Navigasi Utama"
       className="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-40 rounded-full px-3 py-2 flex justify-around items-center bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl border border-white/90 dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.6)] transition-all"
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const isActive = activeTab === tab.id;
         return (
+          <React.Fragment key={tab.id}>
+          {centerAction && index === middle && (
+            <button
+              type="button"
+              onClick={centerAction.onClick}
+              aria-label={centerAction.label}
+              data-tour={centerAction.tourId}
+              className="-mt-8 w-14 h-14 shrink-0 rounded-full flex items-center justify-center text-white bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 shadow-[0_8px_24px_-4px_rgba(47,84,235,0.6)] border-4 border-[#F2F2F7] dark:border-[#090A0F] active:scale-95 transition-all"
+            >
+              {centerAction.icon}
+            </button>
+          )}
           <button
-            key={tab.id}
             type="button"
             onClick={() => onTabChange(tab.id)}
             aria-label={tab.label}
@@ -61,6 +76,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             </div>
             <span className="text-[10px] mt-0.5 tracking-tight font-medium">{tab.label}</span>
           </button>
+          </React.Fragment>
         );
       })}
     </nav>

@@ -5,6 +5,7 @@ import {
   Plus,
   Download,
   Mic,
+  X,
   Key,
   Database,
   Sparkles,
@@ -23,6 +24,8 @@ import { TourSpotlight } from './components/tutorial/TourSpotlight';
 import { useTutorial } from './components/tutorial/useTutorial';
 import { VoiceNoteModal } from './components/kinship/VoiceNoteModal';
 import { applyVoiceNote, VoiceNoteResult } from './services/voiceNoteService';
+import { applyContactsFilter, describeContactsFilter, ContactsFilter } from './utils/contactFilters';
+import { remapAssociations } from './services/labelService';
 import { AppUpdateModal } from './components/ui/AppUpdateModal';
 import {
   checkForAppUpdate,
@@ -198,6 +201,7 @@ export const App: React.FC = () => {
 
   // Contacts search state
   const [contactsSearch, setContactsSearch] = useState<string>('');
+  const [contactsFilter, setContactsFilter] = useState<ContactsFilter | null>(null);
 
   // Toast Notification State
   const [toast, setToast] = useState<{
@@ -688,16 +692,34 @@ export const App: React.FC = () => {
   };
 
   // Handle drawer filter shortcut selection
+  const showContactsWith = (filter: ContactsFilter | null) => {
+    setContactsFilter(filter);
+    setContactsSearch('');
+    setActiveTab('contacts');
+  };
+
   const handleDrawerSelectFilter = (filterType: 'all' | 'overdue' | 'week' | 'never_contacted') => {
     setIsDrawerOpen(false);
-    if (filterType === 'all') {
-      setActiveTab('radar');
-    } else if (filterType === 'overdue') {
-      setActiveTab('radar');
-    } else if (filterType === 'week') {
-      setActiveTab('notifications');
-    } else if (filterType === 'never_contacted') {
-      setActiveTab('contacts');
+    const map = { all: null, overdue: { kind: 'overdue' }, week: { kind: 'week' }, never_contacted: { kind: 'never' } } as const;
+    showContactsWith(map[filterType] as ContactsFilter | null);
+  };
+
+  // Rename (to) or remove (null) a label on every contact that has it.
+  const handleRemapLabel = async (from: string, to: string | null) => {
+    try {
+      const nowIso = new Date().toISOString();
+      const affected = contacts.filter((c) => c.associations.includes(from));
+      for (const c of affected) {
+        await crmDb.contacts.update(c.id, { associations: remapAssociations(c.associations, from, to), updatedAt: nowIso });
+      }
+      if (contactsFilter?.kind === 'label' && contactsFilter.label === from) {
+        setContactsFilter(to ? { kind: 'label', label: to } : null);
+      }
+      await refreshData();
+      showToast(to ? `Label "${from}" diubah menjadi "${to}"` : `Label "${from}" dihapus`, 'success');
+    } catch (err) {
+      console.error('Failed to update label', err);
+      showToast('Gagal memperbarui label', 'error');
     }
   };
 
@@ -761,8 +783,9 @@ export const App: React.FC = () => {
   // Filtered contacts for 'contacts' tab
   const filteredContacts = useMemo(() => {
     const q = contactsSearch.trim().toLowerCase();
-    if (!q) return contacts;
-    return contacts.filter((c) => {
+    const base = applyContactsFilter(contacts, contactsFilter);
+    if (!q) return base;
+    return base.filter((c) => {
       return (
         c.name.toLowerCase().includes(q) ||
         c.phoneNumber.toLowerCase().includes(q) ||
@@ -770,7 +793,7 @@ export const App: React.FC = () => {
         c.associations.some((a) => a.toLowerCase().includes(q))
       );
     });
-  }, [contacts, contactsSearch]);
+  }, [contacts, contactsSearch, contactsFilter]);
 
   const activeInteractionsForSelected = useMemo(() => {
     if (!selectedContact) return [];
@@ -808,16 +831,6 @@ export const App: React.FC = () => {
             </div>
 
             {/* Quick Header Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setVoiceNote({ open: true, contact: null })}
-                aria-label="Catat Kabar dengan Suara"
-                data-tour="voice-global"
-                className="p-2 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-colors"
-              >
-                <Mic className="w-4 h-4" />
-              </button>
             <div className="flex items-center gap-2" data-tour="add-actions">
               <button
                 type="button"
@@ -838,7 +851,6 @@ export const App: React.FC = () => {
                 <span>Tambah Kontak</span>
               </button>
             </div>
-            </div>
           </div>
         </header>
 
@@ -856,8 +868,7 @@ export const App: React.FC = () => {
                 <KinshipDashboardView
                   contacts={contacts}
                   onSelectContact={(c) => setSelectedContact(c)}
-                  onOpenSync={() => setIsSyncOpen(true)}
-                  onOpenNotifications={() => setActiveTab('notifications')}
+                  onOpenNotifications={() => showContactsWith({ kind: 'overdue' })}
                   onOpenAiDraft={(c) => setDraftContact(c)}
                   onLogChat={(c) => handleLogChat(c)}
                 />
@@ -918,6 +929,22 @@ export const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {contactsFilter && (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/25">
+                        {describeContactsFilter(contactsFilter)} · {filteredContacts.length}
+                        <button
+                          type="button"
+                          aria-label="Hapus Filter"
+                          onClick={() => setContactsFilter(null)}
+                          className="p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-500/25"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    </div>
+                  )}
 
                   {contactsViewMode === 'cards' ? (
                     <div className="space-y-3" data-tour="contact-list">
@@ -1360,6 +1387,12 @@ export const App: React.FC = () => {
             activeTab === 'home' ? 'radar' : activeTab === 'calendar' ? 'notifications' : activeTab
           }
           onTabChange={(tabId) => setActiveTab(tabId)}
+          centerAction={{
+            label: 'Catat Kabar dengan Suara',
+            icon: <Mic className="w-6 h-6" />,
+            onClick: () => setVoiceNote({ open: true, contact: null }),
+            tourId: 'voice-global',
+          }}
         />
 
         {/* Kinship Contact Dossier Modal */}
@@ -1438,6 +1471,11 @@ export const App: React.FC = () => {
           contacts={contacts}
           interactions={interactions}
           onSelectFilter={handleDrawerSelectFilter}
+          onSelectLabel={(label) => {
+            setIsDrawerOpen(false);
+            showContactsWith({ kind: 'label', label });
+          }}
+          onRemapLabel={handleRemapLabel}
           onExportBackup={handleExportBackup}
           onImportBackup={handleImportBackup}
         />
