@@ -1,6 +1,6 @@
 import { scheduleAppUpdateNotification } from './notificationService';
 
-export const CURRENT_APP_VERSION = '1.0.2';
+export const CURRENT_APP_VERSION = '1.0.3';
 export const GITHUB_REPO = 'jaegu504/Sapa-ai';
 export const UPDATE_STORAGE_KEY = 'sapa_last_update_check';
 export const UPDATE_DISMISSED_KEY = 'sapa_dismissed_update_version';
@@ -91,9 +91,16 @@ export async function checkForAppUpdate(
       const cachedStr = localStorage.getItem(UPDATE_STORAGE_KEY);
       if (cachedStr) {
         const cached: UpdateCheckResult = JSON.parse(cachedStr);
-        if (Date.now() - cached.checkedAt < FOUR_HOURS_MS) {
-          // If cached check already knows there's an update, check if user dismissed it
-          return cached;
+        // The cache survives an APK upgrade, so only trust it if it was
+        // produced by this same installed version.
+        if (
+          cached.currentVersion === currentVersion &&
+          Date.now() - cached.checkedAt < FOUR_HOURS_MS
+        ) {
+          return {
+            ...cached,
+            hasUpdate: compareVersions(cached.latestVersion, currentVersion) > 0,
+          };
         }
       }
     } catch {

@@ -123,6 +123,38 @@ describe('updateService', () => {
       expect(result.hasUpdate).toBe(false);
     });
 
+    it('ignores a cached update result from an older installed version', async () => {
+      const cached = {
+        hasUpdate: true,
+        currentVersion: '1.0.1',
+        latestVersion: '1.0.2',
+        releaseNotes: '',
+        releaseUrl: 'https://github.com/jaegu504/Sapa-ai/releases',
+        checkedAt: Date.now() - 1000 * 60,
+      };
+      localStorage.setItem(UPDATE_STORAGE_KEY, JSON.stringify(cached));
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          tag_name: 'v1.0.2',
+          body: '',
+          html_url: 'https://github.com/jaegu504/Sapa-ai/releases/tag/v1.0.2',
+          assets: [],
+        }),
+      });
+
+      const result = await checkForAppUpdate({
+        currentVersion: '1.0.2',
+        fetchFn: mockFetch as any,
+        force: false,
+      });
+
+      expect(mockFetch).toHaveBeenCalled();
+      expect(result.hasUpdate).toBe(false);
+      expect(notifModule.scheduleAppUpdateNotification).not.toHaveBeenCalled();
+    });
+
     it('does not re-notify if user dismissed this specific version', async () => {
       localStorage.setItem(UPDATE_DISMISSED_KEY, '1.1.0');
 
