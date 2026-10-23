@@ -1,0 +1,13 @@
+{
+  "tag_name": "v1.2.2",
+  "name": "Sapa-ai v1.2.2 — Pemeriksa Pembaruan Lebih Andal",
+  "body": "## 🛠️ Sapa-ai v1.2.2 — Pemeriksa Pembaruan Lebih Andal\n\n### 🐞 Perbaikan Bug\n- **Pemeriksa pembaruan kini lebih andal**: sebelumnya, kalau banyak HP memakai jaringan yang sama (WiFi kantor/kampus atau sinyal operator tertentu), pengecekan update bisa gagal tanpa ketahuan, dan aplikasi malah menulis \"sudah versi terbaru\". Sekarang Sapa memakai sumber pembaruan yang tidak dibatasi, dan kalau pengecekan benar-benar gagal, Sapa akan bilang gagal dengan jujur.\n\n### 📱 Download Android APK\nDownload file **`sapa-ai-v1.2.2.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.2.2",
+  "published_at": "2026-10-23T14:35:46Z",
+  "assets": [
+    {
+      "name": "sapa-ai-v1.2.2.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.2.2/sapa-ai-v1.2.2.apk"
+    }
+  ]
+}
