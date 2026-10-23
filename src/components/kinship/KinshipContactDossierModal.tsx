@@ -37,6 +37,15 @@ export interface KinshipContactDossierModalProps {
   now?: Date;
 }
 
+const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+/** "2026-10-24" → "24 Okt 2026" (manual so it reads the same on every phone locale). */
+export function formatFactDate(date: string): string {
+  const [y, m, d] = date.split('T')[0].split('-').map(Number);
+  if (!y || !m || !d || m > 12) return date;
+  return `${d} ${MONTHS_ID[m - 1]} ${y}`;
+}
+
 export function computeDateOffset(baseDate?: Date, daysOffset?: number | null): string | null {
   if (daysOffset === null || daysOffset === undefined) return null;
   const ref = baseDate ? new Date(baseDate) : new Date();
@@ -532,11 +541,11 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                   {contact.facts.map((f) => (
                     <span
                       key={`${f.text}-${f.date}`}
-                      title={`Dicatat ${f.date}`}
+                      title={`Dicatat ${formatFactDate(f.date)}`}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/25"
                     >
                       {f.text}
-                      <span className="text-[9px] text-blue-400 dark:text-blue-400/70">{f.date.slice(0, 7)}</span>
+                      <span className="text-[9px] text-blue-400 dark:text-blue-400/70">{formatFactDate(f.date)}</span>
                     </span>
                   ))}
                 </div>

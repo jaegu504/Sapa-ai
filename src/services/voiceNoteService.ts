@@ -103,14 +103,61 @@ function normalizeName(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').trim();
 }
 
-/** Local name match, so the contact list never leaves the phone. */
-export function matchContactsByName(name: string, contacts: Contact[]): Contact[] {
-  const words = normalizeName(name).split(/\s+/).filter((w) => w.length >= 3);
-  if (words.length === 0) return [];
-  return contacts.filter((c) => {
-    const contactWords = normalizeName(c.name).split(/\s+/);
-    return words.every((w) => contactWords.some((cw) => cw.startsWith(w)));
-  });
+// Spoken titles that are usually not part of the saved contact name.
+const HONORIFICS = new Set([
+  'ustadz', 'ustaz', 'ustad', 'ustadzah', 'ust', 'pak', 'bapak', 'bu', 'ibu', 'mas', 'mbak', 'mba', 'kak', 'kakak',
+  'bang', 'abang', 'om', 'tante', 'dek', 'adik', 'hoca', 'hocam', 'hoja', 'abi', 'abim', 'abla', 'kardes', 'kardesim',
+  'syekh', 'syaikh', 'kyai', 'kiai', 'gus', 'haji', 'hj', 'dr', 'prof', 'sama', 'dengan', 'si',
+]);
+
+function nameTokens(name: string): string[] {
+  return normalizeName(name)
+    .split(/\s+/)
+    .filter((w) => w.length >= 2 && !HONORIFICS.has(w));
+}
+
+function editDistance(a: string, b: string): number {
+  const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = dp[j];
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return dp[b.length];
+}
+
+function wordScore(spoken: string, saved: string): number {
+  if (spoken === saved) return 3;
+  if (spoken.length >= 3 && saved.length >= 3 && (saved.startsWith(spoken) || spoken.startsWith(saved))) return 2;
+  // Speech-to-text spelling slips: "Ahmed" for Ahmad, "Fauzy" for Fauzi.
+  const maxTypos = Math.min(spoken.length, saved.length) >= 7 ? 2 : 1;
+  if (Math.min(spoken.length, saved.length) >= 4 && editDistance(spoken, saved) <= maxTypos) return 1;
+  return 0;
+}
+
+/** Local, typo-tolerant name ranking, so the contact list never leaves the phone. Best match first. */
+export function rankContactsByName(name: string, contacts: Contact[]): { contact: Contact; score: number }[] {
+  const spoken = nameTokens(name);
+  if (spoken.length === 0) return [];
+  return contacts
+    .map((contact) => {
+      const saved = nameTokens(contact.name);
+      const score = spoken.reduce((sum, w) => sum + Math.max(0, ...saved.map((s) => wordScore(w, s))), 0);
+      return { contact, score };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score);
+}
+
+/** The single contact that clearly matches, or null when the user should choose. */
+export function pickConfidentMatch(ranked: { contact: Contact; score: number }[]): Contact | null {
+  const [best, second] = ranked;
+  if (!best || best.score < 2) return null;
+  return !second || second.score < best.score ? best.contact : null;
 }
 
 /** Turns a reviewed voice note into contact updates; the replaced kabar is returned to be kept in the timeline. */

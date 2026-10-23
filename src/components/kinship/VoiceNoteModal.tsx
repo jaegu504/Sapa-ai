@@ -1,8 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Mic, X, Sparkles, Loader2, UserCircle2 } from 'lucide-react';
+import { Mic, X, Sparkles, Loader2, UserCircle2, Search } from 'lucide-react';
 import type { Contact } from '../../types/crm';
 import { isSpeechAvailable, listenOnce } from '../../services/speechService';
-import { extractVoiceNote, matchContactsByName, VoiceNoteResult } from '../../services/voiceNoteService';
+import { extractVoiceNote, rankContactsByName, pickConfidentMatch, VoiceNoteResult } from '../../services/voiceNoteService';
+
+const LANGUAGE_KEY = 'sapa_voice_language';
+const LANGUAGES = [
+  { code: 'id-ID', label: '🇮🇩 ID' },
+  { code: 'tr-TR', label: '🇹🇷 TR' },
+];
+
+function loadLanguage(): string {
+  try {
+    return localStorage.getItem(LANGUAGE_KEY) === 'tr-TR' ? 'tr-TR' : 'id-ID';
+  } catch {
+    return 'id-ID';
+  }
+}
 
 export interface VoiceNoteModalProps {
   isOpen: boolean;
@@ -33,6 +47,8 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
   const [usedFallback, setUsedFallback] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingResult, setPendingResult] = useState<VoiceNoteResult | null>(null);
+  const [search, setSearch] = useState('');
+  const [language, setLanguage] = useState(loadLanguage);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +57,7 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
       setError('');
       setTarget(contact);
       setCandidates([]);
+      setSearch('');
     }
   }, [isOpen, contact]);
 
@@ -50,7 +67,7 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
     setError('');
     setListening(true);
     try {
-      const text = await listenOnce();
+      const text = await listenOnce(language);
       if (text) setTranscript((prev) => (prev ? `${prev} ${text}` : text));
       else setError('Suara tidak terdengar. Coba lagi, atau ketik ceritanya.');
     } catch {
@@ -78,12 +95,15 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
       showReview(result, target);
       return;
     }
-    const matches = matchContactsByName(result.personName, contacts);
-    if (matches.length === 1) {
-      showReview(result, matches[0]);
+    const ranked = rankContactsByName(result.personName, contacts);
+    const confident = pickConfidentMatch(ranked);
+    if (confident) {
+      showReview(result, confident);
     } else {
+      // Closest names first, then everyone else, so the search box covers all contacts.
+      const rankedIds = new Set(ranked.map((r) => r.contact.id));
       setPendingResult(result);
-      setCandidates(matches.length ? matches : contacts);
+      setCandidates([...ranked.map((r) => r.contact), ...contacts.filter((c) => !rankedIds.has(c.id))]);
       setStage('pick');
     }
   };
@@ -125,6 +145,30 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
 
         {stage === 'record' && (
           <div className="space-y-3">
+            <div className="flex justify-center gap-1.5" role="group" aria-label="Bahasa Suara">
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  aria-pressed={language === l.code}
+                  onClick={() => {
+                    setLanguage(l.code);
+                    try {
+                      localStorage.setItem(LANGUAGE_KEY, l.code);
+                    } catch {
+                      // Ignore localStorage failures
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    language === l.code
+                      ? 'bg-slate-900 dark:bg-blue-600 text-white'
+                      : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-col items-center gap-2 py-2">
               <button
                 type="button"
@@ -175,8 +219,20 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
                 ? `Kabar ini tentang siapa? ("${pendingResult.personName}")`
                 : 'Kabar ini tentang siapa?'}
             </p>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                aria-label="Cari Kontak"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari nama kontak..."
+                className={`${field} pl-9`}
+              />
+            </div>
             <div className="max-h-64 overflow-y-auto space-y-1.5">
-              {candidates.map((c) => (
+              {candidates
+                .filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()))
+                .map((c) => (
                 <button
                   key={c.id}
                   type="button"

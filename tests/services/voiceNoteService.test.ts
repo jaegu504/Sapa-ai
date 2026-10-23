@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseVoiceNoteJson,
-  matchContactsByName,
+  rankContactsByName,
+  pickConfidentMatch,
   applyVoiceNote,
   buildVoiceNotePrompt,
 } from '../../src/services/voiceNoteService';
@@ -41,11 +42,22 @@ describe('voiceNoteService', () => {
     expect(parseVoiceNoteJson('tidak ada json')).toBeNull();
   });
 
-  it('matches contacts by spoken first name, accent and case insensitive', () => {
-    const others = [{ ...base, id: 'c2', name: 'Budi' }, { ...base, id: 'c3', name: 'Ahmad Rizki' }];
-    expect(matchContactsByName('ahmad', [base, ...others]).map((c) => c.id)).toEqual(['c1', 'c3']);
-    expect(matchContactsByName('Ahmad Fauzi', [base, ...others]).map((c) => c.id)).toEqual(['c1']);
-    expect(matchContactsByName('', [base])).toEqual([]);
+  it('ranks contacts ignoring honorifics and tolerating spelling slips', () => {
+    const hasan = { ...base, id: 'h', name: 'Hasan' };
+    const ahmadR = { ...base, id: 'r', name: 'Ahmad Rizki' };
+    const budi = { ...base, id: 'b', name: 'Budi' };
+    const all = [base, hasan, ahmadR, budi];
+    // "Ustadz" is dropped, so the saved "Hasan" is a confident match.
+    expect(pickConfidentMatch(rankContactsByName('Ustadz Hasan', all))?.id).toBe('h');
+    // Full name beats a shared first name.
+    expect(pickConfidentMatch(rankContactsByName('Ahmad Fauzi', all))?.id).toBe('c1');
+    // Two Ahmads: ask instead of guessing, both ranked first.
+    const twoAhmads = rankContactsByName('Pak Ahmad', all);
+    expect(pickConfidentMatch(twoAhmads)).toBeNull();
+    expect(twoAhmads.slice(0, 2).map((r) => r.contact.id).sort()).toEqual(['c1', 'r']);
+    // Speech typo "Ahmed Fauzy" still finds Ahmad Fauzi first.
+    expect(rankContactsByName('Ahmed Fauzy', all)[0].contact.id).toBe('c1');
+    expect(rankContactsByName('', all)).toEqual([]);
   });
 
   it('applyVoiceNote archives old kabar, appends only new facts, sets dates', () => {

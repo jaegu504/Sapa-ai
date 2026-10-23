@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { KinshipContactDossierModal } from '../../src/components/kinship/KinshipContactDossierModal';
+import { KinshipContactDossierModal, formatFactDate } from '../../src/components/kinship/KinshipContactDossierModal';
 import { Contact, InteractionLog } from '../../src/types/crm';
 
 describe('KinshipContactDossierModal', () => {
@@ -393,5 +393,13 @@ describe('KinshipContactDossierModal', () => {
       associations: ['Keluarga', 'Ihvan', 'Hoca'],
       isProfessional: true,
     });
+  });
+});
+
+describe('formatFactDate', () => {
+  it('shows day, month and year', () => {
+    expect(formatFactDate('2026-10-24')).toBe('24 Okt 2026');
+    expect(formatFactDate('2026-01-05T09:00')).toBe('5 Jan 2026');
+    expect(formatFactDate('bukan tanggal')).toBe('bukan tanggal');
   });
 });
