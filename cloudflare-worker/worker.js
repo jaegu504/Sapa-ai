@@ -24,7 +24,7 @@ export default {
     }
 
     try {
-      const groqKey = env.GROQ_API_KEY || "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";
+      const groqKey = env.GROQ_API_KEY;
       const geminiKey = env.GEMINI_API_KEY;
 
       const body = await request.json();
