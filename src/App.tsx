@@ -17,7 +17,9 @@ import {
   HelpCircle,
   Rocket,
 } from 'lucide-react';
-import { OnboardingModal, ONBOARDING_STORAGE_KEY } from './components/onboarding/OnboardingModal';
+import { OnboardingModal } from './components/onboarding/OnboardingModal';
+import { TourSpotlight } from './components/tutorial/TourSpotlight';
+import { useTutorial } from './components/tutorial/useTutorial';
 import { AppUpdateModal } from './components/ui/AppUpdateModal';
 import {
   checkForAppUpdate,
@@ -184,14 +186,6 @@ export const App: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
-  // First-time Onboarding Tutorial State
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'true';
-    } catch {
-      return false;
-    }
-  });
 
   // In-App Software Update State
   const [appUpdate, setAppUpdate] = useState<UpdateCheckResult | null>(null);
@@ -225,6 +219,28 @@ export const App: React.FC = () => {
   const hideToast = useCallback(() => {
     setToast((prev) => ({ ...prev, visible: false }));
   }, []);
+
+  // First-run guided tutorial (intro + spotlight tour over the real UI)
+  const contactExists = useCallback((id: string) => contacts.some((c) => c.id === id), [contacts]);
+  const tutorial = useTutorial({
+    context: draftContact
+      ? 'draft'
+      : selectedContact
+        ? 'dossier'
+        : isEditModalOpen || isSyncOpen || logEncounterContact || isDrawerOpen || isUpdateModalOpen
+          ? 'other'
+          : 'shell',
+    ready: !loading,
+    selectedContactId: selectedContact?.id ?? null,
+    contactExists,
+    setActiveTab,
+    openContact: (id) => {
+      const contact = contacts.find((c) => c.id === id);
+      if (contact) setSelectedContact(contact);
+    },
+    closeContact: () => setSelectedContact(null),
+    onComplete: () => showToast('Tutorial selesai 🎉 Selamat menyapa!', 'success'),
+  });
 
   // Auto-hide toast after 3.5s
   useEffect(() => {
@@ -1270,11 +1286,14 @@ export const App: React.FC = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setIsOnboardingOpen(true)}
+                        onClick={() => {
+                          tutorial.replay();
+                          setActiveTab('radar');
+                        }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-colors"
                       >
                         <HelpCircle className="w-3.5 h-3.5" />
-                        <span>Panduan Tutorial</span>
+                        <span>Ulangi Tutorial</span>
                       </button>
                     </div>
                   </div>
@@ -1374,9 +1393,19 @@ export const App: React.FC = () => {
 
         {/* First-time Onboarding Modal */}
         <OnboardingModal
-          isOpen={isOnboardingOpen}
-          onClose={() => setIsOnboardingOpen(false)}
+          isOpen={tutorial.showIntro}
+          onClose={tutorial.skip}
+          onFinish={tutorial.finishIntro}
         />
+        {tutorial.showTour && tutorial.currentStep && (
+          <TourSpotlight
+            step={tutorial.currentStep}
+            stepIndex={tutorial.stepIndex}
+            total={tutorial.total}
+            onNext={tutorial.next}
+            onSkip={tutorial.skip}
+          />
+        )}
 
         {/* In-App Auto Update Modal */}
         <AppUpdateModal

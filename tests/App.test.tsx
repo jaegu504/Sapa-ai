@@ -369,27 +369,27 @@ describe('App Integration', () => {
     render(<App />);
 
     expect(screen.getByTestId('onboarding-modal')).toBeDefined();
-    expect(screen.getByText('Pantau Denyut Silaturahmi')).toBeDefined();
+    expect(screen.getByText("Assalamu'alaikum, Selamat Datang di Sapa")).toBeDefined();
 
     // Click Lewati
     fireEvent.click(screen.getByText('Lewati'));
 
-    expect(localStorage.getItem('sapa_onboarding_completed')).toBe('true');
+    expect(JSON.parse(localStorage.getItem('sapa_tutorial_state') || '{}').status).toBe('done');
     await waitFor(() => {
       expect(screen.queryByTestId('onboarding-modal')).toBeNull();
     });
   });
 
-  it('can open onboarding guide from Settings tab', async () => {
+  it('Ulangi Tutorial in Settings reopens the intro', async () => {
     render(<App />);
 
     const settingsTabBtn = screen.getByRole('button', { name: /^pengaturan$/i });
     fireEvent.click(settingsTabBtn);
 
-    const tutorialBtn = await screen.findByRole('button', { name: /Panduan Tutorial/i });
+    const tutorialBtn = await screen.findByRole('button', { name: /Ulangi Tutorial/i });
     fireEvent.click(tutorialBtn);
 
     expect(screen.getByTestId('onboarding-modal')).toBeDefined();
-    expect(screen.getByText('Pantau Denyut Silaturahmi')).toBeDefined();
+    expect(screen.getByText("Assalamu'alaikum, Selamat Datang di Sapa")).toBeDefined();
   });
 });
