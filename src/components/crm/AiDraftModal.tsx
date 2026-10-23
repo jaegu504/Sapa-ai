@@ -303,7 +303,7 @@ export function AiDraftModal({
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Pilih Sudut Pandang Sapaan
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2" data-tour="draft-options">
                 {draftOptions.map((opt) => {
                   const isSelected = opt.angle === selectedAngle;
                   return (
@@ -400,7 +400,7 @@ export function AiDraftModal({
             >
               Batal
             </button>
-            <div className="flex-1 order-1 sm:order-2">
+            <div className="flex-1 order-1 sm:order-2" data-tour="draft-whatsapp">
               <DualWhatsAppButton
                 phoneNumber={contact.phoneNumber}
                 draftText={draftText}

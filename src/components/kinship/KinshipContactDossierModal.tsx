@@ -465,6 +465,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
 
               <button
                 type="button"
+                data-tour="dossier-draft-ai"
                 onClick={() => onOpenAiDraft?.(contact)}
                 className="min-h-[42px] bg-blue-50 dark:bg-cyan-500/15 text-blue-700 dark:text-cyan-300 hover:bg-blue-100 dark:hover:bg-cyan-500/25 border border-blue-200/70 dark:border-cyan-500/30 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
               >
@@ -511,7 +512,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             </div>
 
             {/* Notion Grid Row 1: Pertama Ketemu (metContext) */}
-            <div className="space-y-1">
+            <div className="space-y-1" data-tour="field-met">
               <label
                 htmlFor="dossier-met-context"
                 className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
@@ -535,7 +536,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             </div>
 
             {/* Notion Grid Row 2: Pembaruan Terakhir (lastUpdateNotes) */}
-            <div className="space-y-1">
+            <div className="space-y-1" data-tour="field-notes">
               <label
                 htmlFor="dossier-last-notes"
                 className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
@@ -559,7 +560,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             </div>
 
             {/* Notion Grid Row 3: Bahan Obrolan Follow Up (possibleFollowUpTopic) */}
-            <div className="space-y-1 bg-emerald-50/40 dark:bg-emerald-950/25 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+            <div data-tour="field-topic" className="space-y-1 bg-emerald-50/40 dark:bg-emerald-950/25 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
               <label
                 htmlFor="dossier-topic"
                 className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300"
@@ -583,7 +584,7 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
             </div>
 
             {/* Notion Grid Row 4: Jadwal Follow Up Khusus (nextSpecificFollowUp) + Quick Chips */}
-            <div className="space-y-1.5 pt-1">
+            <div className="space-y-1.5 pt-1" data-tour="field-schedule">
               <label
                 htmlFor="dossier-next-followup"
                 className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"

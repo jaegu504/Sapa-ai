@@ -44,6 +44,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             type="button"
             onClick={() => onTabChange(tab.id)}
             aria-label={tab.label}
+            data-tour={`nav-${tab.id}`}
             className={`relative flex flex-col items-center justify-center py-1 px-3.5 transition-all duration-200 rounded-full focus:outline-none select-none active:scale-95 ${
               isActive
                 ? 'text-[#2F54EB] dark:text-cyan-400 font-bold bg-blue-500/10 dark:bg-cyan-500/15'

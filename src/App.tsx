@@ -753,7 +753,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Quick Header Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-tour="add-actions">
               <button
                 type="button"
                 onClick={() => setIsSyncOpen(true)}
@@ -854,7 +854,7 @@ export const App: React.FC = () => {
                   </div>
 
                   {contactsViewMode === 'cards' ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3" data-tour="contact-list">
                       {filteredContacts.length === 0 ? (
                         <div className="p-8 text-center bg-white dark:bg-[#1C1C1E]/80 backdrop-blur-xl rounded-3xl border border-dashed border-slate-200 dark:border-white/15">
                           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
