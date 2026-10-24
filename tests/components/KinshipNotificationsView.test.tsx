@@ -1,15 +1,15 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { KinshipNotificationsView } from '../../src/components/kinship/KinshipNotificationsView';
+import { KinshipNotificationsView, buildSchedule } from '../../src/components/kinship/KinshipNotificationsView';
 import { Contact } from '../../src/types/crm';
 import * as notificationService from '../../src/services/notificationService';
-import * as whatsappUtils from '../../src/utils/whatsapp';
 
 vi.mock('../../src/services/notificationService', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/services/notificationService')>();
   return {
     ...actual,
     requestNotificationPermission: vi.fn().mockResolvedValue(true),
+    checkNotificationPermission: vi.fn().mockResolvedValue(false),
     scheduleDailyMorningDigest: vi.fn().mockResolvedValue(1),
   };
 });
@@ -87,251 +87,61 @@ const mockContacts: Contact[] = [
   },
 ];
 
+const laterContact: Contact = {
+  ...mockContacts[3],
+  id: 'c5',
+  name: 'Zeynep',
+  nextSpecificFollowUp: '2026-11-04T09:00',
+  possibleFollowUpTopic: 'Selamat wisuda',
+};
+
 describe('KinshipNotificationsView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem('kinship_digest_time');
   });
 
-  it('renders Top Header Bar with title, subtitle, and status chip', () => {
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        now={referenceDate}
-      />
-    );
-
-    expect(screen.getByText('Jadwal & Pengingat')).toBeDefined();
-    expect(screen.getByText(/Sapaan terencana & agenda minggu ini/i)).toBeDefined();
-    expect(screen.getByText(/🔔 Jam 08:00 WIB Aktif/i)).toBeDefined();
+  it('shows the Jadwal title with the daily reminder time and no time zone label', () => {
+    render(<KinshipNotificationsView contacts={mockContacts} now={referenceDate} />);
+    expect(screen.getByText('Jadwal')).toBeDefined();
+    expect(screen.getByText('Pengingat harian jam 08:00')).toBeDefined();
+    expect(screen.queryByText(/WIB/)).toBeNull();
   });
 
-  it('renders Today Reminders with AI icebreaker suggestion', () => {
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        now={referenceDate}
-      />
-    );
+  it('groups contacts into Hari ini, Minggu ini and Nanti', () => {
+    const { today, week, later } = buildSchedule([...mockContacts, laterContact], referenceDate);
+    expect(today.map((i) => i.contact.id).sort()).toEqual(['c1', 'c2']);
+    expect(week.map((i) => i.contact.id)).toEqual(['c3', 'c4']);
+    expect(later.map((i) => i.contact.id)).toEqual(['c5']);
 
-    // Hero card contact
-    expect(screen.getByText('Raditya Pratama')).toBeDefined();
-    // AI Icebreaker box
-    expect(screen.getAllByText(/Rekomendasi Icebreaker/i)[0]).toBeDefined();
-    expect(screen.getByText(/Tanyakan progres tim baru/i)).toBeDefined();
+    render(<KinshipNotificationsView contacts={[...mockContacts, laterContact]} now={referenceDate} />);
+    expect(screen.getByRole('region', { name: 'Hari ini' })).toHaveTextContent('Raditya Pratama');
+    expect(screen.getByRole('region', { name: 'Minggu ini' })).toHaveTextContent('Budi Santoso');
+    expect(screen.getByRole('region', { name: 'Nanti' })).toHaveTextContent('Zeynep');
   });
 
-  it('provides snooze buttons (+3 Hari, Akhir Pekan, Minggu Depan) and calls onSnoozeContact', async () => {
-    const onSnoozeContact = vi.fn();
-
-    const { unmount } = render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        onSnoozeContact={onSnoozeContact}
-        now={referenceDate}
-      />
-    );
-
-    const snooze3DaysBtn = screen.getAllByRole('button', { name: /\+3 Hari/i })[0];
-    expect(snooze3DaysBtn).toBeDefined();
-    fireEvent.click(snooze3DaysBtn);
-    await waitFor(() => {
-      expect(onSnoozeContact).toHaveBeenCalledWith(expect.objectContaining({ name: 'Raditya Pratama' }), 3);
-    });
-    unmount();
-
-    const render2 = render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        onSnoozeContact={onSnoozeContact}
-        now={referenceDate}
-      />
-    );
-    const snoozeWeekBtn = screen.getAllByRole('button', { name: /Minggu Depan/i })[0];
-    expect(snoozeWeekBtn).toBeDefined();
-    fireEvent.click(snoozeWeekBtn);
-    await waitFor(() => {
-      expect(onSnoozeContact).toHaveBeenCalledWith(expect.objectContaining({ name: 'Raditya Pratama' }), 7);
-    });
-    render2.unmount();
-
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        onSnoozeContact={onSnoozeContact}
-        now={referenceDate}
-      />
-    );
-    const snoozeWeekendBtn = screen.getAllByRole('button', { name: /Akhir Pekan/i })[0];
-    expect(snoozeWeekendBtn).toBeDefined();
-    fireEvent.click(snoozeWeekendBtn);
-    await waitFor(() => {
-      expect(onSnoozeContact).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Raditya Pratama' }),
-        expect.any(Number)
-      );
-    });
-  });
-
-  it('renders dual WhatsApp dispatch buttons', () => {
-    const onLogChat = vi.fn();
-
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        onLogChat={onLogChat}
-        now={referenceDate}
-      />
-    );
-
-    const regularWaBtn = screen.getAllByRole('button', { name: /Kirim via WhatsApp/i })[0];
-    const bizWaBtn = screen.getAllByRole('button', { name: /Kirim via WhatsApp Business/i })[0];
-
-    expect(regularWaBtn).toBeDefined();
-    expect(bizWaBtn).toBeDefined();
-
-    fireEvent.click(regularWaBtn);
-    expect(whatsappUtils.openWhatsApp).toHaveBeenCalledWith(
-      '+628111111111',
-      expect.stringContaining('Tanyakan progres tim baru'),
-      'regular'
-    );
-    expect(onLogChat).toHaveBeenCalled();
-  });
-
-  it('displays Agenda Pekan Ini with upcoming scheduled contacts for the next 7 days', () => {
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        now={referenceDate}
-      />
-    );
-
-    expect(screen.getByText('Agenda Pekan Ini')).toBeDefined();
-    // c3 (Budi Santoso) scheduled for Oct 17
-    expect(screen.getByText('Budi Santoso')).toBeDefined();
-    expect(screen.getByText(/Casual brunch & review roadmap/i)).toBeDefined();
-    // c4 (Sarah Wijaya) scheduled for Oct 19
-    expect(screen.getByText('Sarah Wijaya')).toBeDefined();
-  });
-
-  it('displays Queue & Dispatch Settings with Daily Morning Digest toggle and buttons', async () => {
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        now={referenceDate}
-      />
-    );
-
-    expect(screen.getByText(/Pengaturan Notifikasi & Antrean/i)).toBeDefined();
-    expect(screen.getByText(/Ringkasan Sapaan Pagi \(08:00 WIB\)/i)).toBeDefined();
-
-    const permissionBtn = screen.getByRole('button', { name: /Minta Izin Notifikasi Sistem/i });
-    expect(permissionBtn).toBeDefined();
-
-    const testNotificationBtn = screen.getByRole('button', { name: /Kirim Notifikasi Uji Coba/i });
-    expect(testNotificationBtn).toBeDefined();
-
-    // Click permission button
-    fireEvent.click(permissionBtn);
-    await waitFor(() => {
-      expect(notificationService.requestNotificationPermission).toHaveBeenCalled();
-    });
-
-    // Click test notification button
-    fireEvent.click(testNotificationBtn);
-    await waitFor(() => {
-      expect(notificationService.scheduleDailyMorningDigest).toHaveBeenCalled();
-    });
-  });
-
-  it('shows encouraging empty state card when no catch-ups are due today', () => {
-    const freshContacts: Contact[] = [
-      {
-        id: 'c99',
-        name: 'Ahmad Faiz',
-        phoneNumber: '+628999999999',
-        associations: ['Teman'],
-        isProfessional: false,
-        lastContactedDate: '2026-10-15', // Contacted today
-        followUpCycleDays: 30,
-        nextSpecificFollowUp: null,
-        metContext: '',
-        lastUpdateNotes: '',
-        possibleFollowUpTopic: '',
-        createdAt: '2026-09-01T00:00:00Z',
-        updatedAt: '2026-10-15T00:00:00Z',
-      },
-    ];
-
-    render(
-      <KinshipNotificationsView
-        contacts={freshContacts}
-        now={referenceDate}
-      />
-    );
-
-    expect(screen.getByText(/Semua hubungan dalam ritme harmonis hari ini 🌟/i)).toBeDefined();
-  });
-
-  it('allows switching segmented tabs between Upcoming, Inbox, and Cadence Rules', () => {
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        now={referenceDate}
-      />
-    );
-
-    // Initial tab: Jadwal Sapaan is shown
-    expect(screen.getByText('Pengingat Hari Ini')).toBeDefined();
-
-    // Click Inbox tab
-    const inboxTab = screen.getByRole('button', { name: /Kotak Masuk/i });
-    fireEvent.click(inboxTab);
-    expect(screen.getByText('Pemberitahuan Sistem Terkini')).toBeDefined();
-
-    // Click Cadence tab
-    const cadenceTab = screen.getByRole('button', { name: /Aturan Ritme/i });
-    fireEvent.click(cadenceTab);
-    expect(screen.getByText(/Interval & Ritme Sapaan/i)).toBeDefined();
-    expect(screen.getByText(/Inner Circle/i)).toBeDefined();
-  });
-
-  it('triggers onSelectContact and onOpenAiDraft callbacks when clicked', () => {
+  it('opens the profile on tap and the Sapa choices from the green button', () => {
     const onSelectContact = vi.fn();
-    const onOpenAiDraft = vi.fn();
+    const onSapa = vi.fn();
+    render(<KinshipNotificationsView contacts={mockContacts} onSelectContact={onSelectContact} onSapa={onSapa} now={referenceDate} />);
 
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        onSelectContact={onSelectContact}
-        onOpenAiDraft={onOpenAiDraft}
-        now={referenceDate}
-      />
-    );
-
-    // Click contact name
-    const contactName = screen.getByText('Raditya Pratama');
-    fireEvent.click(contactName);
-    expect(onSelectContact).toHaveBeenCalledWith(expect.objectContaining({ name: 'Raditya Pratama' }));
-
-    // Click AI Draft button
-    const aiDraftButtons = screen.getAllByRole('button', { name: /AI Draft/i });
-    expect(aiDraftButtons.length).toBeGreaterThan(0);
-    fireEvent.click(aiDraftButtons[0]);
-    expect(onOpenAiDraft).toHaveBeenCalledWith(expect.objectContaining({ name: 'Raditya Pratama' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sapa Budi Santoso' }));
+    expect(onSapa).toHaveBeenCalledWith(mockContacts[2]);
+    expect(onSelectContact).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('schedule-item-c3'));
+    expect(onSelectContact).toHaveBeenCalledWith(mockContacts[2]);
   });
 
-  it('dismisses morning digest banner when close button is clicked', () => {
-    render(
-      <KinshipNotificationsView
-        contacts={mockContacts}
-        now={referenceDate}
-      />
-    );
+  it('shows an empty state when nothing is due today', () => {
+    render(<KinshipNotificationsView contacts={[mockContacts[3]]} now={referenceDate} />);
+    expect(screen.getByText('Tidak ada jadwal hari ini')).toBeDefined();
+  });
 
-    expect(screen.getByText('Ringkasan Sapaan Pagi Terkirim')).toBeDefined();
-    const closeBtn = screen.getByRole('button', { name: /Tutup banner digest/i });
-    fireEvent.click(closeBtn);
-    expect(screen.queryByText('Ringkasan Sapaan Pagi Terkirim')).toBeNull();
+  it('asks for notification permission when it is missing', async () => {
+    render(<KinshipNotificationsView contacts={mockContacts} now={referenceDate} />);
+    const allow = await screen.findByRole('button', { name: 'Izinkan' });
+    fireEvent.click(allow);
+    await waitFor(() => expect(notificationService.requestNotificationPermission).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Izinkan' })).toBeNull());
   });
 });

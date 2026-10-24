@@ -148,7 +148,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       badge: 'Pengingat & 100% Privat',
       title: 'Pengingat Pagi & Bebas Cemas',
       description:
-        'Nikmati pengingat jam 08:00 WIB yang tenang tanpa spam. Semua data dan catatan tersimpan 100% lokal di HP Anda.',
+        'Nikmati pengingat pagi yang tenang tanpa spam. Semua data dan catatan tersimpan 100% lokal di HP Anda.',
       visual: (
         <div className="relative w-44 h-44 sm:w-48 sm:h-48 mx-auto flex items-center justify-center">
           <div className="absolute inset-4 bg-gradient-to-tr from-blue-500/15 via-indigo-500/15 to-emerald-400/15 rounded-full pointer-events-none" />
@@ -156,7 +156,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <div className="w-10 h-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md">
               <Clock className="w-5 h-5" />
             </div>
-            <span className="text-base font-extrabold text-slate-800 dark:text-white">08:00 WIB</span>
+            <span className="text-base font-extrabold text-slate-800 dark:text-white">08:00</span>
             <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>100% Offline</span>
@@ -218,7 +218,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       data-testid="onboarding-modal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 animate-fade-in"
     >
-      <div className="relative w-full max-w-md bg-white dark:bg-[#1C1C1E] border border-slate-200/80 dark:border-white/10 rounded-[32px] shadow-2xl p-6 sm:p-7 flex flex-col justify-between min-h-[540px] text-slate-800 dark:text-white overflow-hidden">
+      <div className="animate-rise relative w-full max-w-md bg-white dark:bg-[#1C1C1E] border border-slate-200/80 dark:border-white/10 rounded-[32px] shadow-2xl p-6 sm:p-7 flex flex-col justify-between min-h-[540px] text-slate-800 dark:text-white overflow-hidden">
         {/* Top Header Actions */}
         <div className="flex items-center justify-between pb-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400">

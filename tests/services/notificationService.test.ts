@@ -326,7 +326,7 @@ describe('notificationService', () => {
           expect.objectContaining({
             id: CHANNEL_MORNING_DIGEST,
             name: 'Ringkasan Sapaan Pagi Sapa',
-            description: 'Ringkasan sapaan harian jam 08:00 WIB',
+            description: 'Ringkasan sapaan harian setiap pagi',
             importance: 4,
           })
         );
@@ -354,6 +354,15 @@ describe('notificationService', () => {
     });
 
     describe('scheduleDailyMorningDigest', () => {
+      // Sample dates assume "today" is 2026-10-14; pin the clock so the test does not expire.
+      beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-14T09:00:00'));
+      });
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
       it('schedules 08:00 WIB daily morning digest with overdue contacts count', async () => {
         // Bu Siti is overdue
         const contacts: Contact[] = [sampleContacts[0], sampleContacts[1]];

@@ -13,6 +13,7 @@ export interface Contact {
   lastUpdateNotes: string; // Pembaruan kabar terakhir
   possibleFollowUpTopic: string; // Bahan obrolan follow-up berikutnya
   facts?: ContactFact[]; // Fakta penting yang menetap (punya anak, punya toko, hobi...)
+  source?: 'phone' | 'manual'; // 'phone' = came from (or matches) the phone's contact list; only those can be removed by a re-sync
   userId?: string; // Owner user ID (optional for local-first)
   createdAt: string; // ISO datetime
   updatedAt: string; // ISO datetime

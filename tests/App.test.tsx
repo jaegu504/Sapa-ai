@@ -16,30 +16,25 @@ describe('App Integration', () => {
     cleanup();
   });
 
-  it('renders Sapa header and default Radar tab', async () => {
+  it('renders Radar Sapa and the bottom navigation', async () => {
     render(<App />);
 
-    // Check header title
-    expect(screen.getByText('Sapa')).toBeDefined();
-
-    // Bottom nav tabs should be rendered
     expect(screen.getByRole('button', { name: /^radar$/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /^kontak$/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /^jadwal$/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /^pengaturan$/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /catat kabar dengan suara/i })).toBeDefined();
 
-    // Default Radar (KinshipDashboardView) should display Denyut Sapa
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Denyut Sapa Overview/i)).toBeDefined();
-      expect(screen.getByText(/Cadence Radar/i)).toBeDefined();
-    });
+    expect(await screen.findByText('Radar Sapa')).toBeDefined();
+    expect(screen.getByText('Denyut Sapa')).toBeDefined();
   });
 
-  it('navigates to Kontak tab and toggles between Kinship cards and Notion table view', async () => {
-    const testContact = {
-      id: 'c-toggle-1',
+  it('Kontak tab lists contacts, searches and filters by label', async () => {
+    await crmDb.contacts.bulkAdd([
+      {
+      id: 'c-1',
       name: 'Farhan Maulana',
-      phoneNumber: '+6281234567811',
+      phoneNumber: '+6281234545255',
       associations: ['Teman'],
       isProfessional: false,
       followUpCycleDays: 14,
@@ -50,144 +45,107 @@ describe('App Integration', () => {
       possibleFollowUpTopic: 'Diskusi skripsi',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
-    await crmDb.contacts.add(testContact);
-
+    },
+      {
+      id: 'c-2',
+      name: 'Ibu Aminah',
+      phoneNumber: '+6281234593740',
+            isProfessional: false,
+      followUpCycleDays: 14,
+      lastContactedDate: '2026-10-01',
+      nextSpecificFollowUp: null,
+      metContext: 'Kampus',
+      lastUpdateNotes: 'Kabar baik',
+      possibleFollowUpTopic: 'Diskusi skripsi',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      associations: ['Keluarga'] as string[],
+    },
+    ]);
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^kontak$/i }));
 
-    const contactsTabBtn = screen.getByRole('button', { name: /^kontak$/i });
-    fireEvent.click(contactsTabBtn);
+    expect(await screen.findByTestId('kinship-card-c-1')).toBeDefined();
+    expect(screen.getByTestId('kinship-card-c-2')).toBeDefined();
+    expect(screen.queryByText('Tabel Notion')).toBeNull();
 
-    await waitFor(() => {
-      expect(screen.getByText(/Semua Kontak/i)).toBeDefined();
-      expect(screen.getByRole('button', { name: /tampilan kartu/i })).toBeDefined();
-      expect(screen.getByRole('button', { name: /tampilan tabel notion/i })).toBeDefined();
-      // By default in cards view
-      expect(screen.getByTestId('kinship-card-c-toggle-1')).toBeDefined();
-    });
+    fireEvent.change(screen.getByLabelText('Cari kontak'), { target: { value: 'farhan' } });
+    await waitFor(() => expect(screen.queryByTestId('kinship-card-c-2')).toBeNull());
+    fireEvent.change(screen.getByLabelText('Cari kontak'), { target: { value: '' } });
 
-    // Switch to Notion table view
-    const tableBtn = screen.getByRole('button', { name: /tampilan tabel notion/i });
-    fireEvent.click(tableBtn);
-
-    await waitFor(() => {
-      expect(screen.getByRole('table')).toBeDefined();
-      expect(screen.getAllByText('Farhan Maulana').length).toBeGreaterThanOrEqual(1);
-    });
-
-    // Switch back to Card view
-    const cardsBtn = screen.getByRole('button', { name: /tampilan kartu/i });
-    fireEvent.click(cardsBtn);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('kinship-card-c-toggle-1')).toBeDefined();
-    });
+    fireEvent.click(within(screen.getByLabelText('Filter kontak')).getByRole('button', { name: 'Keluarga' }));
+    await waitFor(() => expect(screen.queryByTestId('kinship-card-c-1')).toBeNull());
+    expect(screen.getByTestId('kinship-card-c-2')).toBeDefined();
   });
 
-  it('navigates to Jadwal tab and displays Kinship notifications', async () => {
+  it('navigates to Jadwal without time zone labels', async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^jadwal$/i }));
 
-    const calendarTabBtn = screen.getByRole('button', { name: /^jadwal$/i });
-    fireEvent.click(calendarTabBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Jadwal & Pengingat/i)).toBeDefined();
-      expect(screen.getByText(/08:00 WIB Aktif/i)).toBeDefined();
-      expect(screen.getByRole('button', { name: /jadwal sapaan/i })).toBeDefined();
-      expect(screen.getByRole('button', { name: /kotak masuk/i })).toBeDefined();
-    });
+    expect(await screen.findByText('Pengingat harian jam 08:00')).toBeDefined();
+    expect(screen.queryByText(/WIB/)).toBeNull();
   });
 
-  it('navigates to Pengaturan tab and configures Gemini API Key', async () => {
+  it('Pengaturan saves a personal AI key under Lanjutan and has no demo data button', async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^pengaturan$/i }));
 
-    const settingsTabBtn = screen.getByRole('button', { name: /^pengaturan$/i });
-    fireEvent.click(settingsTabBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Pengaturan & Konfigurasi/i)).toBeDefined();
-      expect(screen.getByText(/Google Gemini AI API Key/i)).toBeDefined();
-    });
-
-    const apiKeyInput = screen.getByPlaceholderText(/Masukkan Google Gemini API Key/i);
-    fireEvent.change(apiKeyInput, { target: { value: 'AIzaSyTestApiKey12345' } });
-
-    const saveKeyBtn = screen.getByRole('button', { name: /Simpan Kunci/i });
-    fireEvent.click(saveKeyBtn);
+    fireEvent.click(await screen.findByRole('button', { name: /Lanjutan \(kunci AI\)/i }));
+    fireEvent.change(screen.getByLabelText('Kunci AI pribadi'), { target: { value: 'AIzaSyTestApiKey12345' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
 
     await waitFor(() => {
       expect(localStorage.getItem('growSphere_gemini_api_key')).toBe('AIzaSyTestApiKey12345');
-      expect(screen.getByText(/Gemini API Key berhasil disimpan/i)).toBeDefined();
+      expect(screen.getByText('Kunci AI pribadi disimpan')).toBeDefined();
     });
+    expect(screen.queryByText(/Data Contoh/i)).toBeNull();
+    expect(screen.getByText(/Sapa v\d+\.\d+\.\d+ · Data tersimpan hanya di HP ini/)).toBeDefined();
   });
 
-  it('seeds demo contacts and populates database', async () => {
+  it('opens Add Contact from the + button on the Kontak tab', async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^kontak$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /tambah kontak baru/i }));
 
-    const settingsTabBtn = screen.getByRole('button', { name: /^pengaturan$/i });
-    fireEvent.click(settingsTabBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Isi Data Contoh \(Demo Seed\)/i)).toBeDefined();
-    });
-
-    const seedBtn = screen.getByRole('button', { name: /Isi Data Contoh \(Demo Seed\)/i });
-    fireEvent.click(seedBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Data kontak contoh berhasil di-seed!/i)).toBeDefined();
-    });
-
-    // Switch back to Radar to see seeded contacts
-    const radarTabBtn = screen.getByRole('button', { name: /^radar$/i });
-    fireEvent.click(radarTabBtn);
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Ustadz Danu Hasan').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText('Bunda Sarah')).toBeDefined();
-    });
+    expect(await screen.findByText('Tambah Kontak Baru')).toBeDefined();
   });
 
-  it('opens Add Contact modal when Tambah Kontak button is clicked', async () => {
+  it('opens phone import from Pengaturan', async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^pengaturan$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /impor dari kontak hp/i }));
 
-    const addContactBtn = screen.getByRole('button', { name: /tambah kontak baru/i });
-    fireEvent.click(addContactBtn);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeDefined();
-      expect(screen.getByText('Tambah Kontak Baru')).toBeDefined();
-    });
+    expect(await screen.findByRole('region', { name: /sinkronisasi & impor kontak/i })).toBeDefined();
   });
 
-  it('opens Phonebook Sync modal when Impor HP button is clicked', async () => {
+  it('re-sync offers new phone contacts and never removes anything in the browser', async () => {
+    await crmDb.contacts.add({
+      id: 'c-keep',
+      name: 'Kontak Lama',
+      phoneNumber: '+6281234521202',
+      associations: ['Teman'],
+      isProfessional: false,
+      followUpCycleDays: 14,
+      lastContactedDate: '2026-10-01',
+      nextSpecificFollowUp: null,
+      metContext: 'Kampus',
+      lastUpdateNotes: 'Kabar baik',
+      possibleFollowUpTopic: 'Diskusi skripsi',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      source: 'phone' as const,
+    });
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^kontak$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sinkron ulang dengan kontak hp/i }));
 
-    const importBtn = screen.getByRole('button', { name: /impor kontak telepon/i });
-    fireEvent.click(importBtn);
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText(/belum ada di Sapa/)).toBeDefined();
+    expect(within(dialog).queryByRole('button', { name: /^Hapus/ })).toBeNull();
+    expect(await crmDb.contacts.get('c-keep')).toBeDefined();
 
-    await waitFor(() => {
-      expect(screen.getByRole('region', { name: /sinkronisasi & impor kontak/i })).toBeDefined();
-    });
-  });
-
-  it('opens and closes NavigationDrawer from the hamburger menu button', async () => {
-    render(<App />);
-
-    const menuBtn = screen.getByRole('button', { name: /buka menu analitik/i });
-    fireEvent.click(menuBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Ringkasan & Analitik')).toBeDefined();
-      expect(screen.getByText(/Health Score Silaturahmi/i)).toBeDefined();
-    });
-
-    const closeBtn = screen.getByRole('button', { name: /tutup menu/i });
-    fireEvent.click(closeBtn);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Ringkasan & Analitik')).toBeNull();
-    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Pilih kontak baru' }));
+    expect(await screen.findByRole('region', { name: /sinkronisasi & impor kontak/i })).toBeDefined();
   });
 
   it('toggles DeviceEmulatorFrame between emulator and desktop mode', async () => {
@@ -251,24 +209,15 @@ describe('App Integration', () => {
     });
   });
 
-  it('exports JSON backup when triggered from NavigationDrawer', async () => {
+  it('saves a backup file from Pengaturan', async () => {
     const createObjectURLMock = vi.fn().mockReturnValue('blob:mock-url');
-    const revokeObjectURLMock = vi.fn();
     window.URL.createObjectURL = createObjectURLMock;
-    window.URL.revokeObjectURL = revokeObjectURLMock;
+    window.URL.revokeObjectURL = vi.fn();
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     render(<App />);
-
-    const menuBtn = screen.getByRole('button', { name: /buka menu analitik/i });
-    fireEvent.click(menuBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Ringkasan & Analitik')).toBeDefined();
-    });
-
-    const exportBtn = screen.getByRole('button', { name: /ekspor backup json/i });
-    fireEvent.click(exportBtn);
+    fireEvent.click(screen.getByRole('button', { name: /^pengaturan$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /simpan cadangan/i }));
 
     await waitFor(() => {
       expect(createObjectURLMock).toHaveBeenCalled();
@@ -276,92 +225,63 @@ describe('App Integration', () => {
     });
   });
 
-  it('opens Kinship Log Interaction modal and saves encounter to database', async () => {
-    const testContact = {
-      id: 'c-test-log-encounter',
+  it('logs an interaction from the profile Catat button', async () => {
+    await crmDb.contacts.add({
+      id: 'c-log',
       name: 'Ustadz Hilman Fauzi',
-      phoneNumber: '+6281234567822',
-      associations: ['Hoca'],
-      isProfessional: false,
-      followUpCycleDays: 7,
-      lastContactedDate: '2026-10-01',
-      nextSpecificFollowUp: null,
-      metContext: 'Masjid Agung',
-      lastUpdateNotes: 'Persiapan kajian',
-      possibleFollowUpTopic: 'Jadwal khutbah',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await crmDb.contacts.add(testContact);
-
-    render(<App />);
-
-    // Go to Kontak tab
-    const contactsTabBtn = screen.getByRole('button', { name: /^kontak$/i });
-    fireEvent.click(contactsTabBtn);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('kinship-card-c-test-log-encounter')).toBeDefined();
-    });
-
-    // Click "Catat Interaksi" button on card
-    const catatBtn = screen.getByRole('button', {
-      name: /catat interaksi ustadz hilman fauzi/i,
-    });
-    fireEvent.click(catatBtn);
-
-    await waitFor(() => {
-      const dialog = screen.getByRole('dialog');
-      expect(within(dialog).getByText(/Catat Interaksi:/i)).toBeDefined();
-    });
-
-    const dialog = screen.getByRole('dialog');
-    const notesInput = within(dialog).getByLabelText(/Poin Obrolan & Catatan Penting/i);
-    fireEvent.change(notesInput, { target: { value: 'Silaturahmi di serambi masjid dan makan bersama' } });
-
-    const saveBtn = within(dialog).getByRole('button', { name: /simpan catatan interaksi/i });
-    fireEvent.click(saveBtn);
-
-    await waitFor(async () => {
-      const logs = await crmDb.interactions.where('contactId').equals('c-test-log-encounter').toArray();
-      expect(logs.length).toBe(1);
-      expect(logs[0].notes).toContain('Silaturahmi di serambi masjid dan makan bersama');
-    });
-  });
-
-  it('opens AI draft modal with dual WhatsApp buttons from radar feed', async () => {
-    const testContact = {
-      id: 'c-test-ai-draft',
-      name: 'Kang Emil',
-      phoneNumber: '+6281234567833',
+      phoneNumber: '+6281234510320',
       associations: ['Teman'],
-      isProfessional: true,
+      isProfessional: false,
       followUpCycleDays: 14,
       lastContactedDate: '2026-10-01',
       nextSpecificFollowUp: null,
-      metContext: 'Webinar',
-      lastUpdateNotes: 'Proyek baru',
-      possibleFollowUpTopic: 'Kolaborasi riset',
+      metContext: 'Kampus',
+      lastUpdateNotes: 'Kabar baik',
+      possibleFollowUpTopic: 'Diskusi skripsi',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
-    await crmDb.contacts.add(testContact);
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^kontak$/i }));
+    fireEvent.click(await screen.findByTestId('kinship-card-c-log'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Catat' }));
 
+    const notesInput = await screen.findByLabelText(/Poin Obrolan & Catatan Penting/i);
+    fireEvent.change(notesInput, { target: { value: 'Silaturahmi di serambi masjid' } });
+    fireEvent.click(screen.getByRole('button', { name: /simpan catatan interaksi/i }));
+
+    await waitFor(async () => {
+      const logs = await crmDb.interactions.where('contactId').equals('c-log').toArray();
+      expect(logs.length).toBe(1);
+      expect(logs[0].notes).toContain('Silaturahmi di serambi masjid');
+    });
+  });
+
+  it('Sapa button offers AI or WhatsApp and opens the AI draft', async () => {
+    await crmDb.contacts.add({
+      id: 'c-ai',
+      name: 'Kang Emil',
+      phoneNumber: '+6281234513475',
+      associations: ['Teman'],
+      isProfessional: false,
+      followUpCycleDays: 14,
+      lastContactedDate: '2026-10-01',
+      nextSpecificFollowUp: null,
+      metContext: 'Kampus',
+      lastUpdateNotes: 'Kabar baik',
+      possibleFollowUpTopic: 'Diskusi skripsi',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('radar-ai-draft-c-test-ai-draft')).toBeDefined();
-    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Sapa Kang Emil' }));
+    expect(await screen.findByRole('button', { name: /WhatsApp Business/ })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /Tulis dengan AI/ }));
 
-    const aiDraftBtn = screen.getByTestId('radar-ai-draft-c-test-ai-draft');
-    fireEvent.click(aiDraftBtn);
-
-    await waitFor(() => {
-      const draftModal = screen.getByRole('dialog');
-      expect(within(draftModal).getByText('Sapa via WhatsApp')).toBeDefined();
-      expect(within(draftModal).getByRole('button', { name: /kirim via whatsapp$/i })).toBeDefined();
-      expect(within(draftModal).getByRole('button', { name: /kirim via whatsapp business/i })).toBeDefined();
-    });
+    expect(await screen.findByText('Draf Sapaan')).toBeDefined();
+    expect(screen.getByRole('button', { name: /kirim via whatsapp$/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /kirim via whatsapp business/i })).toBeDefined();
   });
 
   it('shows first-time onboarding modal when sapa_onboarding_completed is not set, and hides it when completed', async () => {

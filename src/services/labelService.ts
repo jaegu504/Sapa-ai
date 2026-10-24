@@ -43,3 +43,20 @@ export function remapAssociations(associations: string[], from: string, to: stri
   const next = associations.flatMap((a) => (a === from ? (to ? [to] : []) : [a]));
   return Array.from(new Set(next));
 }
+
+/** Adds or removes one label on a contact; "Profesional" also drives the isProfessional flag. */
+export function toggleAssociation(
+  contact: { associations: string[]; isProfessional: boolean },
+  label: string
+): { associations: string[]; isProfessional: boolean } {
+  const current = contact.associations || [];
+  const has = label === 'Profesional' ? contact.isProfessional || current.includes(label) : current.includes(label);
+  const associations = has ? current.filter((a) => a !== label) : [...current, label];
+  return { associations, isProfessional: label === 'Profesional' ? !has : contact.isProfessional };
+}
+
+export function hasAssociation(contact: { associations: string[]; isProfessional: boolean }, label: string): boolean {
+  return label === 'Profesional'
+    ? Boolean(contact.isProfessional || contact.associations?.includes(label))
+    : Boolean(contact.associations?.includes(label));
+}

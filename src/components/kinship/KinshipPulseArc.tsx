@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 
 export interface KinshipPulseArcProps {
   score: number;
@@ -33,7 +34,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
       {/* Left: Apple Activity / Fitness Style Glowing Ring */}
       <div className="relative flex items-center justify-center w-[128px] h-[128px] sm:w-[140px] sm:h-[140px] shrink-0">
         <svg
-          className="w-full h-full transform -rotate-90"
+          className="w-full h-full transform -rotate-90 overflow-visible"
           viewBox="0 0 144 144"
           aria-hidden="true"
         >
@@ -60,20 +61,22 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
           />
 
           {/* Foreground glowing progress arc */}
-          <circle
+          <motion.circle
             cx="72"
             cy="72"
             r={radius}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset }}
+            transition={{ duration: 1.1, ease: [0.32, 0.72, 0, 1], delay: 0.15 }}
             stroke={isCoral ? 'url(#kinshipCoralGradient)' : 'url(#kinshipEmeraldGradient)'}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            className={`transition-all duration-700 ease-out ${
+            className={`${
               isCoral
                 ? 'drop-shadow-[0_2px_8px_rgba(244,63,94,0.4)] dark:drop-shadow-[0_0_12px_rgba(244,63,94,0.5)]'
-                : 'drop-shadow-[0_2px_8px_rgba(52,199,89,0.4)] dark:drop-shadow-[0_0_12px_rgba(34,211,238,0.5)]'
+                : 'drop-shadow-[0_2px_8px_rgba(52,199,89,0.4)] dark:drop-shadow-[0_0_12px_rgba(52,199,89,0.55)]'
             }`}
           />
         </svg>
@@ -92,7 +95,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
       {/* Right: Stacked Bento Stat Pills */}
       <div className="flex flex-col justify-center gap-2 flex-1 min-w-0">
         {/* Active Pill */}
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-white/10 shadow-xs transition-all">
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-full bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-white/10 shadow-xs transition-all">
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs" />
             <span className="text-xs font-semibold truncate">
@@ -106,7 +109,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
 
         {/* Due Pill */}
         <div
-          className={`flex items-center justify-between px-3.5 py-2 rounded-2xl transition-all ${
+          className={`flex items-center justify-between px-3.5 py-2 rounded-full transition-all ${
             dueCount > 0
               ? 'bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/20 dark:border-rose-500/30 shadow-xs font-bold'
               : 'bg-white/70 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-white/10 font-semibold'
@@ -126,15 +129,10 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
               {dueCount} Perlu Disapa
             </span>
           </div>
-          {dueCount > 0 && (
-            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-500 text-white shrink-0">
-              Hari ini
-            </span>
-          )}
         </div>
 
         {/* Paused Pill */}
-        <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-white/70 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-white/80 dark:border-white/10">
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-full bg-white/70 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-white/80 dark:border-white/10">
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
             <span className="text-xs font-medium truncate">

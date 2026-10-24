@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { crmDb } from '../../src/db/crmDatabase';
-import { importContacts, markChatCompleted } from '../../src/services/contactService';
+import { importContacts, markChatCompleted, resyncPhoneContacts } from '../../src/services/contactService';
 
 describe('ContactService', () => {
   beforeEach(async () => {
@@ -23,7 +23,8 @@ describe('ContactService', () => {
 
     const all = await crmDb.contacts.toArray();
     expect(all.length).toBe(2);
-    expect(all.find(c => c.phoneNumber === '+628123456789')?.name).toBe('Bu Siti Sarah Updated');
+    // Re-import never overwrites the name the user already has.
+    expect(all.find(c => c.phoneNumber === '+628123456789')?.name).toBe('Bu Siti Sarah');
   });
 
   it('markChatCompleted updates lastContactedDate to today and resets specific follow up', async () => {
@@ -65,7 +66,7 @@ describe('ContactService', () => {
 
     const all = await crmDb.contacts.where('phoneNumber').equals('+628551234567').toArray();
     expect(all.length).toBe(1);
-    expect(all[0].name).toBe('Ahmad Updated');
+    expect(all[0].name).toBe('Ahmad First');
     expect(all[0].associations).toContain('Ihvan');
   });
 
@@ -88,5 +89,25 @@ describe('ContactService', () => {
     await expect(markChatCompleted('non-existent-id', 'Test note')).rejects.toThrow(
       'Contact with id non-existent-id not found'
     );
+  });
+
+  it('resync lists new phone contacts and only proposes removing phone contacts that disappeared', async () => {
+    await importContacts([{ name: 'Dari HP', phoneNumber: '081111111111' }, { name: 'Hilang', phoneNumber: '082222222222' }]);
+    await importContacts([{ name: 'Dari File', phoneNumber: '083333333333' }], '62', 'manual');
+    await crmDb.contacts.add({
+      id: 'manual', name: 'Manual', phoneNumber: '+624444', associations: [], isProfessional: false,
+      lastContactedDate: null, followUpCycleDays: 15, nextSpecificFollowUp: null, metContext: '',
+      lastUpdateNotes: 'catatan', possibleFollowUpTopic: '', createdAt: '', updatedAt: '',
+    });
+    const device = [{ name: 'Dari HP', phoneNumber: '081111111111' }, { name: 'Baru', phoneNumber: '085555555555' }];
+
+    const res = await resyncPhoneContacts(device, true);
+    expect(res.newOnPhone.map((c) => c.name)).toEqual(['Baru']);
+    expect(res.missing.map((c) => c.name)).toEqual(['Hilang']);
+
+    // A partial list (web picker) never proposes removals, and nothing is deleted by the resync itself.
+    expect((await resyncPhoneContacts(device, false)).missing).toEqual([]);
+    expect(await crmDb.contacts.count()).toBe(4);
+    expect((await crmDb.contacts.get('manual'))?.lastUpdateNotes).toBe('catatan');
   });
 });

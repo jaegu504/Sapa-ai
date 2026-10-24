@@ -314,7 +314,7 @@ export async function initNotificationService(): Promise<void> {
     await plugin.createChannel({
       id: CHANNEL_MORNING_DIGEST,
       name: 'Ringkasan Sapaan Pagi Sapa',
-      description: 'Ringkasan sapaan harian jam 08:00 WIB',
+      description: 'Ringkasan sapaan harian setiap pagi',
       importance: 4,
     });
 
@@ -529,7 +529,7 @@ export async function scheduleAppUpdateNotification(update: {
       notifications: [
         {
           id: UPDATE_NOTIFICATION_ID,
-          title: `Pembaruan Sapa v${update.latestVersion} Tersedia! 🚀`,
+          title: `Pembaruan Sapa v${update.latestVersion} Tersedia`,
           body: 'Versi baru sudah siap diunduh. Ketuk untuk memperbarui aplikasi.',
           channelId: CHANNEL_APP_UPDATES,
           schedule: {

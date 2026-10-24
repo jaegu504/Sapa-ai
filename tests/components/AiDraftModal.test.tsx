@@ -139,7 +139,7 @@ describe('AiDraftModal', () => {
 
     await screen.findByDisplayValue('Draf Pertama');
 
-    const regenBtn = screen.getByRole('button', { name: /generate ulang/i });
+    const regenBtn = screen.getByRole('button', { name: /tulis ulang/i });
     fireEvent.click(regenBtn);
 
     await screen.findByDisplayValue('Draf Kedua yang Diperbarui');
@@ -199,34 +199,13 @@ describe('AiDraftModal', () => {
     await screen.findByDisplayValue('Pesan dengan auto mark');
 
     // Find the checkbox for marking chat completed
-    const checkbox = screen.getByRole('checkbox', { name: /tandai langsung selesai ngobrol/i });
+    const checkbox = screen.getByRole('checkbox', { name: /tandai sudah disapa/i });
     if (!checkbox.getAttribute('checked') && !(checkbox as HTMLInputElement).checked) {
       fireEvent.click(checkbox);
     }
 
     const waBtn = screen.getByRole('button', { name: /kirim via whatsapp$/i });
     fireEvent.click(waBtn);
-
-    expect(logChatSpy).toHaveBeenCalledWith(baseContact);
-  });
-
-  it('calls onLogChatCompleted when quick Mark Done button is clicked', async () => {
-    vi.spyOn(aiDraftService, 'generateWhatsAppDraft').mockResolvedValue('Pesan');
-    const logChatSpy = vi.fn();
-
-    render(
-      <AiDraftModal
-        contact={baseContact}
-        isOpen={true}
-        onClose={vi.fn()}
-        onLogChatCompleted={logChatSpy}
-      />
-    );
-
-    await screen.findByDisplayValue('Pesan');
-
-    const doneBtn = screen.getByRole('button', { name: /tandai selesai/i });
-    fireEvent.click(doneBtn);
 
     expect(logChatSpy).toHaveBeenCalledWith(baseContact);
   });
@@ -270,15 +249,15 @@ describe('AiDraftModal', () => {
 
     // 3 cards rendered
     expect(await screen.findByText('Kabar & Doa')).toBeDefined();
-    expect(screen.getByText('Bahasan Topik')).toBeDefined();
+    expect(screen.getByText('Bahas Topik')).toBeDefined();
     expect(screen.getByText(/Ajak Temu/i)).toBeDefined();
 
     // Initially selected first card
     expect(screen.getByDisplayValue('Teks opsi pertama')).toBeDefined();
     expect(sapaSpy).toHaveBeenCalledTimes(1);
 
-    // Click on 2nd card (Bahasan Topik)
-    const topicCard = screen.getByText('Bahasan Topik');
+    // Click on 2nd option (Bahas Topik)
+    const topicCard = screen.getByText('Bahas Topik');
     fireEvent.click(topicCard);
 
     // Textarea now displays second option instantly

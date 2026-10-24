@@ -201,7 +201,7 @@ describe('KinshipPhonebookSyncView', () => {
           phoneNumber: '085611223344',
           followUpCycleDays: 7,
         }),
-      ]);
+      ], '62', 'phone');
       expect(onImportComplete).toHaveBeenCalledWith({
         importedCount: 2,
         updatedCount: 0,

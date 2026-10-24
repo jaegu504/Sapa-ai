@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { KinshipPulseArc } from '../../src/components/kinship/KinshipPulseArc';
 import { CadenceBadge } from '../../src/components/kinship/CadenceBadge';
@@ -36,7 +36,7 @@ describe('Kinship UI Components', () => {
       expect(screen.getByText('2 Dijeda')).toBeDefined();
     });
 
-    it('calculates arc strokeDashoffset based on radius 58 and clamped score', () => {
+    it('calculates arc strokeDashoffset based on radius 58 and clamped score', async () => {
       const { container } = render(
         <KinshipPulseArc
           score={75}
@@ -54,8 +54,11 @@ describe('Kinship UI Components', () => {
       const circumference = 2 * Math.PI * radius;
       const expectedOffset = circumference - (75 / 100) * circumference;
 
-      const strokeDashoffset = parseFloat(foregroundCircle.getAttribute('stroke-dashoffset') || '0');
-      expect(strokeDashoffset).toBeCloseTo(expectedOffset, 1);
+      // The ring animates from empty to its value.
+      await waitFor(() => {
+        const strokeDashoffset = parseFloat(foregroundCircle.getAttribute('stroke-dashoffset') || '0');
+        expect(strokeDashoffset).toBeCloseTo(expectedOffset, 1);
+      });
       expect(foregroundCircle.getAttribute('stroke-dasharray')).toBeCloseTo(circumference, 1);
     });
 

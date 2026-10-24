@@ -22,6 +22,7 @@ import {
   ContactsPermissionStatus,
 } from '../../services/nativeContactsAdapter';
 import { importContacts } from '../../services/contactService';
+import { getDefaultCycleDays } from '../../services/settingsService';
 import { parseVcf, parseCsv } from '../../utils/contactImportParsers';
 
 export interface KinshipPhonebookSyncViewProps {
@@ -80,7 +81,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
   const [requestingPermission, setRequestingPermission] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPhones, setSelectedPhones] = useState<Set<string>>(new Set());
-  const [selectedCadence, setSelectedCadence] = useState<number>(15);
+  const [selectedCadence, setSelectedCadence] = useState<number>(() => getDefaultCycleDays());
   const [importing, setImporting] = useState<boolean>(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -236,7 +237,8 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
         followUpCycleDays: selectedCadence,
       }));
 
-      const result = await importContacts(toImport);
+      // File imports are not the phone's list, so a later re-sync must never remove them.
+      const result = await importContacts(toImport, '62', uploadedFileName ? 'manual' : 'phone');
       setImportResult(result);
       if (onImportComplete) {
         onImportComplete(result);
@@ -256,23 +258,19 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
     <div
       role="region"
       aria-label="Sinkronisasi & Impor Kontak"
-      className="w-full max-w-2xl mx-auto h-full flex flex-col bg-[#f8f9ff] text-slate-900 font-sans"
+      className="w-full max-w-2xl mx-auto h-full flex flex-col bg-[#f8f9ff] text-slate-900 font-sans dark:bg-[#090A0F] dark:text-white"
     >
       {/* Top Header */}
-      <header className="shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between pt-[env(safe-area-inset-top,12px)]">
+      <header className="shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between pt-[env(safe-area-inset-top,12px)] dark:bg-[#1C1C1E]/95 dark:border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
             <Users className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Kinship
-              </span>
-              <span className="text-slate-300 font-bold">·</span>
-              <h1 className="text-base font-bold text-slate-900">Impor Kontak</h1>
+              <h1 className="text-base font-bold text-slate-900 dark:text-white">Impor Kontak</h1>
             </div>
-            <p className="text-xs text-slate-500">Sinkronisasi buku telepon perangkat</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Pilih kontak HP yang ingin disapa</p>
           </div>
         </div>
 
@@ -281,7 +279,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer dark:text-slate-400"
           >
             <X className="w-5 h-5" />
           </button>
@@ -291,14 +289,14 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
       {/* Scrollable Content Body */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Banner / Helper Info */}
-        <div className="relative overflow-hidden bg-white border border-slate-200/70 rounded-3xl p-4 shadow-sm">
+        <div className="relative overflow-hidden bg-white border border-slate-200/70 rounded-3xl p-4 shadow-sm dark:bg-[#1C1C1E] dark:border-white/10">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 dark:bg-emerald-500/15">
               <Smartphone className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold text-slate-800">Sinkronisasi & Impor Kontak</h2>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Sinkronisasi & Impor Kontak</h2>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed dark:text-slate-400">
                 Pilih kontak dari buku telepon ponsel atau unggah file vCard/CSV untuk dipantau ritme
                 follow-up-nya secara berkala.
               </p>
@@ -317,7 +315,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'phonebook'
                 ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100'
+                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100 dark:bg-[#1C1C1E] dark:text-slate-300 dark:border-white/10'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
@@ -330,7 +328,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'google'
                 ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100'
+                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100 dark:bg-[#1C1C1E] dark:text-slate-300 dark:border-white/10'
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -343,7 +341,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'csv'
                 ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100'
+                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100 dark:bg-[#1C1C1E] dark:text-slate-300 dark:border-white/10'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -353,20 +351,20 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
         {/* Google Contacts Tab with Step-by-Step Sync Guide & File Upload */}
         {activeTab === 'google' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 dark:bg-[#1C1C1E] dark:border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                 <RefreshCw className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-slate-900">Sinkronisasi Google Kontak</h3>
-                <p className="text-xs text-slate-500">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sinkronisasi Google Kontak</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Impor kontak akun Google Anda ke Sapa CRM dalam 3 langkah mudah:
                 </p>
               </div>
             </div>
 
-            <div className="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+            <div className="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 dark:text-slate-300 dark:bg-white/5 dark:border-white/10">
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
                 <span>Buka <strong>contacts.google.com</strong> di browser ponsel atau laptop.</span>
@@ -402,19 +400,19 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
         {/* CSV / VCF File Tab */}
         {activeTab === 'csv' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 dark:bg-[#1C1C1E] dark:border-white/10">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-500/15">
                 <FileText className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Unggah File Kontak (.vcf / .csv)</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Unggah File Kontak (.vcf / .csv)</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto dark:text-slate-400">
                 Mendukung file vCard dari Google, iPhone, Android, WhatsApp, atau file spreadsheet CSV.
               </p>
             </div>
 
             {uploadedFileName && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs dark:bg-emerald-500/15">
                 <div className="flex items-center gap-2 min-w-0">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span className="font-semibold text-emerald-900 truncate">
@@ -450,16 +448,16 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
         {/* Native Permission Card for Phonebook */}
         {showPermissionWarning && (
-          <div className="border border-amber-300 bg-amber-50/90 rounded-3xl p-4 space-y-3 shadow-sm">
+          <div className="border border-amber-300 bg-amber-50/90 rounded-3xl p-4 space-y-3 shadow-sm dark:bg-amber-500/10 dark:border-amber-500/30">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-amber-900">
+                <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
                   Akses Kontak Belum Diizinkan
                 </h3>
-                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed dark:text-amber-200">
                   Diperlukan izin sistem Android agar Sapa dapat membaca kontak dari buku
                   telepon Anda secara offline & aman.
                 </p>
@@ -482,7 +480,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
         {/* Success Banner */}
         {importResult && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-3">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-3 dark:bg-emerald-500/15">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div className="text-xs">
               <p className="font-bold text-emerald-800">
@@ -498,13 +496,13 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
         {/* Empty state for phonebook when device contacts list is empty */}
         {activeTab === 'phonebook' && !loading && !searchQuery && contacts.length === 0 && !showPermissionWarning && (
-          <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+          <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-8 text-center space-y-3 dark:bg-[#1C1C1E] dark:border-white/10">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto dark:bg-white/10 dark:text-slate-400">
               <Users className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-800">Buku Telepon Kosong</h3>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Buku Telepon Kosong</h3>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto dark:text-slate-400">
                 Tidak ada kontak ditemukan di buku telepon HP Anda, atau izin membaca kontak belum aktif.
               </p>
             </div>
@@ -519,7 +517,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               <button
                 type="button"
                 onClick={() => setActiveTab('csv')}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold hover:bg-slate-200 transition-all cursor-pointer"
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold hover:bg-slate-200 transition-all cursor-pointer dark:bg-white/10 dark:text-slate-200"
               >
                 Unggah File CSV / VCF
               </button>
@@ -539,13 +537,13 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari nama atau nomor telepon..."
-                  className="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all shadow-sm"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all shadow-sm dark:bg-[#1C1C1E] dark:border-white/10"
                 />
               </div>
 
               {/* Selection Counter & Select All Toggle */}
               <div className="flex items-center justify-between px-1 text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-slate-600">
+                <div className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                   <span>
                     Dipilih: {selectedPhones.size} dari {contacts.length} kontak
@@ -566,11 +564,11 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             <div className="space-y-2">
               {loading ? (
                 <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2">
-                  <Loader2 className="w-6 h-6 animate-spin text-slate-600" />
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-600 dark:text-slate-300" />
                   <span className="text-xs">Memuat kontak telepon...</span>
                 </div>
               ) : filteredContacts.length === 0 ? (
-                <div className="p-8 text-center bg-white border border-dashed border-slate-200 rounded-3xl text-slate-400 text-xs">
+                <div className="p-8 text-center bg-white border border-dashed border-slate-200 rounded-3xl text-slate-400 text-xs dark:bg-[#1C1C1E] dark:border-white/10">
                   Tidak ada kontak ditemukan.
                 </div>
               ) : (
@@ -581,30 +579,30 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                       <div
                         key={contact.phoneNumber}
                         onClick={() => handleToggleContact(contact.phoneNumber)}
-                        className={`flex items-center justify-between p-3 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs ${
+                        className={`flex items-center justify-between p-3 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs dark:bg-[#1C1C1E] ${
                           isSelected
                             ? 'border-emerald-500/70 bg-emerald-50/20 shadow-sm ring-1 ring-emerald-400/30'
-                            : 'border-slate-200/70 hover:border-slate-300'
+                            : 'border-slate-200/70 hover:border-slate-300 dark:border-white/10'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Squircle Avatar with Initials */}
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-white/10 dark:to-white/5 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0 dark:border-white/10 dark:text-slate-200">
                             {getInitials(contact.name)}
                           </div>
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <h3 className="text-xs font-bold text-slate-900 truncate">
+                              <h3 className="text-xs font-bold text-slate-900 truncate dark:text-white">
                                 {contact.name}
                               </h3>
                               {contact.associations && contact.associations.length > 0 && (
-                                <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold truncate max-w-[120px]">
+                                <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold truncate max-w-[120px] dark:bg-white/10 dark:text-slate-300">
                                   {contact.associations[0]}
                                 </span>
                               )}
                             </div>
-                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            <p className="text-[11px] text-slate-500 truncate mt-0.5 dark:text-slate-400">
                               {contact.phoneNumber}
                             </p>
                           </div>
@@ -640,7 +638,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                     <button
                       type="button"
                       onClick={() => setVisibleLimit((prev) => prev + 50)}
-                      className="w-full py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs transition-colors cursor-pointer"
+                      className="w-full py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs transition-colors cursor-pointer dark:text-slate-200 dark:bg-[#1C1C1E] dark:border-white/10"
                     >
                       Tampilkan 50 Kontak Lainnya ({filteredContacts.length - visibleLimit} tersisa)
                     </button>
@@ -650,13 +648,13 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             </div>
 
             {/* Intentional Care Cadence Selector */}
-            <div className="bg-white border border-slate-200/70 rounded-3xl p-4 space-y-3 shadow-xs">
+            <div className="bg-white border border-slate-200/70 rounded-3xl p-4 space-y-3 shadow-xs dark:bg-[#1C1C1E] dark:border-white/10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-bold text-slate-900">
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">
                     Tentukan Ritme Sapaan Awal
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-[11px] text-slate-500 mt-0.5 dark:text-slate-400">
                     Frekuensi pengingat follow-up untuk kontak yang dipilih
                   </p>
                 </div>
@@ -679,8 +677,8 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                       onClick={() => setSelectedCadence(opt.days)}
                       className={`text-left p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                         isChecked
-                          ? 'border-slate-900 bg-slate-900/5 ring-1 ring-slate-900 text-slate-900 shadow-xs'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                          ? 'border-slate-900 bg-slate-900/5 ring-1 ring-slate-900 text-slate-900 shadow-xs dark:text-white'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-[#1C1C1E] dark:text-slate-200'
                       }`}
                     >
                       <div className="min-w-0">
@@ -690,7 +688,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                           )}
                           <span>{opt.title}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-tight dark:text-slate-400">
                           {opt.subtitle}
                         </p>
                       </div>
@@ -712,7 +710,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
       </div>
 
       {/* Sticky Bottom Action Bar */}
-      <footer className="shrink-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 space-y-2">
+      <footer className="shrink-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 space-y-2 dark:bg-[#1C1C1E]/95 dark:border-white/10">
         <button
           type="button"
           onClick={handleImport}
@@ -729,9 +727,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
           )}
         </button>
 
-        <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px]">
+        <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px] dark:text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>WhatsApp direct launch enabled on due dates</span>
+          <span>Kontak hanya disimpan di HP ini</span>
         </div>
       </footer>
     </div>

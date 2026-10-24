@@ -1,35 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  X,
-  Star,
-  Edit3,
   Calendar,
+  Check,
+  ChevronLeft,
   Clock,
+  Compass,
+  History,
+  MessageCircle,
   MessageSquare,
-  Sparkles,
+  Mic,
+  PenLine,
   Phone,
   Plus,
-  Mic,
-  Compass,
   Repeat,
+  Sparkles,
+  Star,
   Tag,
-  Hash,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
 } from 'lucide-react';
 import { Contact, InteractionLog } from '../../types/crm';
-import { calculateContactStatus, getDaysLeftOrOverdue } from '../../utils/status';
-import { CadenceBadge } from './CadenceBadge';
-import { DualWhatsAppButton } from './DualWhatsAppButton';
-import { getLabels } from '../../services/labelService';
+import { calculateContactStatus } from '../../utils/status';
+import { dueLabel, formatLongDate, formatShortDate, getInitials } from '../../utils/display';
+import { getLabels, hasAssociation, toggleAssociation } from '../../services/labelService';
+import { Sheet, useSticky } from '../ui/Sheet';
+import { tapHaptic } from '../../services/haptics';
 
 export interface KinshipContactDossierModalProps {
   contact: Contact | null;
   isOpen: boolean;
   onClose: () => void;
   onEditContact?: (contact: Contact) => void;
+  onSapa?: (contact: Contact) => void;
   onOpenAiDraft?: (contact: Contact) => void;
   onOpenLogEncounter?: (contact: Contact) => void;
   onOpenVoiceNote?: (contact: Contact) => void;
@@ -69,72 +69,51 @@ export function computeDateOffset(baseDate?: Date, daysOffset?: number | null): 
 }
 
 const QUICK_SCHEDULE_CHIPS = [
-  { label: 'Besok (+1 hr)', days: 1 },
+  { label: 'Besok', days: 1 },
   { label: '+3 Hari', days: 3 },
   { label: '+1 Minggu', days: 7 },
   { label: '+2 Minggu', days: 14 },
   { label: 'Bulan Depan', days: 30 },
-  { label: 'Hapus Jadwal', days: null },
+  { label: 'Hapus', days: null },
 ];
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '??';
-  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
+const CYCLE_CHIPS = [7, 15, 30, 60];
 
-function getAssociationBadgeClass(assoc?: string): string {
-  switch (assoc?.toLowerCase()) {
-    case 'ihvan':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30';
-    case 'hoca':
-      return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30';
-    case 'keluarga':
-      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30';
-    case 'zahiri':
-      return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/30';
-    case 'teman':
-      return 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/20 dark:text-teal-300 dark:border-teal-500/30';
-    case 'profesional':
-      return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30';
-    default:
-      return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-white/10 dark:text-slate-300 dark:border-white/15';
-  }
-}
+const INTERACTION_TYPES: Record<string, { label: string; dot: string; pill: string }> = {
+  whatsapp: { label: 'Chat WA', dot: 'bg-emerald-500', pill: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
+  call: { label: 'Telepon', dot: 'bg-blue-500', pill: 'bg-blue-500/15 text-blue-700 dark:text-blue-300' },
+  meetup: { label: 'Ketemu', dot: 'bg-amber-500', pill: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+  other: { label: 'Catatan', dot: 'bg-violet-500', pill: 'bg-violet-500/15 text-violet-700 dark:text-violet-300' },
+};
 
-function getInteractionTypeBadge(type: string) {
-  switch (type?.toLowerCase()) {
-    case 'meetup':
-      return {
-        label: 'Kopi / Makan',
-        color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30',
-      };
-    case 'whatsapp':
-      return {
-        label: 'WhatsApp',
-        color: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30',
-      };
-    case 'call':
-      return {
-        label: 'Telepon',
-        color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30',
-      };
-    case 'other':
-    default:
-      return {
-        label: 'Acara / Majelis',
-        color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30',
-      };
-  }
-}
+const fieldBox =
+  'w-full text-[14px] leading-relaxed text-slate-800 dark:text-white bg-slate-50 dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 dark:focus:border-cyan-400 placeholder:text-slate-400 dark:placeholder:text-slate-500';
 
+const chipBase = 'press px-3 py-1.5 rounded-full text-[12.5px] font-medium border';
+const chipIdle = 'bg-white dark:bg-white/[0.06] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200';
+const chipOn = 'bg-blue-500/15 border-blue-500/40 text-blue-700 dark:text-blue-300 font-semibold';
 
-export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProps> = ({
+const FieldLabel: React.FC<{ icon: React.ReactNode; htmlFor?: string; children: React.ReactNode; className?: string }> = ({
+  icon,
+  htmlFor,
+  children,
+  className = 'text-slate-600 dark:text-slate-300',
+}) => (
+  <label htmlFor={htmlFor} className={`flex items-center gap-1.5 text-[12.5px] font-semibold mb-1.5 ${className}`}>
+    {icon}
+    {children}
+  </label>
+);
+
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <div className={`rounded-[22px] bg-white dark:bg-white/[0.04] border border-slate-200/70 dark:border-white/10 p-4 ${className}`}>{children}</div>
+);
+
+const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 'contact'> & { contact: Contact }> = ({
   contact,
-  isOpen,
   onClose,
   onEditContact,
+  onSapa,
   onOpenAiDraft,
   onOpenLogEncounter,
   onOpenVoiceNote,
@@ -142,49 +121,30 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
   interactions = [],
   now,
 }) => {
-  if (!isOpen || !contact) return null;
-
-  // Local state for inline editing
-  const [followUpTopic, setFollowUpTopic] = useState<string>(contact.possibleFollowUpTopic || '');
-  const [lastUpdateNotes, setLastUpdateNotes] = useState<string>(contact.lastUpdateNotes || '');
-  const [metContext, setMetContext] = useState<string>(contact.metContext || '');
-  const [nextSpecificFollowUp, setNextSpecificFollowUp] = useState<string>(
-    contact.nextSpecificFollowUp || ''
-  );
+  const [followUpTopic, setFollowUpTopic] = useState(contact.possibleFollowUpTopic || '');
+  const [lastUpdateNotes, setLastUpdateNotes] = useState(contact.lastUpdateNotes || '');
+  const [metContext, setMetContext] = useState(contact.metContext || '');
+  const [nextSpecificFollowUp, setNextSpecificFollowUp] = useState(contact.nextSpecificFollowUp || '');
   const [followUpTime, setFollowUpTime] = useState<string>(() => {
-    if (contact.nextSpecificFollowUp && contact.nextSpecificFollowUp.includes('T')) {
-      return contact.nextSpecificFollowUp.split('T')[1].slice(0, 5);
-    }
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kinship_digest_time');
-      if (saved) return saved;
-    }
+    if (contact.nextSpecificFollowUp?.includes('T')) return contact.nextSpecificFollowUp.split('T')[1].slice(0, 5);
     return '09:00';
   });
-  const [lastContactedDate, setLastContactedDate] = useState<string>(
-    contact.lastContactedDate || ''
-  );
+  const [lastContactedDate, setLastContactedDate] = useState(contact.lastContactedDate || '');
   // '' lets the user clear the field while typing; only valid numbers are saved
-  const [followUpCycleDays, setFollowUpCycleDays] = useState<number | ''>(
-    contact.followUpCycleDays ?? 15
-  );
-  const [isStarred, setIsStarred] = useState<boolean>(false);
+  const [followUpCycleDays, setFollowUpCycleDays] = useState<number | ''>(contact.followUpCycleDays ?? 15);
+  const [isEditingAssociations, setIsEditingAssociations] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Sync state when contact updates
   useEffect(() => {
-    if (contact) {
-      setFollowUpTopic(contact.possibleFollowUpTopic || '');
-      setLastUpdateNotes(contact.lastUpdateNotes || '');
-      setMetContext(contact.metContext || '');
-      setNextSpecificFollowUp(contact.nextSpecificFollowUp || '');
-      if (contact.nextSpecificFollowUp && contact.nextSpecificFollowUp.includes('T')) {
-        setFollowUpTime(contact.nextSpecificFollowUp.split('T')[1].slice(0, 5));
-      }
-      setLastContactedDate(contact.lastContactedDate || '');
-      setFollowUpCycleDays(contact.followUpCycleDays ?? 15);
-    }
+    setFollowUpTopic(contact.possibleFollowUpTopic || '');
+    setLastUpdateNotes(contact.lastUpdateNotes || '');
+    setMetContext(contact.metContext || '');
+    setNextSpecificFollowUp(contact.nextSpecificFollowUp || '');
+    if (contact.nextSpecificFollowUp?.includes('T')) setFollowUpTime(contact.nextSpecificFollowUp.split('T')[1].slice(0, 5));
+    setLastContactedDate(contact.lastContactedDate || '');
+    setFollowUpCycleDays(contact.followUpCycleDays ?? 15);
   }, [
     contact.id,
     contact.possibleFollowUpTopic,
@@ -195,8 +155,6 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
     contact.followUpCycleDays,
   ]);
 
-  const isMountedRef = useRef<boolean>(true);
-
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -205,532 +163,315 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
     };
   }, []);
 
-  const [isEditingAssociations, setIsEditingAssociations] = useState<boolean>(false);
-
   const handleUpdate = async (updates: Partial<Contact>) => {
-    if (!onUpdateContact || !contact) return;
+    if (!onUpdateContact) return;
     setSaveStatus('saving');
     try {
       await onUpdateContact(contact.id, updates);
-      if (typeof window !== 'undefined' && isMountedRef.current) {
-        setSaveStatus('saved');
-      }
+      if (isMountedRef.current) setSaveStatus('saved');
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => {
-        if (typeof window !== 'undefined' && isMountedRef.current) {
-          setSaveStatus('idle');
-        }
-      }, 1500);
+      saveTimerRef.current = setTimeout(() => isMountedRef.current && setSaveStatus('idle'), 1500);
     } catch {
-      if (typeof window !== 'undefined' && isMountedRef.current) {
-        setSaveStatus('idle');
-      }
+      if (isMountedRef.current) setSaveStatus('idle');
     }
   };
 
-  const handleToggleAssociation = async (assoc: string) => {
-    if (!contact) return;
-    const current = contact.associations || [];
-    let updated: string[];
-    let updatedIsProf = contact.isProfessional;
+  const setSchedule = (date: string | null) => {
+    const combined = date ? `${date}T${followUpTime || '09:00'}` : null;
+    setNextSpecificFollowUp(combined || '');
+    handleUpdate({ nextSpecificFollowUp: combined });
+  };
 
-    if (assoc === 'Profesional') {
-      updatedIsProf = !contact.isProfessional;
-      if (updatedIsProf) {
-        if (!current.includes('Profesional')) updated = [...current, 'Profesional'];
-        else updated = current;
-      } else {
-        updated = current.filter((a) => a !== 'Profesional');
-      }
-    } else {
-      if (current.includes(assoc)) {
-        updated = current.filter((a) => a !== assoc);
-      } else {
-        updated = [...current, assoc];
-      }
-    }
-
-    await handleUpdate({
-      associations: updated,
-      isProfessional: updatedIsProf,
-    });
+  const setCycle = (days: number) => {
+    const valid = Math.min(365, Math.max(1, days));
+    setFollowUpCycleDays(valid);
+    handleUpdate({ followUpCycleDays: valid });
   };
 
   const status = calculateContactStatus(contact, now);
-  const initials = getInitials(contact.name);
-  const daysLeftOrOverdue = getDaysLeftOrOverdue(status);
+  const labels = [...new Set([...getLabels(), ...(contact.associations || [])])];
+  const shownLabels = [...(contact.associations || [])];
+  if (contact.isProfessional && !shownLabels.includes('Profesional')) shownLabels.push('Profesional');
+  const sortedInteractions = [...interactions].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const scheduleDate = nextSpecificFollowUp ? nextSpecificFollowUp.split('T')[0] : '';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dossier-contact-name"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 dark:bg-black/85"
-    >
-      <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl border border-slate-200/90 dark:border-white/12 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white transition-colors">
-        {/* Header Bar */}
-        <div className="px-5 py-3.5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between bg-slate-50/80 dark:bg-white/5">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-              Profil Relasi
-            </h2>
+    <>
+      {/* Navigation bar */}
+      <div className="shrink-0 flex items-center justify-between px-3 pb-2">
+        <button type="button" onClick={onClose} aria-label="Tutup" className="press flex items-center gap-0.5 px-1 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
+          <ChevronLeft className="w-5 h-5" />
+          Kembali
+        </button>
+        <span className="text-[11px] font-semibold text-slate-400" aria-live="polite">
+          {saveStatus === 'saving' ? 'Menyimpan...' : saveStatus === 'saved' ? 'Tersimpan' : ''}
+        </span>
+        {onEditContact ? (
+          <button type="button" onClick={() => onEditContact(contact)} aria-label="Edit Relasi" className="press px-2 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
+            Edit
+          </button>
+        ) : (
+          <span className="w-12" />
+        )}
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-8 space-y-3">
+        {/* Header card */}
+        <Card>
+          <div className="flex items-center gap-3.5">
+            <div className="w-[60px] h-[60px] rounded-[18px] bg-gradient-to-br from-blue-600 to-indigo-500 text-white font-bold text-xl flex items-center justify-center shrink-0 shadow-[0_10px_24px_-12px_rgba(47,84,235,0.9)]">
+              {getInitials(contact.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 id="dossier-contact-name" className="text-xl font-bold tracking-tight truncate">
+                {contact.name}
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                {shownLabels.map((label) => (
+                  <span key={label} className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/15 text-violet-700 dark:text-violet-300">
+                    {label}
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  aria-label="Ubah Asosiasi Kontak"
+                  aria-expanded={isEditingAssociations}
+                  onClick={() => setIsEditingAssociations((v) => !v)}
+                  className="press inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
+                >
+                  <Tag className="w-3 h-3" />
+                  {isEditingAssociations ? 'Selesai' : 'Ubah label'}
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            {/* Star bookmark button */}
-            <button
-              type="button"
-              aria-label="Tandai favorit"
-              aria-pressed={isStarred}
-              onClick={() => setIsStarred(!isStarred)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                isStarred
-                  ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/20'
-                  : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10'
+
+          {isEditingAssociations && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {labels.map((label) => {
+                const on = hasAssociation(contact, label);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => handleUpdate(toggleAssociation(contact, label))}
+                    className={`${chipBase} inline-flex items-center gap-1 ${on ? chipOn : chipIdle}`}
+                  >
+                    {on ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-white/[0.08] text-slate-700 dark:text-slate-200">
+              <Phone className="w-3 h-3" />
+              {contact.phoneNumber}
+            </span>
+            <span
+              data-testid="cadence-dot"
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                status.isOverdue ? 'bg-rose-500/15 text-rose-600 dark:text-rose-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
               }`}
             >
-              <Star
-                className="w-4 h-4"
-                fill={isStarred ? '#F59E0B' : 'none'}
-                stroke={isStarred ? '#F59E0B' : 'currentColor'}
-              />
-            </button>
-
-            {/* Edit button */}
-            {onEditContact && (
-              <button
-                type="button"
-                onClick={() => onEditContact(contact)}
-                aria-label="Edit Relasi"
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-white dark:hover:bg-white/10 rounded-full border border-transparent hover:border-slate-200 dark:hover:border-white/15 transition-all"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Edit</span>
-              </button>
-            )}
-
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Tutup"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+              <span className={`w-1.5 h-1.5 rounded-full ${status.isOverdue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              {dueLabel(status, contact.lastContactedDate)}
+            </span>
           </div>
+          <div className="flex justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.07] text-xs font-medium text-slate-600 dark:text-slate-300">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              {contact.lastContactedDate ? `Terakhir ${formatShortDate(contact.lastContactedDate)}` : 'Belum pernah disapa'}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Repeat className="w-3.5 h-3.5 text-slate-400" />
+              Tiap {contact.followUpCycleDays || 15} hari
+            </span>
+          </div>
+        </Card>
+
+        {/* Main action + quick actions */}
+        {onSapa && (
+          <button
+            type="button"
+            onClick={() => {
+              tapHaptic('medium');
+              onSapa(contact);
+            }}
+            className="press w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-bold text-white bg-[#25D366] shadow-[0_10px_22px_-10px_rgba(37,211,102,0.9)]"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Sapa {contact.name.split(' ')[0]}
+          </button>
+        )}
+        <div className="grid grid-cols-4 gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenLogEncounter?.(contact)}
+            className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-white dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/10"
+          >
+            <PenLine className="w-5 h-5" />
+            Catat
+          </button>
+          <button
+            type="button"
+            data-tour="dossier-draft-ai"
+            onClick={() => onOpenAiDraft?.(contact)}
+            className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300"
+          >
+            <Sparkles className="w-5 h-5" />
+            Draf AI
+          </button>
+          <button
+            type="button"
+            data-tour="dossier-voice"
+            aria-label="Catat Kabar dengan Suara"
+            onClick={() => onOpenVoiceNote?.(contact)}
+            className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-indigo-500/15 border border-indigo-500/35 text-indigo-700 dark:text-indigo-300"
+          >
+            <Mic className="w-5 h-5" />
+            Suara
+          </button>
+          <a
+            href={`tel:${contact.phoneNumber}`}
+            className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-white dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/10"
+          >
+            <Phone className="w-5 h-5" />
+            Panggil
+          </a>
         </div>
 
-        {/* Scrollable Modal Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4 text-slate-900 dark:text-white">
-          {/* Profile Dossier Hero Card */}
-          <div className="relative bg-slate-50/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 overflow-hidden shadow-xs">
-            <div className="flex items-start gap-3.5 relative z-10">
-              {/* Squircle Avatar with initials */}
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-700 dark:from-cyan-700 dark:to-blue-700 text-white font-bold text-lg flex items-center justify-center shadow-sm">
-                  {initials}
-                </div>
-                {status.isOverdue && (
-                  <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
-                  </span>
-                )}
-              </div>
-
-              {/* Contact info */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h3
-                    id="dossier-contact-name"
-                    className="font-bold text-slate-900 dark:text-white text-base sm:text-lg tracking-tight truncate"
+        {/* Notes */}
+        <Card className="space-y-4">
+          <div data-tour="field-facts">
+            <FieldLabel icon={<Star className="w-3.5 h-3.5 text-slate-400" />}>Fakta Penting</FieldLabel>
+            {contact.facts && contact.facts.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {contact.facts.map((f) => (
+                  <span
+                    key={`${f.text}-${f.date}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-medium bg-blue-500/10 text-blue-800 dark:text-blue-200 border border-blue-500/25"
                   >
-                    {contact.name}
-                  </h3>
-                  <CadenceBadge
-                    cadenceDays={contact.followUpCycleDays || 15}
-                    isOverdue={status.isOverdue}
-                    daysLeftOrOverdue={daysLeftOrOverdue}
-                  />
-                </div>
-
-                {/* Association badges with edit toggle */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                  {contact.associations?.map((assoc) => (
-                    <span
-                      key={assoc}
-                      className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getAssociationBadgeClass(
-                        assoc
-                      )}`}
-                    >
-                      {assoc}
-                    </span>
-                  ))}
-                  {contact.isProfessional && !contact.associations?.includes('Profesional') && (
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
-                      Profesional
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    aria-label="Ubah Asosiasi Kontak"
-                    onClick={() => setIsEditingAssociations((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-cyan-400 hover:text-blue-700 dark:hover:text-cyan-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-cyan-500/30 bg-blue-50/60 dark:bg-cyan-500/15 hover:bg-blue-100/60 dark:hover:bg-cyan-500/25 transition-colors cursor-pointer"
-                  >
-                    <Tag className="w-2.5 h-2.5" />
-                    <span>{isEditingAssociations ? 'Tutup' : 'Ubah Label'}</span>
-                  </button>
-                </div>
-
-                {/* Interactive Association Selector Drawer/Panel */}
-                {isEditingAssociations && (
-                  <div className="mt-2.5 p-2.5 bg-white dark:bg-[#2C2C2E] border border-slate-200 dark:border-white/15 rounded-xl shadow-xs space-y-1.5">
-                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Pilih Label / Hubungan:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {getLabels().map((assoc) => {
-                        const isSelected =
-                          assoc === 'Profesional'
-                            ? Boolean(contact.isProfessional || contact.associations?.includes('Profesional'))
-                            : Boolean(contact.associations?.includes(assoc));
-
-                        return (
-                          <button
-                            key={assoc}
-                            type="button"
-                            onClick={() => handleToggleAssociation(assoc)}
-                            className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer font-medium ${
-                              isSelected
-                                ? 'bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-xs'
-                                : 'bg-slate-50 dark:bg-white/10 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/15 hover:bg-slate-100 dark:hover:bg-white/20'
-                            }`}
-                          >
-                            <span>{isSelected ? '✓' : '+'}</span>
-                            <span>{assoc}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Phone & Met details */}
-                <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                  <span className="flex items-center gap-1 font-mono text-[11px] text-slate-600 dark:text-slate-300">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                    {contact.phoneNumber}
+                    {f.text}
+                    <span className="text-[10.5px] text-blue-500/80 dark:text-blue-300/70">{formatFactDate(f.date)}</span>
                   </span>
-                  {contact.lastContactedDate && (
-                    <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                      Terakhir: {contact.lastContactedDate}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Status Pill Banner */}
-            <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>
-                  Jadwal Sapa:{' '}
-                  <strong className={status.isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}>
-                    {status.isOverdue ? 'Perlu Disapa' : 'Sesuai Siklus'}
-                  </strong>
-                </span>
-              </div>
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                Siklus: {contact.followUpCycleDays || 15} Hari
-              </span>
-            </div>
-          </div>
-
-          {/* Dual WhatsApp Action Bar & Outreach Triggers */}
-          <div className="flex flex-col gap-2">
-            <DualWhatsAppButton
-              phoneNumber={contact.phoneNumber}
-              draftText={followUpTopic || contact.possibleFollowUpTopic}
-              size="md"
-            />
-
-            {/* Secondary Action Row: [+ Catat Interaksi] & [✨ Draf AI] & Phone */}
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => onOpenLogEncounter?.(contact)}
-                className="min-h-[42px] bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-xs font-semibold active:scale-[0.98] transition-all"
-              >
-                <Plus className="w-4 h-4 text-emerald-400" />
-                <span>+ Catat Interaksi</span>
-              </button>
-
-              <button
-                type="button"
-                data-tour="dossier-draft-ai"
-                onClick={() => onOpenAiDraft?.(contact)}
-                className="min-h-[42px] bg-blue-50 dark:bg-cyan-500/15 text-blue-700 dark:text-cyan-300 hover:bg-blue-100 dark:hover:bg-cyan-500/25 border border-blue-200/70 dark:border-cyan-500/30 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
-              >
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
-                <span>Draf AI</span>
-              </button>
-
-              <a
-                href={`tel:${contact.phoneNumber}`}
-                className="min-h-[42px] bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200 dark:border-white/15 rounded-xl flex items-center justify-center gap-1.5 shadow-xs text-xs font-semibold active:scale-[0.98] transition-all"
-              >
-                <Phone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                <span>Panggil</span>
-              </a>
-            </div>
-
-            <button
-              type="button"
-              data-tour="dossier-voice"
-              onClick={() => onOpenVoiceNote?.(contact)}
-              className="w-full min-h-[42px] bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-xs font-bold active:scale-[0.98] transition-all"
-            >
-              <Mic className="w-4 h-4" />
-              <span>Catat Kabar dengan Suara</span>
-            </button>
-          </div>
-
-          {/* Notion-Style Structured Key Information / 10-Properties Grid */}
-          <div className="bg-white dark:bg-white/5 rounded-2xl border border-slate-200/90 dark:border-white/10 p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-white/10 flex-wrap">
-              <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 min-w-0">
-                <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate">
-                  Profil & Properti Relasi
-                </h4>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {saveStatus === 'saving' && (
-                  <span className="text-[10px] font-semibold text-blue-600 dark:text-cyan-400 flex items-center gap-1 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-ping" />
-                    Menyimpan...
-                  </span>
-                )}
-                {saveStatus === 'saved' && (
-                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                    Tersimpan
-                  </span>
-                )}
-                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                  SINKRON OTOMATIS
-                </span>
-              </div>
-            </div>
-
-            {/* Fakta Penting: durable facts about the person, newest last */}
-            <div className="space-y-1" data-tour="field-facts">
-              <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Fakta Penting</p>
-              {contact.facts && contact.facts.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {contact.facts.map((f) => (
-                    <span
-                      key={`${f.text}-${f.date}`}
-                      title={`Dicatat ${formatFactDate(f.date)}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/25"
-                    >
-                      {f.text}
-                      <span className="text-[9px] text-blue-400 dark:text-blue-400/70">{formatFactDate(f.date)}</span>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                  Belum ada. Fakta seperti "punya anak" atau "punya toko" akan muncul di sini.
-                </p>
-              )}
-            </div>
-
-            {/* Notion Grid Row 1: Pertama Ketemu (metContext) */}
-            <div className="space-y-1" data-tour="field-met">
-              <label
-                htmlFor="dossier-met-context"
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
-              >
-                <Compass className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                Pertama Ketemu & Konteks
-              </label>
-              <textarea
-                id="dossier-met-context"
-                aria-label="Pertama Ketemu & Konteks Pertemuan"
-                rows={2}
-                value={metContext}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setMetContext(val);
-                }}
-                onBlur={() => handleUpdate({ metContext })}
-                placeholder="Misal: Tech conference booth, rekomendasi teman..."
-                className="w-full text-xs text-slate-800 dark:text-white bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-              />
-            </div>
-
-            {/* Notion Grid Row 2: Pembaruan Terakhir (lastUpdateNotes) */}
-            <div className="space-y-1" data-tour="field-notes">
-              <label
-                htmlFor="dossier-last-notes"
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                Pembaruan Kabar Terakhir
-              </label>
-              <textarea
-                id="dossier-last-notes"
-                aria-label="Pembaruan Kabar Terakhir"
-                rows={2}
-                value={lastUpdateNotes}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setLastUpdateNotes(val);
-                }}
-                onBlur={() => handleUpdate({ lastUpdateNotes })}
-                placeholder="Pembaruan kabar, keluarga, karir, atau project terakhir..."
-                className="w-full text-xs text-slate-800 dark:text-white bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-              />
-            </div>
-
-            {/* Notion Grid Row 3: Bahan Obrolan Follow Up (possibleFollowUpTopic) */}
-            <div data-tour="field-topic" className="space-y-1 bg-emerald-50/40 dark:bg-emerald-950/25 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
-              <label
-                htmlFor="dossier-topic"
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Bahan Obrolan Follow Up Berikutnya
-              </label>
-              <textarea
-                id="dossier-topic"
-                aria-label="Bahan Obrolan & Topik Follow Up"
-                rows={2}
-                value={followUpTopic}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFollowUpTopic(val);
-                }}
-                onBlur={() => handleUpdate({ possibleFollowUpTopic: followUpTopic })}
-                placeholder="Topik atau bahan sapaan untuk silaturahmi berikutnya..."
-                className="w-full text-xs text-slate-800 dark:text-white bg-white dark:bg-[#1C1C1E]/80 border border-emerald-200 dark:border-emerald-500/30 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-              />
-            </div>
-
-            {/* Notion Grid Row 4: Jadwal Follow Up Khusus (nextSpecificFollowUp) + Quick Chips */}
-            <div className="space-y-1.5 pt-1" data-tour="field-schedule">
-              <label
-                htmlFor="dossier-next-followup"
-                className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
-              >
-                <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                Jadwal Follow Up Khusus
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  id="dossier-next-followup"
-                  type="date"
-                  aria-label="Jadwal Follow Up Khusus"
-                  value={nextSpecificFollowUp ? nextSpecificFollowUp.split('T')[0] : ''}
-                  onChange={(e) => {
-                    const dateVal = e.target.value;
-                    if (!dateVal) {
-                      setNextSpecificFollowUp('');
-                      handleUpdate({ nextSpecificFollowUp: null });
-                      return;
-                    }
-                    const timePart = followUpTime || '09:00';
-                    const combined = `${dateVal}T${timePart}`;
-                    setNextSpecificFollowUp(combined);
-                    handleUpdate({ nextSpecificFollowUp: combined });
-                  }}
-                  className="sm:col-span-2 text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-                />
-                <input
-                  id="dossier-next-followup-time"
-                  type="time"
-                  aria-label="Jam Follow Up"
-                  value={followUpTime}
-                  onChange={(e) => {
-                    const timeVal = e.target.value;
-                    setFollowUpTime(timeVal);
-                    const datePart = nextSpecificFollowUp
-                      ? nextSpecificFollowUp.split('T')[0]
-                      : computeDateOffset(now, 1) || '';
-                    const combined = timeVal ? `${datePart}T${timeVal}` : datePart;
-                    setNextSpecificFollowUp(combined);
-                    handleUpdate({ nextSpecificFollowUp: combined });
-                  }}
-                  className="sm:col-span-1 text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-                />
-              </div>
-
-              {/* Quick schedule chips */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {QUICK_SCHEDULE_CHIPS.map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => {
-                      if (chip.days === null) {
-                        setNextSpecificFollowUp('');
-                        handleUpdate({ nextSpecificFollowUp: null });
-                      } else {
-                        const newDate = computeDateOffset(now, chip.days);
-                        const timePart = followUpTime || '09:00';
-                        const combined = newDate ? `${newDate}T${timePart}` : null;
-                        setNextSpecificFollowUp(combined || '');
-                        handleUpdate({ nextSpecificFollowUp: combined });
-                      }
-                    }}
-                    className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-all active:scale-95 ${
-                      chip.days === null
-                        ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/25 hover:border-rose-300'
-                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20'
-                    }`}
-                  >
-                    {chip.label}
-                  </button>
                 ))}
               </div>
+            ) : (
+              <p className="text-xs text-slate-400 dark:text-slate-500">Belum ada. Hal yang menetap seperti "punya anak" atau "punya toko" muncul di sini.</p>
+            )}
+          </div>
+
+          <div data-tour="field-met">
+            <FieldLabel icon={<Compass className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-met-context">
+              Pertama Ketemu & Konteks
+            </FieldLabel>
+            <textarea
+              id="dossier-met-context"
+              aria-label="Pertama Ketemu & Konteks Pertemuan"
+              rows={2}
+              value={metContext}
+              onChange={(e) => setMetContext(e.target.value)}
+              onBlur={() => metContext !== (contact.metContext || '') && handleUpdate({ metContext })}
+              placeholder="Di mana dan bagaimana kalian kenal"
+              className={fieldBox}
+            />
+          </div>
+
+          <div data-tour="field-notes">
+            <FieldLabel icon={<MessageSquare className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-last-notes">
+              Pembaruan Kabar Terakhir
+            </FieldLabel>
+            <textarea
+              id="dossier-last-notes"
+              aria-label="Pembaruan Kabar Terakhir"
+              rows={2}
+              value={lastUpdateNotes}
+              onChange={(e) => setLastUpdateNotes(e.target.value)}
+              onBlur={() => lastUpdateNotes !== (contact.lastUpdateNotes || '') && handleUpdate({ lastUpdateNotes })}
+              placeholder="Kabar keluarga, pekerjaan, atau kesehatan terakhir"
+              className={fieldBox}
+            />
+          </div>
+
+          <div data-tour="field-topic" className="rounded-2xl p-3 bg-emerald-500/[0.07] border border-emerald-500/25">
+            <FieldLabel icon={<Sparkles className="w-3.5 h-3.5" />} htmlFor="dossier-topic" className="text-emerald-700 dark:text-emerald-300">
+              Bahan Obrolan Follow Up Berikutnya
+            </FieldLabel>
+            <textarea
+              id="dossier-topic"
+              aria-label="Bahan Obrolan & Topik Follow Up"
+              rows={2}
+              value={followUpTopic}
+              onChange={(e) => setFollowUpTopic(e.target.value)}
+              onBlur={() => followUpTopic !== (contact.possibleFollowUpTopic || '') && handleUpdate({ possibleFollowUpTopic: followUpTopic })}
+              placeholder="Yang ingin ditanyakan saat menyapa berikutnya"
+              className={`${fieldBox} bg-white dark:bg-[#1C1C1E]/70 border-emerald-500/25`}
+            />
+          </div>
+        </Card>
+
+        {/* Schedule & rhythm */}
+        <Card className="space-y-4">
+          <div data-tour="field-schedule">
+            <FieldLabel icon={<Calendar className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-next-followup">
+              Jadwal Follow Up Khusus
+            </FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              <input
+                id="dossier-next-followup"
+                type="date"
+                aria-label="Jadwal Follow Up Khusus"
+                value={scheduleDate}
+                onChange={(e) => setSchedule(e.target.value || null)}
+                className="px-3 py-1.5 rounded-full text-[13px] font-semibold bg-blue-500/15 text-blue-700 dark:text-blue-200 border border-blue-500/30 focus:outline-none"
+              />
+              <input
+                type="time"
+                aria-label="Jam Follow Up"
+                value={followUpTime}
+                onChange={(e) => {
+                  const timeVal = e.target.value;
+                  setFollowUpTime(timeVal);
+                  const datePart = scheduleDate || computeDateOffset(now, 1) || '';
+                  const combined = timeVal ? `${datePart}T${timeVal}` : datePart;
+                  setNextSpecificFollowUp(combined);
+                  handleUpdate({ nextSpecificFollowUp: combined });
+                }}
+                className="px-3 py-1.5 rounded-full text-[13px] font-semibold bg-blue-500/15 text-blue-700 dark:text-blue-200 border border-blue-500/30 focus:outline-none"
+              />
             </div>
-
-            {/* Notion Grid Row 5 & 6: Terakhir Sapa & Ritme Sapa (2 columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="space-y-1">
-                <label
-                  htmlFor="dossier-last-contact"
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
+            {scheduleDate && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">{formatLongDate(scheduleDate)}</p>}
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {QUICK_SCHEDULE_CHIPS.map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  aria-label={chip.days === null ? 'Hapus Jadwal' : chip.days === 1 ? 'Besok (+1 hr)' : chip.label}
+                  onClick={() => setSchedule(chip.days === null ? null : computeDateOffset(now, chip.days))}
+                  className={`${chipBase} ${chip.days === null ? 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-300' : chipIdle}`}
                 >
-                  <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  Terakhir Sapa
-                </label>
-                <input
-                  id="dossier-last-contact"
-                  type="date"
-                  aria-label="Terakhir Sapa"
-                  value={lastContactedDate ? lastContactedDate.split('T')[0] : ''}
-                  onChange={(e) => {
-                    const val = e.target.value || null;
-                    setLastContactedDate(val || '');
-                    handleUpdate({ lastContactedDate: val });
-                  }}
-                  className="w-full text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-                />
-              </div>
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-              <div className="space-y-1">
-                <label
-                  htmlFor="dossier-cycle-days"
-                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
-                >
-                  <Repeat className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  Ritme Sapa (Hari)
-                </label>
+          <div>
+            <FieldLabel icon={<Repeat className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-cycle-days">
+              Ritme Sapa
+            </FieldLabel>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {CYCLE_CHIPS.map((d) => (
+                <button key={d} type="button" aria-pressed={followUpCycleDays === d} onClick={() => setCycle(d)} className={`${chipBase} ${followUpCycleDays === d ? chipOn : chipIdle}`}>
+                  {d} hari
+                </button>
+              ))}
+              <span className="inline-flex items-center gap-1 text-[12.5px] text-slate-500 dark:text-slate-400">
+                atau
                 <input
                   id="dossier-cycle-days"
                   type="number"
@@ -740,118 +481,77 @@ export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProp
                   value={followUpCycleDays}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
-                    if (isNaN(val)) {
-                      setFollowUpCycleDays('');
-                      return;
-                    }
-                    const valid = Math.min(365, Math.max(1, val));
-                    setFollowUpCycleDays(valid);
-                    handleUpdate({ followUpCycleDays: valid });
+                    if (isNaN(val)) return setFollowUpCycleDays('');
+                    setCycle(val);
                   }}
-                  onBlur={() => {
-                    if (followUpCycleDays === '') {
-                      setFollowUpCycleDays(contact.followUpCycleDays ?? 15);
-                    }
-                  }}
-                  className="w-full text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
+                  onBlur={() => followUpCycleDays === '' && setFollowUpCycleDays(contact.followUpCycleDays ?? 15)}
+                  className="w-14 px-2 py-1 rounded-lg text-center text-[13px] bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 />
-              </div>
-            </div>
-
-            {/* Notion Grid Row 7-10: Quick Read-Only Properties */}
-            <div className="pt-2 border-t border-slate-100 dark:border-white/10 grid grid-cols-2 gap-2 text-[11px]">
-              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                <Tag className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-                <span>Asosiasi:</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">
-                  {contact.associations?.join(', ') || 'Umum'}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                <ShieldCheck className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-                <span>Kategori:</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-200">
-                  {contact.isProfessional ? 'Profesional' : 'Personal'}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                <Hash className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-                <span>ID:</span>
-                <span className="font-mono text-slate-600 dark:text-slate-300 truncate">{contact.id}</span>
-              </div>
-              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                <AlertCircle
-                  className={`w-3 h-3 ${status.isOverdue ? 'text-rose-500' : 'text-emerald-500'}`}
-                />
-                <span>Status:</span>
-                <span
-                  className={`font-semibold ${
-                    status.isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                  }`}
-                >
-                  {status.isOverdue ? 'Perlu Disapa' : 'Aman'}
-                </span>
-              </div>
+                hari
+              </span>
             </div>
           </div>
 
-          {/* Warm Editorial Relationship Timeline */}
-          <div className="bg-slate-50/70 dark:bg-white/5 rounded-2xl border border-slate-200/80 dark:border-white/10 p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  Interaction Timeline
-                </h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenLogEncounter?.(contact)}
-                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Catat Interaksi</span>
-              </button>
-            </div>
+          <div>
+            <FieldLabel icon={<Clock className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-last-contact">
+              Terakhir Disapa
+            </FieldLabel>
+            <input
+              id="dossier-last-contact"
+              type="date"
+              aria-label="Terakhir Sapa"
+              value={lastContactedDate ? lastContactedDate.split('T')[0] : ''}
+              onChange={(e) => {
+                const val = e.target.value || null;
+                setLastContactedDate(val || '');
+                handleUpdate({ lastContactedDate: val });
+              }}
+              className="px-3 py-1.5 rounded-full text-[13px] font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none"
+            />
+          </div>
+        </Card>
 
-            {interactions.length > 0 ? (
-              <div className="relative pl-5 space-y-3 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-white/15">
-                {interactions.map((log) => {
-                  const typeBadge = getInteractionTypeBadge(log.type);
-                  return (
-                    <div key={log.id} className="relative group">
-                      {/* Marker dot */}
-                      <div className="absolute -left-5 top-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
-                      <div className="bg-white dark:bg-[#1C1C1E]/80 rounded-xl border border-slate-200/70 dark:border-white/10 p-3 shadow-xs hover:border-slate-300 dark:hover:border-white/20 transition-colors">
-                        <div className="flex items-center justify-between gap-1 flex-wrap">
-                          <span
-                            className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${typeBadge.color}`}
-                          >
-                            {typeBadge.label}
-                          </span>
-                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{log.date}</span>
-                        </div>
-                        {log.notes && (
-                          <p className="text-xs text-slate-700 dark:text-slate-200 mt-1.5 leading-relaxed">
-                            {log.notes}
-                          </p>
-                        )}
-                      </div>
+        {/* History */}
+        <Card>
+          <div className="flex items-center justify-between mb-2">
+            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300">
+              <History className="w-3.5 h-3.5 text-slate-400" />
+              Riwayat Interaksi
+            </span>
+            <button type="button" onClick={() => onOpenLogEncounter?.(contact)} className="press text-[13px] font-semibold text-blue-600 dark:text-cyan-400">
+              + Catat Interaksi
+            </button>
+          </div>
+          {sortedInteractions.length > 0 ? (
+            <ol className="relative ml-1.5 border-l-2 border-slate-100 dark:border-white/10 space-y-3">
+              {sortedInteractions.map((log) => {
+                const type = INTERACTION_TYPES[log.type] || INTERACTION_TYPES.other;
+                return (
+                  <li key={log.id} className="relative pl-4">
+                    <span className={`absolute -left-[6px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-[#232325] ${type.dot}`} />
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${type.pill}`}>{type.label}</span>
+                      <span className="text-[11.5px] text-slate-400">{formatFactDate(log.date)}</span>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-xs text-slate-400 dark:text-slate-500 bg-white dark:bg-white/5 rounded-xl border border-dashed border-slate-200 dark:border-white/15">
-                <p>Belum ada riwayat interaksi tercatat.</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                  Klik &apos;+ Catat Interaksi&apos; untuk menambahkan catatan temu.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+                    {log.notes && <p className="text-[13.5px] text-slate-700 dark:text-slate-200 mt-1 leading-relaxed">{log.notes}</p>}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">Belum ada riwayat interaksi.</p>
+          )}
+        </Card>
       </div>
-    </div>
+    </>
+  );
+};
+
+export const KinshipContactDossierModal: React.FC<KinshipContactDossierModalProps> = ({ contact, isOpen, ...rest }) => {
+  const shown = useSticky(contact);
+  return (
+    <Sheet isOpen={isOpen && Boolean(contact)} onClose={rest.onClose} labelledBy="dossier-contact-name" size="full">
+      {shown && <DossierContent key={shown.id} contact={shown} {...rest} />}
+    </Sheet>
   );
 };

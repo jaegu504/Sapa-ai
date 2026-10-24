@@ -29,7 +29,7 @@ export const Toast: React.FC<ToastProps> = ({
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full shadow-lg text-sm flex items-center gap-2.5 bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/50 max-w-[90vw] whitespace-nowrap"
+      className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[70] animate-fade-in px-4 py-2.5 rounded-full shadow-lg text-sm flex items-center gap-2.5 bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/50 max-w-[90vw] whitespace-nowrap"
     >
       {icons[type]}
       <span className="font-medium text-slate-100 text-xs md:text-sm">{message}</span>

@@ -2,6 +2,7 @@ import { getLabels } from '../../services/labelService';
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Edit3, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import type { Contact } from '../../types/crm';
+import { getDefaultCycleDays } from '../../services/settingsService';
 
 export interface EditContactModalProps {
   contact?: Contact | null; // null/undefined for adding new, Contact object for editing
@@ -25,7 +26,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [associations, setAssociations] = useState<string[]>(['Teman']);
   const [isProfessional, setIsProfessional] = useState<boolean>(false);
-  const [followUpCycleDays, setFollowUpCycleDays] = useState<number | ''>(15);
+  const [followUpCycleDays, setFollowUpCycleDays] = useState<number | ''>(() => getDefaultCycleDays());
   const [lastContactedDate, setLastContactedDate] = useState<string>('');
   const [nextSpecificFollowUp, setNextSpecificFollowUp] = useState<string>('');
   const [metContext, setMetContext] = useState<string>('');
@@ -60,7 +61,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
         setPhoneNumber('');
         setAssociations(['Teman']);
         setIsProfessional(false);
-        setFollowUpCycleDays(15);
+        setFollowUpCycleDays(getDefaultCycleDays());
         setLastContactedDate('');
         setNextSpecificFollowUp('');
         setMetContext('');
@@ -104,7 +105,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
         phoneNumber: phoneNumber.trim(),
         associations: associations.length > 0 ? associations : ['Teman'],
         isProfessional,
-        followUpCycleDays: Number(followUpCycleDays) || 15,
+        followUpCycleDays: Number(followUpCycleDays) || getDefaultCycleDays(),
         lastContactedDate: lastContactedDate.trim() ? lastContactedDate : null,
         nextSpecificFollowUp: nextSpecificFollowUp.trim() ? nextSpecificFollowUp : null,
         metContext: metContext.trim(),
@@ -137,7 +138,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({
       aria-labelledby="edit-contact-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 dark:bg-black/85 animate-fade-in"
     >
-      <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl border border-slate-200 dark:border-white/12 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white transition-colors">
+      <div className="animate-rise bg-white dark:bg-[#1C1C1E] rounded-3xl border border-slate-200 dark:border-white/12 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] text-slate-900 dark:text-white transition-colors">
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">

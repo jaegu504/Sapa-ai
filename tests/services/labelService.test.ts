@@ -36,3 +36,15 @@ describe('labelService', () => {
     expect(remapAssociations(['Teman', 'Hoca'], 'Teman', null)).toEqual(['Hoca']);
   });
 });
+
+import { toggleAssociation } from '../../src/services/labelService';
+
+describe('toggleAssociation', () => {
+  it('adds and removes a label, and Profesional drives the flag', () => {
+    const c = { associations: ['Hoca'], isProfessional: false };
+    expect(toggleAssociation(c, 'Teman')).toEqual({ associations: ['Hoca', 'Teman'], isProfessional: false });
+    expect(toggleAssociation(c, 'Hoca')).toEqual({ associations: [], isProfessional: false });
+    expect(toggleAssociation(c, 'Profesional')).toEqual({ associations: ['Hoca', 'Profesional'], isProfessional: true });
+    expect(toggleAssociation({ associations: [], isProfessional: true }, 'Profesional').isProfessional).toBe(false);
+  });
+});

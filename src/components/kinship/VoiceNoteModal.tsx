@@ -128,9 +128,9 @@ export const VoiceNoteModal: React.FC<VoiceNoteModalProps> = ({ isOpen, contact,
       role="dialog"
       aria-modal="true"
       aria-label="Catat dengan Suara"
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 animate-fade-in p-0 sm:p-4"
     >
-      <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1C1C1E] text-slate-800 dark:text-white rounded-t-[28px] sm:rounded-[28px] border border-slate-200/80 dark:border-white/10 shadow-2xl p-5 space-y-4">
+      <div className="animate-rise w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1C1C1E] text-slate-800 dark:text-white rounded-t-[28px] sm:rounded-[28px] border border-slate-200/80 dark:border-white/10 shadow-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-extrabold text-slate-900 dark:text-white">Catat dengan Suara</h2>

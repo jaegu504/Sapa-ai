@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import {
   RadarNavIcon,
   ContactsNavIcon,
@@ -35,46 +36,59 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   centerAction,
 }) => {
   const middle = Math.ceil(tabs.length / 2);
+  const columns = tabs.length + (centerAction ? 1 : 0);
   return (
     <nav
       aria-label="Navigasi Utama"
-      className="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-40 rounded-full px-3 py-2 flex justify-around items-center bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl border border-white/90 dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.6)] transition-all"
+      // Equal-width grid columns keep the center action exactly in the middle, whatever the label lengths.
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-4 right-4 max-w-md mx-auto z-40 rounded-full px-2 py-1.5 grid items-center bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl border border-white/90 dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.6)] transition-colors"
     >
       {tabs.map((tab, index) => {
         const isActive = activeTab === tab.id;
         return (
           <React.Fragment key={tab.id}>
           {centerAction && index === middle && (
-            <button
-              type="button"
-              onClick={centerAction.onClick}
-              aria-label={centerAction.label}
-              data-tour={centerAction.tourId}
-              className="-mt-8 w-14 h-14 shrink-0 rounded-full flex items-center justify-center text-white bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 shadow-[0_8px_24px_-4px_rgba(47,84,235,0.6)] border-4 border-[#F2F2F7] dark:border-[#090A0F] active:scale-95 transition-all"
-            >
-              {centerAction.icon}
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={centerAction.onClick}
+                aria-label={centerAction.label}
+                data-tour={centerAction.tourId}
+                className="press -mt-8 w-14 h-14 shrink-0 rounded-full flex items-center justify-center text-white bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 shadow-[0_8px_24px_-4px_rgba(47,84,235,0.6)] border-4 border-[#F2F2F7] dark:border-[#090A0F]"
+              >
+                {centerAction.icon}
+              </button>
+            </div>
           )}
           <button
             type="button"
             onClick={() => onTabChange(tab.id)}
             aria-label={tab.label}
+            aria-current={isActive ? 'page' : undefined}
             data-tour={`nav-${tab.id}`}
-            className={`relative flex flex-col items-center justify-center py-1 px-3.5 transition-all duration-200 rounded-full focus:outline-none select-none active:scale-95 ${
+            className={`press relative flex flex-col items-center justify-center py-1.5 rounded-full focus:outline-none select-none min-w-0 ${
               isActive
-                ? 'text-[#2F54EB] dark:text-cyan-400 font-bold bg-blue-500/10 dark:bg-cyan-500/15'
+                ? 'text-[#2F54EB] dark:text-cyan-400 font-bold'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
+            {isActive && (
+              <motion.span
+                layoutId="nav-active-pill"
+                className="absolute inset-0 rounded-full bg-blue-500/10 dark:bg-cyan-500/15"
+                transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              />
+            )}
             <div className="relative flex items-center justify-center">
               {tab.icon}
               {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 bg-rose-500 text-white text-[10px] font-extrabold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 shadow-xs border border-white dark:border-slate-900 animate-pulse">
+                <span className="absolute -top-1.5 -right-2.5 bg-rose-500 text-white text-[10px] font-extrabold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 shadow-xs border border-white dark:border-slate-900">
                   {tab.badge}
                 </span>
               )}
             </div>
-            <span className="text-[10px] mt-0.5 tracking-tight font-medium">{tab.label}</span>
+            <span className="relative text-[10px] mt-0.5 tracking-tight font-medium truncate max-w-full">{tab.label}</span>
           </button>
           </React.Fragment>
         );

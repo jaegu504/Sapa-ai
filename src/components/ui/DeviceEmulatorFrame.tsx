@@ -75,7 +75,7 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
               className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
             >
               <Smartphone className="w-3.5 h-3.5" />
-              <span>📱 Mode Emulator HP</span>
+              <Smartphone className="w-3.5 h-3.5" /><span>Mode Emulator HP</span>
             </button>
             <button
               type="button"
@@ -84,7 +84,7 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
               className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#2F54EB] text-white shadow-xs cursor-pointer"
             >
               <Monitor className="w-3.5 h-3.5" />
-              <span>💻 Mode Desktop</span>
+              <Monitor className="w-3.5 h-3.5" /><span>Mode Desktop</span>
             </button>
           </div>
         </header>
@@ -110,7 +110,7 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#2F54EB] text-white shadow-xs cursor-pointer"
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span>📱 Mode Emulator HP</span>
+            <Smartphone className="w-3.5 h-3.5" /><span>Mode Emulator HP</span>
           </button>
           <button
             type="button"
@@ -119,7 +119,7 @@ export const DeviceEmulatorFrame: React.FC<DeviceEmulatorFrameProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <Monitor className="w-3.5 h-3.5" />
-            <span>💻 Mode Desktop</span>
+            <Monitor className="w-3.5 h-3.5" /><span>Mode Desktop</span>
           </button>
         </div>
 

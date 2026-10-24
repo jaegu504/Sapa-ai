@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rocket, Download, X, Sparkles, ExternalLink } from 'lucide-react';
+import { ArrowRight, Rocket, Download, X, Sparkles, ExternalLink } from 'lucide-react';
 import type { UpdateCheckResult } from '../../services/updateService';
 import { openUpdateDownload } from '../../services/updateService';
 
@@ -39,7 +39,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
       aria-labelledby="update-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-md animate-fade-in"
     >
-      <div className="relative w-full max-w-md bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl border border-white/80 dark:border-white/15 rounded-[32px] p-6 shadow-2xl text-slate-900 dark:text-white space-y-5 animate-scale-up">
+      <div className="animate-rise relative w-full max-w-md bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl border border-white/80 dark:border-white/15 rounded-[32px] p-6 shadow-2xl text-slate-900 dark:text-white space-y-5 animate-scale-up">
         {/* Close Button */}
         <button
           type="button"
@@ -76,7 +76,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
               v{update.currentVersion}
             </span>
           </div>
-          <div className="text-blue-500 dark:text-cyan-400 font-bold px-2">➔</div>
+          <ArrowRight className="w-5 h-5 mx-2 text-blue-500 dark:text-cyan-400 shrink-0" aria-hidden="true" />
           <div className="text-center flex-1">
             <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider">
               Versi Terbaru

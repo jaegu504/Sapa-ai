@@ -12,19 +12,20 @@ Capacitor; UI copy is **Indonesian** (AI drafts also support Turkish).
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.3.0 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.4.0 at time of writing).
 
 ## Stack
 
 React 18 + TypeScript + Vite + Tailwind 3 (light + dark "glass" theme, `dark:` classes), Dexie 4
-(IndexedDB) for all contact data, Capacitor 8 (Android), Vitest + Testing Library.
+(IndexedDB) for all contact data, Capacitor 8 (Android), Vitest + Testing Library, `motion` (iOS-style
+animations). Capacitor plugins: contacts, local-notifications, app (back button), haptics, filesystem + share (backup).
 Node is installed at `~/.local/bin`. JDK 21: `/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`.
 
 ## Commands
 
 ```bash
-npm run dev          # http://localhost:5173 (also .claude/launch.json "sapa-dev")
-npx vitest run       # full test suite (~380 tests) — must be green before any release
+npm run dev          # http://localhost:5173 (also .claude/launch.json "sapa-dev"); add ?noanim when the preview tab is in the background (animations pause there)
+npx vitest run       # full test suite (~315 tests) — must be green before any release
 npx tsc --noEmit     # typecheck
 npm run build && npx cap sync android
 cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ./gradlew assembleRelease
@@ -33,13 +34,21 @@ cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Content
 
 ## Code map
 
-- `src/App.tsx` — app shell: tabs (`radar`, `contacts`, `notifications`=Jadwal, `settings`), modal state, save handlers.
-- `src/components/kinship/` — current UI: Radar dashboard, contact dossier (profile), log interaction, phonebook import, `VoiceNoteModal`.
-- `src/components/crm/` — older UI; `AiDraftModal`, `EditContactModal`, `NavigationDrawer` (☰ menu) are still used, others are legacy.
+- `src/App.tsx` — app shell: tabs (`radar`, `contacts`, `notifications`=Jadwal, `settings`), sheet/modal state, save handlers,
+  Android back button (`useAndroidBack`: closes the top sheet, then returns to Radar, then exits).
+- `src/components/kinship/` — main UI: `KinshipDashboardView` (Radar Sapa), `ContactsView` (list, chips, swipe right = label),
+  `KinshipNotificationsView` (Jadwal: Hari ini / Minggu ini / Nanti), `KinshipContactDossierModal` (profile sheet),
+  `SapaActionSheet` (green Sapa button: AI / WhatsApp / Business), `LabelPickerSheet`, `ResyncDialog`, `VoiceNoteModal`,
+  log interaction, phonebook import.
+- `src/components/settings/` — `SettingsView` (iOS grouped list) and `LabelManagerSheet` (add/rename/remove labels inline).
+- `src/components/crm/` — `AiDraftModal` (Draf AI sheet) and `EditContactModal`; the rest of the old UI was deleted in v1.4.0.
+- `src/components/ui/` — `Sheet` (bottom sheet with spring + drag-to-close, `useSticky`), `EmptyState`, `SplashScreen`,
+  `BottomNavBar` (equal grid columns so the mic is centered), `Toast`, `AppUpdateModal`, `NavIcons`.
 - `src/components/onboarding/` + `src/components/tutorial/` — first-run intro, permission step, spotlight tour.
-- `src/services/` — `aiDraftService` (Draf AI), `voiceNoteService` (voice note → fields), `speechService`,
-  `notificationService`, `nativeContactsAdapter`, `permissionService`, `labelService`, `tutorialService`, `updateService`, `themeService`.
-- `src/utils/` — phone normalization, status/cadence, WhatsApp URLs + native plugin type, `contactFilters`.
+- `src/services/` — `aiDraftService` (Draf AI), `voiceNoteService`, `speechService`, `notificationService`,
+  `nativeContactsAdapter`, `contactService` (import, `resyncPhoneContacts`, `deleteContacts`), `backupService`,
+  `settingsService` (default rhythm), `haptics`, `permissionService`, `labelService`, `tutorialService`, `updateService`, `themeService`.
+- `src/utils/` — phone normalization, status/cadence, `display` (initials, due labels, Indonesian dates), WhatsApp URLs, `contactFilters`.
 - `android/app/src/main/java/com/growsphere/crm/WhatsAppLauncherPlugin.java` — custom native plugin:
   `openWhatsApp`, `openAppSettings`, `recognizeSpeech` (phone's speech recognizer via RecognizerIntent).
 - `cloudflare-worker/worker.js` — AI proxy (see below).
@@ -52,6 +61,12 @@ cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Content
 - When a voice note replaces the kabar, the old kabar is saved to the interaction timeline (`crmDb.interactions`).
 - Labels (Asosiasi) come only from `labelService` (localStorage `sapa_labels`, defaults Ihvan/Hoca/Keluarga/Zahiri/Teman/Profesional).
   Rename/remove remaps every contact (`handleRemapLabel` in App). Do not hardcode label lists again.
+- `source?: 'phone' | 'manual'` marks contacts from the phone list. Only `phone` contacts can be offered for removal by
+  the phone re-sync, and only on native with the full list, always after a confirmation dialog. Imports never overwrite
+  a contact's existing name, notes or schedule (labels are only added). Contacts from before v1.4.0 have no `source`
+  until the next sync, so they are never removed.
+- Backups: `backupService` (version 2 file with contacts, interactions, labels). On the phone, export goes through the
+  share sheet (Filesystem cache + Share); restore merges by id. A backup/restore path must exist before any keystore change.
 - No Dexie schema change is needed for new non-indexed fields.
 
 ## AI
@@ -89,11 +104,15 @@ After a change is done and tests pass:
 - Tutorial: anchors are `data-tour="..."` attributes on real elements; steps live in `TOUR_STEPS`
   (`tutorialService.ts`). Adding/removing a step changes the step-count test. New user-facing features should get a step.
 - localStorage access is always wrapped in try/catch.
+- UI style: no emoji as icons (lucide SVG only; the ID/TR flag emoji in Draf AI are the agreed exception). No time zone
+  labels ("WIB"): users are in Turkey and Indonesia, times follow the phone. Tailwind opacity steps are 5/10/15/20...
+  (`/12` does not exist). Sheets use `Sheet`; centered modals use `animate-rise`. Tests set `MotionGlobalConfig.skipAnimations`.
 - Do not edit the same files from two agents at the same time; commit before switching tools.
 
 ## Known open items
 
 - Play Protect warns on install (unknown developer, debug signing). Options discussed: Android developer verification /
   Play Store (one-time ~$25), which requires a new release keystore.
-- Not yet tested on a real phone: Turkish voice input, label rename dialog (`window.prompt`) in the Android WebView.
+- Not yet tested on a real phone: Turkish voice input; v1.4.0 back button, haptics, backup share sheet, swipe-to-label, re-sync.
+- Next planned: full Turkish UI (dictionary-based `t()`, language switch with a fade animation).
 - `README.md` is outdated (old name, old AI engine).

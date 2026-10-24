@@ -4,6 +4,7 @@ export type TourStepId =
   | 'radar-tab'
   | 'contacts-tab'
   | 'add-contact'
+  | 'swipe-label'
   | 'pick-contact'
   | 'field-met'
   | 'field-notes'
@@ -46,8 +47,8 @@ export const TOUR_STEPS: TourStep[] = [
     context: 'shell',
     tab: 'radar',
     advance: 'next',
-    title: 'Beranda Radar',
-    body: 'Di sini Sapa menunjukkan siapa saja yang sudah waktunya disapa dan seberapa hangat silaturahmi Anda.',
+    title: 'Radar Sapa',
+    body: 'Di sini terlihat siapa yang sudah waktunya disapa. Tombol centang menandai sudah disapa, tombol hijau untuk menyapa lewat AI atau WhatsApp.',
   },
   {
     id: 'contacts-tab',
@@ -65,7 +66,16 @@ export const TOUR_STEPS: TourStep[] = [
     tab: 'contacts',
     advance: 'click',
     title: 'Tambahkan Kontak untuk Tutorial',
-    body: 'Untuk tutorial ini, tambahkan satu kontak sungguhan lewat + Tambah Kontak, atau ambil dari buku telepon lewat Impor HP. Sudah punya kontak? Ketuk Berikutnya.',
+    body: 'Ketuk tombol + biru untuk menambah kontak, atau tombol putar untuk mengambil kontak dari HP. Tombol putar juga merapikan kontak yang sudah Anda hapus dari HP. Sudah punya kontak? Ketuk Berikutnya.',
+  },
+  {
+    id: 'swipe-label',
+    target: 'contact-list',
+    context: 'shell',
+    tab: 'contacts',
+    advance: 'next',
+    title: 'Geser untuk Memberi Label',
+    body: 'Geser satu kontak ke kanan untuk memberi label seperti Keluarga atau Hoca. Label lalu bisa dipakai untuk menyaring daftar lewat tombol di atas.',
   },
   {
     id: 'pick-contact',
@@ -123,8 +133,8 @@ export const TOUR_STEPS: TourStep[] = [
     context: 'shell',
     tab: 'notifications',
     advance: 'next',
-    title: 'Jadwal & Pengingat',
-    body: 'Di tab Jadwal ada rangkuman pagi dan daftar sapaan yang terjadwal. Sapa akan mengirim notifikasi pengingat ke HP Anda.',
+    title: 'Jadwal',
+    body: 'Tab Jadwal menunjukkan siapa yang perlu disapa hari ini, minggu ini, dan nanti. Setiap pagi Sapa mengirim pengingat ke HP Anda.',
   },
   {
     id: 'draft-ai',
@@ -132,15 +142,15 @@ export const TOUR_STEPS: TourStep[] = [
     context: 'dossier',
     advance: 'click',
     title: 'Buat Draf dengan AI',
-    body: 'Ketuk Draf AI. Sapa akan menyusun 3 pilihan pesan pembuka berdasarkan catatan kontak ini.',
+    body: 'Ketuk Draf AI. Sapa menyusun pesan pembuka dari catatan kontak ini. Tombol hijau Sapa di atasnya juga bisa dipakai: pilih tulis dengan AI atau langsung buka WhatsApp.',
   },
   {
     id: 'draft-pick',
     target: 'draft-options',
     context: 'draft',
     advance: 'click',
-    title: 'Pilih Satu Draf',
-    body: 'Ketuk salah satu dari 3 pilihan pesan. Anda masih bisa mengedit teksnya.',
+    title: 'Pilih Jenis Sapaan',
+    body: 'Pilih Kabar & Doa, Bahas Topik, atau Ajak Temu, lalu baca pesannya di kotak di bawah. Teksnya masih bisa Anda ubah.',
   },
   {
     id: 'whatsapp',

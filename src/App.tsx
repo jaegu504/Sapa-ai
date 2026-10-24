@@ -1,225 +1,112 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Users,
-  Settings as SettingsIcon,
-  Plus,
-  Download,
-  Mic,
-  X,
-  Key,
-  Database,
-  Sparkles,
-  CheckCircle2,
-  Trash2,
-  RefreshCw,
-  Search,
-  Menu,
-  Smartphone,
-  SunMoon,
-  HelpCircle,
-  Rocket,
-} from 'lucide-react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import { Capacitor } from '@capacitor/core';
+import { Mic } from 'lucide-react';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { TourSpotlight } from './components/tutorial/TourSpotlight';
 import { useTutorial } from './components/tutorial/useTutorial';
 import { VoiceNoteModal } from './components/kinship/VoiceNoteModal';
 import { applyVoiceNote, VoiceNoteResult } from './services/voiceNoteService';
-import { applyContactsFilter, describeContactsFilter, ContactsFilter } from './utils/contactFilters';
+import { ContactsFilter } from './utils/contactFilters';
 import { remapAssociations } from './services/labelService';
 import { AppUpdateModal } from './components/ui/AppUpdateModal';
-import {
-  checkForAppUpdate,
-  dismissUpdate,
-  CURRENT_APP_VERSION,
-  type UpdateCheckResult,
-} from './services/updateService';
-import {
-  RadarNavIcon,
-  ContactsNavIcon,
-  ScheduleNavIcon,
-  SettingsNavIcon,
-  AppleThemeIcon,
-  VisionOsThemeIcon,
-  SystemThemeIcon,
-} from './components/ui/NavIcons';
-import {
-  initTheme,
-  setThemePreference,
-  getThemePreference,
-  applyTheme,
-  type ThemePreference,
-} from './services/themeService';
+import { checkForAppUpdate, dismissUpdate, CURRENT_APP_VERSION, type UpdateCheckResult } from './services/updateService';
+import { RadarNavIcon, ContactsNavIcon, ScheduleNavIcon, SettingsNavIcon } from './components/ui/NavIcons';
+import { initTheme, setThemePreference, getThemePreference, applyTheme, type ThemePreference } from './services/themeService';
 import { crmDb } from './db/crmDatabase';
 import type { Contact, InteractionLog, InteractionType } from './types/crm';
-import { markChatCompleted } from './services/contactService';
+import { deleteContacts, markChatCompleted, resyncPhoneContacts } from './services/contactService';
+import { getDeviceContactsWithStatus } from './services/nativeContactsAdapter';
+import { exportBackup, restoreBackup } from './services/backupService';
+import { getDefaultCycleDays } from './services/settingsService';
 import {
   initNotificationService,
   scheduleDailyMorningDigest,
   scheduleTargetedFollowUpAlarm,
   getUpcomingAlarms,
 } from './services/notificationService';
-import { calculateContactStatus, getDaysLeftOrOverdue } from './utils/status';
-import sapaLogo from './assets/logo.png';
+import { successHaptic, tapHaptic } from './services/haptics';
 import { KinshipDashboardView } from './components/kinship/KinshipDashboardView';
 import { KinshipContactDossierModal } from './components/kinship/KinshipContactDossierModal';
 import { KinshipLogInteractionModal } from './components/kinship/KinshipLogInteractionModal';
 import { KinshipNotificationsView } from './components/kinship/KinshipNotificationsView';
 import { KinshipPhonebookSyncView } from './components/kinship/KinshipPhonebookSyncView';
-import { CadenceBadge } from './components/kinship/CadenceBadge';
-import { NotionTableView } from './components/crm/NotionTableView';
+import { ContactsView } from './components/kinship/ContactsView';
+import { SapaActionSheet } from './components/kinship/SapaActionSheet';
+import { LabelPickerSheet } from './components/kinship/LabelPickerSheet';
+import { ResyncDialog } from './components/kinship/ResyncDialog';
+import { SettingsView } from './components/settings/SettingsView';
+import { LabelManagerSheet } from './components/settings/LabelManagerSheet';
 import { AiDraftModal } from './components/crm/AiDraftModal';
 import { EditContactModal } from './components/crm/EditContactModal';
-import { NavigationDrawer } from './components/crm/NavigationDrawer';
 import { DeviceEmulatorFrame } from './components/ui/DeviceEmulatorFrame';
 import { BottomNavBar, NavTabItem } from './components/ui/BottomNavBar';
+import { SplashScreen } from './components/ui/SplashScreen';
 import { Toast, ToastType } from './components/ui/Toast';
+import { useAndroidBack } from './hooks/useAndroidBack';
 
 const STORAGE_API_KEY = 'growSphere_gemini_api_key';
+const DIGEST_TIME_KEY = 'kinship_digest_time';
 
-// Realistic sample contacts for instant demo seeding
-const SEED_CONTACTS: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>[] = [
-  {
-    name: 'Ustadz Danu Hasan',
-    phoneNumber: '+6281234567891',
-    associations: ['Hoca', 'Ihvan'],
-    isProfessional: false,
-    followUpCycleDays: 7,
-    lastContactedDate: new Date(Date.now() - 10 * 86400000).toISOString().split('T')[0], // 10 days ago (overdue)
-    nextSpecificFollowUp: null,
-    metContext: 'Kajian Rutin Masjid Al-Ikhlas',
-    lastUpdateNotes: 'Sedang mempersiapkan materi kajian kitab hadits Arbain',
-    possibleFollowUpTopic: 'Menanyakan kabar kesehatan dan kitab kajian pekan depan',
-  },
-  {
-    name: 'Bunda Sarah',
-    phoneNumber: '+6281234567892',
-    associations: ['Keluarga'],
-    isProfessional: false,
-    followUpCycleDays: 5,
-    lastContactedDate: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], // 2 days ago (aman)
-    nextSpecificFollowUp: null,
-    metContext: 'Keluarga besar pihak Ibu',
-    lastUpdateNotes: 'Kabar keluarga sehat, cucu baru masuk TK',
-    possibleFollowUpTopic: 'Kirim kabar anak-anak dan silaturahmi akhir pekan',
-  },
-  {
-    name: 'dr. Farhan Rizki',
-    phoneNumber: '+6281234567893',
-    associations: ['Profesional', 'Teman'],
-    isProfessional: true,
-    followUpCycleDays: 30,
-    lastContactedDate: new Date(Date.now() - 45 * 86400000).toISOString().split('T')[0], // 45 days ago (overdue)
-    nextSpecificFollowUp: null,
-    metContext: 'Konferensi Medika Nusantara Bandung',
-    lastUpdateNotes: 'Baru menyelesaikan residensi spesialis',
-    possibleFollowUpTopic: 'Diskusi kolaborasi seminar kesehatan masyarakat',
-  },
-  {
-    name: 'Ahmad Fauzi',
-    phoneNumber: '+6281234567894',
-    associations: ['Ihvan', 'Teman'],
-    isProfessional: false,
-    followUpCycleDays: 14,
-    lastContactedDate: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0],
-    nextSpecificFollowUp: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Besok (alarm target)
-    metContext: 'Halaqah Pekanan & Alumni Kampus',
-    lastUpdateNotes: 'Baru pindah rumah di area BSD',
-    possibleFollowUpTopic: 'Konfirmasi kehadiran agenda rihlah akhir pekan',
-  },
-  {
-    name: 'Emre Yilmaz',
-    phoneNumber: '+905551234567',
-    associations: ['Hoca', 'Zahiri'],
-    isProfessional: false,
-    followUpCycleDays: 21,
-    lastContactedDate: new Date(Date.now() - 28 * 86400000).toISOString().split('T')[0], // 28 days ago (overdue)
-    nextSpecificFollowUp: null,
-    metContext: 'Pertukaran Budaya & Studi di Istanbul',
-    lastUpdateNotes: 'Aktif mengajar di yayasan sosial',
-    possibleFollowUpTopic: 'Silaturahmi dan menanyakan kabar kursus bahasa Turki',
-  },
-];
-
-function getInitials(name: string): string {
-  if (!name || !name.trim()) return '??';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.trim().slice(0, 2).toUpperCase();
+function newId(prefix: string): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function getAssociationBadgeClass(assoc?: string): string {
-  switch (assoc?.toLowerCase()) {
-    case 'ihvan':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'hoca':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    case 'keluarga':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'zahiri':
-      return 'bg-sky-50 text-sky-700 border-sky-200';
-    case 'teman':
-      return 'bg-teal-50 text-teal-700 border-teal-200';
-    case 'profesional':
-      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+function readStorage(key: string, fallback: string): string {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
   }
 }
 
 export const App: React.FC = () => {
-  // Navigation State: 'radar' | 'contacts' | 'notifications' | 'settings' (supports legacy 'home' & 'calendar')
+  // Navigation State: 'radar' | 'contacts' | 'notifications' | 'settings'
   const [activeTab, setActiveTab] = useState<string>('radar');
-
-  // Contacts view mode toggle in Tab 2: 'cards' | 'table'
-  const [contactsViewMode, setContactsViewMode] = useState<'cards' | 'table'>('cards');
 
   // Database Entities State
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [interactions, setInteractions] = useState<InteractionLog[]>([]);
-  const [interactionsCount, setInteractionsCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Navigation Drawer State
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
-
-  // Modals State
+  // Screens and sheets
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [logEncounterContact, setLogEncounterContact] = useState<Contact | null>(null);
   const [draftContact, setDraftContact] = useState<Contact | null>(null);
+  const [sapaContact, setSapaContact] = useState<Contact | null>(null);
+  const [labelContact, setLabelContact] = useState<Contact | null>(null);
+  const [isLabelManagerOpen, setIsLabelManagerOpen] = useState<boolean>(false);
   const [isSyncOpen, setIsSyncOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [voiceNote, setVoiceNote] = useState<{ open: boolean; contact: Contact | null }>({ open: false, contact: null });
-
+  const [resyncResult, setResyncResult] = useState<{ newCount: number; missing: Contact[] } | null>(null);
+  const [isResyncing, setIsResyncing] = useState<boolean>(false);
 
   // In-App Software Update State
   const [appUpdate, setAppUpdate] = useState<UpdateCheckResult | null>(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
 
-  // Contacts search state
+  // Contacts list search and filter
   const [contactsSearch, setContactsSearch] = useState<string>('');
   const [contactsFilter, setContactsFilter] = useState<ContactsFilter | null>(null);
 
-  // Toast Notification State
-  const [toast, setToast] = useState<{
-    visible: boolean;
-    message: string;
-    type: ToastType;
-  }>({
+  const [digestTime, setDigestTime] = useState<string>(() => readStorage(DIGEST_TIME_KEY, '08:00'));
+
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
     visible: false,
     message: '',
     type: 'info',
   });
 
-  // Settings State: Gemini API Key
+  // Optional personal AI key (Groq / Gemini)
   const [apiKey, setApiKey] = useState<string>('');
   const [apiKeyInput, setApiKeyInput] = useState<string>('');
   const [isApiKeySaved, setIsApiKeySaved] = useState<boolean>(false);
 
-  // Show Toast helper
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     setToast({ visible: true, message, type });
   }, []);
@@ -234,12 +121,12 @@ export const App: React.FC = () => {
     context: voiceNote.open
       ? 'other'
       : draftContact
-      ? 'draft'
-      : selectedContact
-        ? 'dossier'
-        : isEditModalOpen || isSyncOpen || logEncounterContact || isDrawerOpen || isUpdateModalOpen
-          ? 'other'
-          : 'shell',
+        ? 'draft'
+        : selectedContact
+          ? 'dossier'
+          : isEditModalOpen || isSyncOpen || logEncounterContact || isUpdateModalOpen || sapaContact || labelContact || isLabelManagerOpen || resyncResult
+            ? 'other'
+            : 'shell',
     ready: !loading,
     selectedContactId: selectedContact?.id ?? null,
     contactExists,
@@ -249,22 +136,18 @@ export const App: React.FC = () => {
       if (contact) setSelectedContact(contact);
     },
     closeContact: () => setSelectedContact(null),
-    onComplete: () => showToast('Tutorial selesai 🎉 Selamat menyapa!', 'success'),
+    onComplete: () => showToast('Tutorial selesai. Selamat menyapa!', 'success'),
   });
 
-  // Auto-hide toast after 3.5s
   useEffect(() => {
     if (toast.visible) {
-      const timer = setTimeout(() => {
-        hideToast();
-      }, 3500);
+      const timer = setTimeout(hideToast, 3500);
       return () => clearTimeout(timer);
     }
   }, [toast.visible, hideToast]);
 
-  // Load API key from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_API_KEY) || localStorage.getItem('gemini_api_key') || '';
+    const saved = readStorage(STORAGE_API_KEY, '') || readStorage('gemini_api_key', '');
     if (saved) {
       setApiKey(saved);
       setApiKeyInput(saved);
@@ -272,14 +155,10 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Reactive DB refresh function
   const refreshData = useCallback(async () => {
     try {
-      const allContacts = await crmDb.contacts.toArray();
-      setContacts(allContacts);
-      const allInteractions = await crmDb.interactions.toArray();
-      setInteractions(allInteractions);
-      setInteractionsCount(allInteractions.length);
+      setContacts(await crmDb.contacts.toArray());
+      setInteractions(await crmDb.interactions.toArray());
     } catch (err) {
       console.error('Failed to load contacts from database', err);
     } finally {
@@ -287,42 +166,25 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
-  // Initialize notification service on mount
   useEffect(() => {
-    initNotificationService().catch((err) => {
-      console.error('Failed to initialize notification service:', err);
-    });
+    initNotificationService().catch((err) => console.error('Failed to initialize notification service:', err));
   }, []);
 
-  // Register daily morning digest whenever contacts change
   useEffect(() => {
     if (contacts.length > 0) {
-      scheduleDailyMorningDigest(contacts).catch((err) => {
-        console.error('Failed to schedule daily morning digest:', err);
-      });
+      scheduleDailyMorningDigest(contacts).catch((err) => console.error('Failed to schedule daily morning digest:', err));
     }
   }, [contacts]);
 
-  // Computed notifications for badge
-  const upcomingAlarms = useMemo(() => {
-    return getUpcomingAlarms(contacts, 48);
-  }, [contacts]);
+  const upcomingAlarms = useMemo(() => getUpcomingAlarms(contacts, 48), [contacts]);
 
-  // Theme state: 'light' | 'dark' | 'system'
   const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => getThemePreference());
+  useEffect(() => initTheme(), []);
 
-  // Initialize theme on mount
-  useEffect(() => {
-    const cleanup = initTheme();
-    return cleanup;
-  }, []);
-
-  // Check for app update in the background on startup
   useEffect(() => {
     checkForAppUpdate()
       .then((res) => {
@@ -331,9 +193,7 @@ export const App: React.FC = () => {
           setIsUpdateModalOpen(true);
         }
       })
-      .catch((err) => {
-        console.warn('Startup app update check failed:', err);
-      });
+      .catch((err) => console.warn('Startup app update check failed:', err));
   }, []);
 
   const handleCheckAppUpdate = async () => {
@@ -343,12 +203,12 @@ export const App: React.FC = () => {
       setAppUpdate(res);
       if (res.hasUpdate) {
         setIsUpdateModalOpen(true);
-        showToast(`Versi baru v${res.latestVersion} tersedia!`, 'success');
+        showToast(`Versi baru v${res.latestVersion} tersedia`, 'success');
       } else {
-        showToast(`Aplikasi Sapa sudah versi terbaru (v${CURRENT_APP_VERSION}) ✨`, 'info');
+        showToast(`Sapa sudah versi terbaru (v${CURRENT_APP_VERSION})`, 'info');
       }
     } catch {
-      showToast('Gagal memeriksa pembaruan. Periksa internet, lalu coba lagi beberapa saat lagi.', 'error');
+      showToast('Gagal memeriksa pembaruan. Periksa internet, lalu coba lagi.', 'error');
     } finally {
       setIsCheckingUpdate(false);
     }
@@ -358,13 +218,22 @@ export const App: React.FC = () => {
     setThemePreference(newTheme);
     setThemePreferenceState(newTheme);
     applyTheme(newTheme);
-    showToast(
-      `Tema diubah ke ${newTheme === 'light' ? 'Terang (iOS 18 Glass)' : newTheme === 'dark' ? 'Gelap (VisionOS Glass)' : 'Otomatis (Sistem)'}`,
-      'success'
-    );
   };
 
-  // Tab definitions with dynamic badge and pure vector SVG icons
+  const handleDigestTimeChange = async (time: string) => {
+    setDigestTime(time);
+    try {
+      localStorage.setItem(DIGEST_TIME_KEY, time);
+    } catch {
+      // Ignore localStorage failures
+    }
+    const [hour, minute] = time.split(':').map(Number);
+    if (!isNaN(hour) && !isNaN(minute)) {
+      await scheduleDailyMorningDigest(contacts, { hour, minute }).catch(() => {});
+      showToast(`Pengingat harian jam ${time}`, 'success');
+    }
+  };
+
   const navTabs: NavTabItem[] = useMemo(
     () => [
       { id: 'radar', label: 'Radar', icon: <RadarNavIcon size={20} /> },
@@ -379,6 +248,23 @@ export const App: React.FC = () => {
     ],
     [upcomingAlarms.length]
   );
+
+  // Android back button closes the top-most screen first, then returns to Radar.
+  useAndroidBack(() => {
+    if (resyncResult) return setResyncResult(null), true;
+    if (labelContact) return setLabelContact(null), true;
+    if (sapaContact) return setSapaContact(null), true;
+    if (voiceNote.open) return setVoiceNote({ open: false, contact: null }), true;
+    if (draftContact) return setDraftContact(null), true;
+    if (logEncounterContact) return setLogEncounterContact(null), true;
+    if (isEditModalOpen) return setIsEditModalOpen(false), setEditingContact(null), true;
+    if (isLabelManagerOpen) return setIsLabelManagerOpen(false), true;
+    if (isUpdateModalOpen) return setIsUpdateModalOpen(false), true;
+    if (isSyncOpen) return setIsSyncOpen(false), true;
+    if (selectedContact) return setSelectedContact(null), true;
+    if (activeTab !== 'radar') return setActiveTab('radar'), true;
+    return false;
+  });
 
   // Contact Handlers
   const handleOpenAddContact = () => {
@@ -396,40 +282,30 @@ export const App: React.FC = () => {
     try {
       const nowIso = new Date().toISOString();
       if (editingContact && editingContact.id) {
-        await crmDb.contacts.update(editingContact.id, {
-          ...contactData,
-          updatedAt: nowIso,
-        });
+        await crmDb.contacts.update(editingContact.id, { ...contactData, updatedAt: nowIso });
         const updated = await crmDb.contacts.get(editingContact.id);
-        if (updated) {
-          await scheduleTargetedFollowUpAlarm(updated);
-        }
+        if (updated) await scheduleTargetedFollowUpAlarm(updated);
         showToast(`Kontak ${contactData.name || editingContact.name} diperbarui`, 'success');
       } else {
         const newContact: Contact = {
-          id:
-            typeof crypto !== 'undefined' && crypto.randomUUID
-              ? crypto.randomUUID()
-              : `c_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: newId('c'),
           name: (contactData.name || '').trim(),
           phoneNumber: (contactData.phoneNumber || '').trim(),
-          associations:
-            contactData.associations && contactData.associations.length > 0
-              ? contactData.associations
-              : ['Teman'],
+          associations: contactData.associations && contactData.associations.length > 0 ? contactData.associations : ['Teman'],
           isProfessional: contactData.isProfessional ?? false,
           lastContactedDate: contactData.lastContactedDate || null,
-          followUpCycleDays: contactData.followUpCycleDays || 15,
+          followUpCycleDays: contactData.followUpCycleDays || getDefaultCycleDays(),
           nextSpecificFollowUp: contactData.nextSpecificFollowUp || null,
           metContext: contactData.metContext || '',
           lastUpdateNotes: contactData.lastUpdateNotes || '',
           possibleFollowUpTopic: contactData.possibleFollowUpTopic || '',
+          source: 'manual',
           createdAt: nowIso,
           updatedAt: nowIso,
         };
         await crmDb.contacts.add(newContact);
         await scheduleTargetedFollowUpAlarm(newContact);
-        showToast(`Kontak ${newContact.name} berhasil ditambahkan`, 'success');
+        showToast(`${newContact.name} ditambahkan`, 'success');
       }
       await refreshData();
       setIsEditModalOpen(false);
@@ -442,13 +318,12 @@ export const App: React.FC = () => {
 
   const handleDeleteContact = async (contactId: string) => {
     try {
-      await crmDb.contacts.delete(contactId);
-      await crmDb.interactions.where('contactId').equals(contactId).delete();
+      await deleteContacts([contactId]);
       await refreshData();
       setIsEditModalOpen(false);
       setEditingContact(null);
       setSelectedContact(null);
-      showToast('Kontak berhasil dihapus', 'info');
+      showToast('Kontak dihapus', 'info');
     } catch (err) {
       console.error('Failed to delete contact', err);
       showToast('Gagal menghapus kontak', 'error');
@@ -459,48 +334,33 @@ export const App: React.FC = () => {
     try {
       await markChatCompleted(contact.id, notes || 'Selesai berinteraksi via WhatsApp');
       const updated = await crmDb.contacts.get(contact.id);
-      if (updated) {
-        await scheduleTargetedFollowUpAlarm(updated);
-      }
+      if (updated) await scheduleTargetedFollowUpAlarm(updated);
       await refreshData();
-      showToast(`Silaturahmi dengan ${contact.name} dicatat!`, 'success');
+      successHaptic();
+      showToast(`${contact.name} sudah disapa`, 'success');
     } catch (err) {
       console.error('Failed to log chat', err);
       showToast('Gagal mencatat interaksi', 'error');
     }
   };
 
-  // Handle direct inline update for Contact Dossier
+  // Inline edits from the profile and other sheets. The profile shows its own "Tersimpan".
   const handleUpdateContact = async (contactId: string, updates: Partial<Contact>) => {
     try {
       const nowIso = new Date().toISOString();
-      await crmDb.contacts.update(contactId, {
-        ...updates,
-        updatedAt: nowIso,
-      });
+      await crmDb.contacts.update(contactId, { ...updates, updatedAt: nowIso });
       const updated = await crmDb.contacts.get(contactId);
-      if (updated) {
-        await scheduleTargetedFollowUpAlarm(updated);
-      }
+      if (updated) await scheduleTargetedFollowUpAlarm(updated);
       await refreshData();
-      setSelectedContact((prev) => {
-        if (prev && prev.id === contactId) {
-          return {
-            ...prev,
-            ...updates,
-            updatedAt: nowIso,
-          };
-        }
-        return prev;
-      });
-      showToast('Kontak berhasil diperbarui', 'success');
+      const merge = (prev: Contact | null) => (prev && prev.id === contactId ? { ...prev, ...updates, updatedAt: nowIso } : prev);
+      setSelectedContact(merge);
+      setLabelContact(merge);
     } catch (err) {
       console.error('Failed to update contact inline', err);
       showToast('Gagal memperbarui kontak', 'error');
     }
   };
 
-  // Handle saving an encounter from KinshipLogInteractionModal
   const handleSaveEncounter = async (encounter: {
     contactId: string;
     type: InteractionType;
@@ -512,40 +372,27 @@ export const App: React.FC = () => {
   }) => {
     try {
       const nowIso = new Date().toISOString();
-      const interactionId =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `int_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-      // Prepare notes string combining location, talkingPoints, and newFacts
       const noteParts: string[] = [];
       if (encounter.location) noteParts.push(`Lokasi: ${encounter.location}`);
       if (encounter.talkingPoints) noteParts.push(encounter.talkingPoints);
-      if (encounter.newFacts && encounter.newFacts.length > 0) {
-        noteParts.push(`Fakta baru: ${encounter.newFacts.join(', ')}`);
-      }
-      const combinedNotes = noteParts.join(' • ');
+      if (encounter.newFacts && encounter.newFacts.length > 0) noteParts.push(`Fakta baru: ${encounter.newFacts.join(', ')}`);
 
-      // Save interaction log into Dexie
       await crmDb.interactions.add({
-        id: interactionId,
+        id: newId('int'),
         contactId: encounter.contactId,
         date: encounter.date || nowIso.split('T')[0],
         type: encounter.type,
-        notes: combinedNotes,
+        notes: noteParts.join(' • '),
         createdAt: nowIso,
       });
 
-      // Update contact's lastContactedDate & lastUpdateNotes
       const contact = contacts.find((c) => c.id === encounter.contactId);
       if (contact) {
         const contactUpdates: Partial<Contact> = {
           lastContactedDate: encounter.date || nowIso.split('T')[0],
           updatedAt: nowIso,
         };
-        if (encounter.talkingPoints) {
-          contactUpdates.lastUpdateNotes = encounter.talkingPoints;
-        }
+        if (encounter.talkingPoints) contactUpdates.lastUpdateNotes = encounter.talkingPoints;
         if (encounter.newFacts && encounter.newFacts.length > 0) {
           const date = contactUpdates.lastContactedDate as string;
           const known = new Set((contact.facts ?? []).map((f) => f.text.toLowerCase()));
@@ -555,13 +402,13 @@ export const App: React.FC = () => {
           ];
         }
         await crmDb.contacts.update(contact.id, contactUpdates);
-        const updatedContact = { ...contact, ...contactUpdates };
-        await scheduleTargetedFollowUpAlarm(updatedContact);
+        await scheduleTargetedFollowUpAlarm({ ...contact, ...contactUpdates });
       }
 
       await refreshData();
       setLogEncounterContact(null);
-      showToast('Interaksi berhasil dicatat!', 'success');
+      successHaptic();
+      showToast('Interaksi dicatat', 'success');
     } catch (err) {
       console.error('Failed to save encounter', err);
       showToast('Gagal mencatat interaksi', 'error');
@@ -569,23 +416,20 @@ export const App: React.FC = () => {
   };
 
   // Save a reviewed voice note: old kabar goes to the timeline, then the contact is updated.
-  const handleSaveVoiceNote = async (
-    contact: Contact,
-    note: Pick<VoiceNoteResult, 'kabar' | 'facts' | 'topic' | 'followUpDate'>
-  ) => {
+  const handleSaveVoiceNote = async (contact: Contact, note: Pick<VoiceNoteResult, 'kabar' | 'facts' | 'topic' | 'followUpDate'>) => {
     try {
       const { updates, archivedKabar } = applyVoiceNote(contact, note);
-      const nowIso = new Date().toISOString();
       await crmDb.interactions.add({
-        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `int_${Date.now()}`,
+        id: newId('int'),
         contactId: contact.id,
         date: updates.lastContactedDate as string,
         type: 'other',
         notes: archivedKabar ? `Catatan suara • Kabar sebelumnya: ${archivedKabar}` : 'Catatan suara',
-        createdAt: nowIso,
+        createdAt: new Date().toISOString(),
       });
       await handleUpdateContact(contact.id, updates);
       setVoiceNote({ open: false, contact: null });
+      successHaptic();
       showToast(`Kabar ${contact.name} diperbarui`, 'success');
     } catch (err) {
       console.error('Failed to save voice note', err);
@@ -593,115 +437,69 @@ export const App: React.FC = () => {
     }
   };
 
-  // Handle snoozing follow-up alarm for a contact
-  const handleSnoozeContact = async (contact: Contact, days: number) => {
-    try {
-      const target = new Date();
-      target.setDate(target.getDate() + days);
-      const targetDateStr = target.toISOString().split('T')[0];
-      const nowIso = new Date().toISOString();
-
-      await crmDb.contacts.update(contact.id, {
-        nextSpecificFollowUp: targetDateStr,
-        updatedAt: nowIso,
-      });
-
-      const updatedContact = {
-        ...contact,
-        nextSpecificFollowUp: targetDateStr,
-        updatedAt: nowIso,
-      };
-
-      await scheduleTargetedFollowUpAlarm(updatedContact);
-      await refreshData();
-      showToast(`Pengingat ${contact.name} ditunda +${days} hari (${targetDateStr})`, 'success');
-    } catch (err) {
-      console.error('Failed to snooze contact', err);
-      showToast('Gagal menunda pengingat', 'error');
-    }
-  };
-
-  // Export full CRM database to JSON backup file
   const handleExportBackup = async () => {
     try {
-      const allContacts = await crmDb.contacts.toArray();
-      const allInteractions = await crmDb.interactions.toArray();
-      const backupData = {
-        version: '1.0.0',
-        exportedAt: new Date().toISOString(),
-        contacts: allContacts,
-        interactions: allInteractions,
-      };
-      const jsonString = JSON.stringify(backupData, null, 2);
-      const dateStr = new Date().toISOString().split('T')[0];
-      const fileName = `growsphere-backup-${dateStr}.json`;
-
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showToast(`Backup berhasil diekspor (${allContacts.length} kontak)`, 'success');
+      const count = await exportBackup();
+      showToast(`Cadangan dibuat (${count} kontak)`, 'success');
     } catch (err) {
       console.error('Failed to export backup', err);
-      showToast('Gagal mengekspor data backup', 'error');
+      showToast('Gagal membuat cadangan', 'error');
     }
   };
 
-  // Import CRM database from JSON backup file
-  const handleImportBackup = async (jsonData: string) => {
+  const handleRestoreBackup = async (jsonText: string) => {
     try {
-      const parsed = JSON.parse(jsonData);
-      if (!parsed || typeof parsed !== 'object') {
-        throw new Error('Format file backup JSON tidak valid');
-      }
-      const incomingContacts: Contact[] = Array.isArray(parsed)
-        ? parsed
-        : Array.isArray(parsed.contacts)
-        ? parsed.contacts
-        : [];
-      const incomingInteractions: InteractionLog[] = Array.isArray(parsed.interactions)
-        ? parsed.interactions
-        : [];
-
-      if (incomingContacts.length === 0 && incomingInteractions.length === 0) {
-        throw new Error('Tidak ada data kontak atau interaksi dalam file backup');
-      }
-
-      for (const c of incomingContacts) {
-        if (c && c.id) {
-          await crmDb.contacts.put(c);
-        }
-      }
-      for (const log of incomingInteractions) {
-        if (log && log.id) {
-          await crmDb.interactions.put(log);
-        }
-      }
-
+      const count = await restoreBackup(jsonText);
       await refreshData();
-      showToast(`Berhasil memulihkan ${incomingContacts.length} kontak dari backup!`, 'success');
+      showToast(`${count} kontak dipulihkan dari cadangan`, 'success');
     } catch (err: any) {
-      console.error('Failed to import backup', err);
-      showToast(err?.message || 'Gagal mengimpor file backup', 'error');
+      console.error('Failed to restore backup', err);
+      showToast(err?.message || 'Gagal memulihkan cadangan', 'error');
     }
   };
 
-  // Handle drawer filter shortcut selection
+  // Compare with the phone's contact list. Removing contacts is only offered on the phone,
+  // where the full list is available, and always waits for the user's confirmation.
+  const handleResync = async () => {
+    setIsResyncing(true);
+    try {
+      const device = await getDeviceContactsWithStatus();
+      if (device.permissionStatus === 'denied') {
+        showToast('Izin kontak belum diberikan. Buka Pengaturan HP untuk mengizinkan.', 'error');
+        return;
+      }
+      const full = Capacitor.isNativePlatform() && device.permissionStatus === 'granted';
+      const result = await resyncPhoneContacts(device.contacts, full);
+      await refreshData();
+      if (result.newOnPhone.length === 0 && result.missing.length === 0) {
+        showToast('Kontak sudah sinkron dengan HP', 'success');
+      } else {
+        setResyncResult({ newCount: result.newOnPhone.length, missing: result.missing });
+      }
+    } catch (err) {
+      console.error('Failed to resync contacts', err);
+      showToast('Gagal membaca kontak HP', 'error');
+    } finally {
+      setIsResyncing(false);
+    }
+  };
+
+  const handleDeleteMissing = async (ids: string[]) => {
+    try {
+      await deleteContacts(ids);
+      await refreshData();
+      setResyncResult(null);
+      showToast(`${ids.length} kontak dihapus`, 'info');
+    } catch (err) {
+      console.error('Failed to delete contacts', err);
+      showToast('Gagal menghapus kontak', 'error');
+    }
+  };
+
   const showContactsWith = (filter: ContactsFilter | null) => {
     setContactsFilter(filter);
     setContactsSearch('');
     setActiveTab('contacts');
-  };
-
-  const handleDrawerSelectFilter = (filterType: 'all' | 'overdue' | 'week' | 'never_contacted') => {
-    setIsDrawerOpen(false);
-    const map = { all: null, overdue: { kind: 'overdue' }, week: { kind: 'week' }, never_contacted: { kind: 'never' } } as const;
-    showContactsWith(map[filterType] as ContactsFilter | null);
   };
 
   // Rename (to) or remove (null) a label on every contact that has it.
@@ -723,802 +521,263 @@ export const App: React.FC = () => {
     }
   };
 
-  // Seed Demo Contacts
-  const handleSeedContacts = async () => {
-    try {
-      const nowIso = new Date().toISOString();
-      for (const item of SEED_CONTACTS) {
-        const existing = await crmDb.contacts.where('phoneNumber').equals(item.phoneNumber).first();
-        if (!existing) {
-          await crmDb.contacts.add({
-            ...item,
-            id:
-              typeof crypto !== 'undefined' && crypto.randomUUID
-                ? crypto.randomUUID()
-                : `seed_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            createdAt: nowIso,
-            updatedAt: nowIso,
-          });
-        }
-      }
-      await refreshData();
-      showToast('Data kontak contoh berhasil di-seed!', 'success');
-    } catch (err) {
-      console.error('Failed to seed contacts', err);
-      showToast('Gagal memuat data contoh', 'error');
-    }
-  };
-
-  // Reset Database
   const handleResetData = async () => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus seluruh data kontak dan riwayat CRM? Tindakan ini tidak dapat dibatalkan.')) {
-      try {
-        await crmDb.contacts.clear();
-        await crmDb.interactions.clear();
-        await refreshData();
-        showToast('Basis data CRM berhasil direset', 'info');
-      } catch (err) {
-        console.error('Failed to reset database', err);
-        showToast('Gagal mereset database', 'error');
-      }
+    try {
+      await crmDb.contacts.clear();
+      await crmDb.interactions.clear();
+      await refreshData();
+      showToast('Semua data dihapus', 'info');
+    } catch (err) {
+      console.error('Failed to reset database', err);
+      showToast('Gagal menghapus data', 'error');
     }
   };
 
-  // Save Gemini API Key
   const handleSaveApiKey = () => {
     const trimmed = apiKeyInput.trim();
-    if (trimmed) {
-      localStorage.setItem(STORAGE_API_KEY, trimmed);
-      setApiKey(trimmed);
-      setIsApiKeySaved(true);
-      showToast('Gemini API Key berhasil disimpan!', 'success');
-    } else {
-      localStorage.removeItem(STORAGE_API_KEY);
-      setApiKey('');
-      setIsApiKeySaved(false);
-      showToast('Gemini API Key dihapus (menggunakan template bawaan)', 'info');
+    try {
+      if (trimmed) localStorage.setItem(STORAGE_API_KEY, trimmed);
+      else localStorage.removeItem(STORAGE_API_KEY);
+    } catch {
+      // Ignore localStorage failures
     }
+    setApiKey(trimmed);
+    setIsApiKeySaved(Boolean(trimmed));
+    showToast(trimmed ? 'Kunci AI pribadi disimpan' : 'Kembali memakai AI bawaan', trimmed ? 'success' : 'info');
   };
 
-  // Filtered contacts for 'contacts' tab
-  const filteredContacts = useMemo(() => {
-    const q = contactsSearch.trim().toLowerCase();
-    const base = applyContactsFilter(contacts, contactsFilter);
-    if (!q) return base;
-    return base.filter((c) => {
-      return (
-        c.name.toLowerCase().includes(q) ||
-        c.phoneNumber.toLowerCase().includes(q) ||
-        (c.possibleFollowUpTopic || '').toLowerCase().includes(q) ||
-        c.associations.some((a) => a.toLowerCase().includes(q))
-      );
-    });
-  }, [contacts, contactsSearch, contactsFilter]);
+  const openSapa = (contact: Contact) => {
+    tapHaptic();
+    setSapaContact(contact);
+  };
 
-  const activeInteractionsForSelected = useMemo(() => {
-    if (!selectedContact) return [];
-    return interactions.filter((i) => i.contactId === selectedContact.id);
-  }, [interactions, selectedContact]);
+  const activeInteractionsForSelected = useMemo(
+    () => (selectedContact ? interactions.filter((i) => i.contactId === selectedContact.id) : []),
+    [interactions, selectedContact]
+  );
+
+  const tabKey = activeTab === 'home' || activeTab === 'dashboard' ? 'radar' : activeTab === 'calendar' || activeTab === 'schedules' ? 'notifications' : activeTab;
 
   return (
-    <DeviceEmulatorFrame>
-      <div className="min-h-screen max-w-full w-full overflow-x-hidden bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans pb-28 selection:bg-blue-600 selection:text-white transition-colors">
-        {/* Top Application Navbar */}
-        <header className="sticky top-0 z-30 bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 pt-[env(safe-area-inset-top,0px)] transition-colors">
-          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                aria-label="Buka Menu Analitik"
-                onClick={() => setIsDrawerOpen(true)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <img
-                src={sapaLogo}
-                alt="Sapa Logo"
-                className="w-8 h-8 rounded-xl shadow-xs object-cover"
-              />
-              <div>
-                <span className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
-                  Sapa
-                </span>
-                <span className="hidden sm:inline-block text-xs text-slate-400 dark:text-slate-500 ml-2 font-medium">
-                  Rawat & jaga ritme silaturahmi
-                </span>
-              </div>
-            </div>
-
-            {/* Quick Header Actions */}
-            <div className="flex items-center gap-2" data-tour="add-actions">
-              <button
-                type="button"
-                onClick={() => setIsSyncOpen(true)}
-                aria-label="Impor Kontak Telepon"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Impor HP</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenAddContact}
-                aria-label="Tambah Kontak Baru"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 shadow-sm transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah Kontak</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Tab Content */}
-        <main className="flex-1 w-full max-w-full overflow-x-hidden">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 gap-3">
-              <RefreshCw className="w-8 h-8 animate-spin text-slate-600" />
-              <p className="text-sm font-medium">Memuat data relasi Sapa...</p>
-            </div>
-          ) : (
-            <>
-              {/* TAB 1: RADAR / HOME (KinshipDashboardView) */}
-              {(activeTab === 'radar' || activeTab === 'home' || activeTab === 'dashboard') && (
-                <KinshipDashboardView
-                  contacts={contacts}
-                  onSelectContact={(c) => setSelectedContact(c)}
-                  onOpenNotifications={() => showContactsWith({ kind: 'overdue' })}
-                  onOpenAiDraft={(c) => setDraftContact(c)}
-                  onLogChat={(c) => handleLogChat(c)}
-                />
-              )}
-
-              {/* TAB 2: CONTACTS (Dossier Cards + Notion Table Toggle) */}
-              {activeTab === 'contacts' && (
-                <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                        <Users className="w-5 h-5 text-slate-900 dark:text-white" />
-                        <span>Semua Kontak ({filteredContacts.length})</span>
-                      </h2>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Kelola relasi personal & pantau ritme silaturahmi berkala
-                      </p>
-                    </div>
-
-                    {/* View Switcher Toggle & Search */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center bg-slate-200/80 dark:bg-white/10 p-1 rounded-full shadow-inner">
-                        <button
-                          type="button"
-                          aria-label="Tampilan Kartu"
-                          onClick={() => setContactsViewMode('cards')}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                            contactsViewMode === 'cards'
-                              ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm'
-                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                          }`}
-                        >
-                          Kartu Sapa
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Tampilan Tabel Notion"
-                          onClick={() => setContactsViewMode('table')}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                            contactsViewMode === 'table'
-                              ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm'
-                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                          }`}
-                        >
-                          Tabel Notion
-                        </button>
-                      </div>
-
-                      <div className="relative w-full sm:w-60">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={contactsSearch}
-                          onChange={(e) => setContactsSearch(e.target.value)}
-                          placeholder="Cari kontak..."
-                          className="w-full pl-9 pr-4 py-1.5 text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white/30"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {contactsFilter && (
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/25">
-                        {describeContactsFilter(contactsFilter)} · {filteredContacts.length}
-                        <button
-                          type="button"
-                          aria-label="Hapus Filter"
-                          onClick={() => setContactsFilter(null)}
-                          className="p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-500/25"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
-                    </div>
-                  )}
-
-                  {contactsViewMode === 'cards' ? (
-                    <div className="space-y-3" data-tour="contact-list">
-                      {filteredContacts.length === 0 ? (
-                        <div className="p-8 text-center bg-white dark:bg-[#1C1C1E]/80 backdrop-blur-xl rounded-3xl border border-dashed border-slate-200 dark:border-white/15">
-                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                            Tidak ada kontak ditemukan
-                          </p>
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                            Mulai dengan menambahkan kontak baru atau impor dari buku telepon.
-                          </p>
-                          <div className="mt-4 flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={handleOpenAddContact}
-                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 dark:bg-blue-600 text-white"
-                            >
-                              + Tambah Kontak
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setIsSyncOpen(true)}
-                              className="px-4 py-2 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/20"
-                            >
-                              📱 Impor Buku Telepon
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {filteredContacts.map((contact) => {
-                            const status = calculateContactStatus(contact);
-                            const cycle = contact.followUpCycleDays || 15;
-                            const daysLeftOrOverdue = getDaysLeftOrOverdue(status);
-                            const primaryAssoc =
-                              contact.associations?.[0] || (contact.isProfessional ? 'Profesional' : 'Relasi');
-                            const badgeClass = getAssociationBadgeClass(
-                              contact.associations?.[0] || (contact.isProfessional ? 'profesional' : 'relasi')
-                            );
-
-                            return (
-                              <div
-                                key={contact.id}
-                                data-testid={`kinship-card-${contact.id}`}
-                                onClick={() => setSelectedContact(contact)}
-                                className="bg-white dark:bg-[#1C1C1E]/80 backdrop-blur-xl rounded-2xl p-4 border border-slate-200 dark:border-white/12 shadow-xs hover:border-slate-300 dark:hover:border-white/25 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3"
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-white/10 dark:to-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-200 shrink-0">
-                                      {getInitials(contact.name)}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                                          {contact.name}
-                                        </h3>
-                                        <span
-                                          className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border ${badgeClass}`}
-                                        >
-                                          {primaryAssoc}
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate mt-0.5">
-                                        {contact.phoneNumber}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <CadenceBadge
-                                    cadenceDays={cycle}
-                                    isOverdue={status.isOverdue}
-                                    daysLeftOrOverdue={daysLeftOrOverdue}
-                                  />
-                                </div>
-
-                                {contact.possibleFollowUpTopic && (
-                                  <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl p-2.5 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
-                                    <span className="font-semibold text-slate-800 dark:text-white">Topik:</span>{' '}
-                                    {contact.possibleFollowUpTopic}
-                                  </div>
-                                )}
-
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/10 gap-2">
-                                  <button
-                                    type="button"
-                                    aria-label={`Draf WA untuk ${contact.name}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDraftContact(contact);
-                                    }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-colors"
-                                  >
-                                    <Sparkles className="w-3.5 h-3.5" />
-                                    <span>Sapa WA</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    aria-label={`Catat interaksi ${contact.name}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setLogEncounterContact(contact);
-                                    }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span>Catat Interaksi</span>
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <NotionTableView
-                      contacts={filteredContacts}
-                      onSelectContact={(c) => setSelectedContact(c)}
-                      onQuickWhatsApp={(c) => setDraftContact(c)}
+    <MotionConfig reducedMotion="user">
+      <DeviceEmulatorFrame>
+        <div className="min-h-screen max-w-full w-full overflow-x-hidden bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors">
+          <main className="flex-1 w-full max-w-full overflow-x-hidden pt-[env(safe-area-inset-top,0px)]">
+            {loading ? (
+              <div className="min-h-[60vh]" />
+            ) : (
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={tabKey}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6, transition: { duration: 0.12 } }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+                >
+                  {tabKey === 'radar' && (
+                    <KinshipDashboardView
+                      contacts={contacts}
+                      onSelectContact={setSelectedContact}
+                      onOpenNotifications={() => showContactsWith({ kind: 'overdue' })}
+                      onSapa={openSapa}
                       onLogChat={(c) => handleLogChat(c)}
+                      onAddContact={handleOpenAddContact}
                     />
                   )}
-                </div>
-              )}
 
-              {/* TAB 3: NOTIFICATIONS / JADWAL (KinshipNotificationsView) */}
-              {(activeTab === 'notifications' || activeTab === 'calendar' || activeTab === 'schedules') && (
-                <KinshipNotificationsView
-                  contacts={contacts}
-                  onSelectContact={(c) => setSelectedContact(c)}
-                  onOpenAiDraft={(c) => setDraftContact(c)}
-                  onLogChat={(c) => handleLogChat(c)}
-                  onSnoozeContact={handleSnoozeContact}
-                />
-              )}
+                  {tabKey === 'contacts' && (
+                    <ContactsView
+                      contacts={contacts}
+                      filter={contactsFilter}
+                      onFilterChange={setContactsFilter}
+                      search={contactsSearch}
+                      onSearchChange={setContactsSearch}
+                      onSelectContact={setSelectedContact}
+                      onSapa={openSapa}
+                      onEditLabels={(c) => {
+                        tapHaptic();
+                        setLabelContact(c);
+                      }}
+                      onAddContact={handleOpenAddContact}
+                      onResync={handleResync}
+                      isSyncing={isResyncing}
+                    />
+                  )}
 
-              {/* TAB 4: SETTINGS */}
-              {activeTab === 'settings' && (
-                <div className="max-w-3xl mx-auto px-4 pt-6 pb-36 space-y-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                      <SettingsIcon className="w-5 h-5 text-slate-900 dark:text-white" />
-                      <span>Pengaturan & Konfigurasi</span>
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Konfigurasi tema tampilan Liquid Glass, AI API Key, dan basis data offline
-                    </p>
-                  </div>
+                  {tabKey === 'notifications' && (
+                    <KinshipNotificationsView contacts={contacts} onSelectContact={setSelectedContact} onSapa={openSapa} />
+                  )}
 
-                  {/* Card 0: Theme & Appearance (Liquid Glass) */}
-                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-sm space-y-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                        <SunMoon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                          Tampilan & Tema (Liquid Glass)
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Pilih gaya antarmuka terang, gelap, atau ikuti tema perangkat Anda
-                        </p>
-                      </div>
-                    </div>
+                  {tabKey === 'settings' && (
+                    <SettingsView
+                      contactsCount={contacts.length}
+                      themePreference={themePreference}
+                      onThemeChange={handleThemeChange}
+                      digestTime={digestTime}
+                      onDigestTimeChange={handleDigestTimeChange}
+                      hasUpdate={Boolean(appUpdate?.hasUpdate)}
+                      latestVersion={appUpdate?.latestVersion}
+                      isCheckingUpdate={isCheckingUpdate}
+                      onCheckUpdate={handleCheckAppUpdate}
+                      onOpenUpdate={() => setIsUpdateModalOpen(true)}
+                      onOpenLabels={() => setIsLabelManagerOpen(true)}
+                      onImportPhone={() => setIsSyncOpen(true)}
+                      onExportBackup={handleExportBackup}
+                      onRestoreBackup={handleRestoreBackup}
+                      onReplayTutorial={() => {
+                        tutorial.replay();
+                        setActiveTab('radar');
+                      }}
+                      onResetData={handleResetData}
+                      apiKeyInput={apiKeyInput}
+                      onApiKeyInputChange={setApiKeyInput}
+                      isApiKeySaved={isApiKeySaved}
+                      onSaveApiKey={handleSaveApiKey}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </main>
 
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        aria-label="Mode Terang"
-                        onClick={() => handleThemeChange('light')}
-                        className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center border transition-all active:scale-95 ${
-                          themePreference === 'light'
-                            ? 'bg-blue-500/10 border-blue-500 text-blue-600 font-bold shadow-xs'
-                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        <div className="w-7 h-7 mb-1.5 flex items-center justify-center">
-                          <AppleThemeIcon className="w-5 h-5 text-current" />
-                        </div>
-                        <span className="text-xs font-semibold block">Terang</span>
-                        <span className="text-[10px] text-slate-400 block">iOS 18 Glass</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        aria-label="Mode Gelap"
-                        onClick={() => handleThemeChange('dark')}
-                        className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center border transition-all active:scale-95 ${
-                          themePreference === 'dark'
-                            ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400 font-bold shadow-xs'
-                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        <div className="w-7 h-7 mb-1.5 flex items-center justify-center">
-                          <VisionOsThemeIcon className="w-5 h-5 text-current" />
-                        </div>
-                        <span className="text-xs font-semibold block">Gelap</span>
-                        <span className="text-[10px] text-slate-400 block">VisionOS Glass</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        aria-label="Mode Otomatis"
-                        onClick={() => handleThemeChange('system')}
-                        className={`p-3 rounded-2xl flex flex-col items-center justify-center text-center border transition-all active:scale-95 ${
-                          themePreference === 'system'
-                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
-                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        <div className="w-7 h-7 mb-1.5 flex items-center justify-center">
-                          <SystemThemeIcon className="w-5 h-5 text-current" />
-                        </div>
-                        <span className="text-xs font-semibold block">Otomatis</span>
-                        <span className="text-[10px] text-slate-400 block">Ikuti HP</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Card 1: Gemini API Key */}
-                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                          <Key className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                            Google Gemini AI API Key & Groq
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Default menggunakan Groq AI kilat via cloud proxy. Masukkan kunci pribadi (Groq / Gemini) jika ingin kuota khusus.
-                          </p>
-                        </div>
-                      </div>
-                      {isApiKeySaved && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
-                          Aktif
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <input
-                        type="password"
-                        value={apiKeyInput}
-                        onChange={(e) => setApiKeyInput(e.target.value)}
-                        placeholder="Masukkan Google Gemini API Key (AIza...) atau Groq Key (gsk_...)"
-                        className="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/15 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white/30"
-                      />
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                        <span>Kunci API disimpan secara aman di browser lokal Anda.</span>
-                        <button
-                          type="button"
-                          onClick={handleSaveApiKey}
-                          className="px-4 py-1.5 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-semibold hover:bg-slate-800 dark:hover:bg-blue-500 transition-colors"
-                        >
-                          Simpan Kunci
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Database Stats & Management */}
-                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                        <Database className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                          Basis Data Offline (IndexedDB Dexie)
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Penyimpanan lokal di perangkat Anda (100% aman & privat)
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 py-1">
-                      <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 text-center">
-                        <span className="block text-xl font-extrabold text-slate-800 dark:text-white">
-                          {contacts.length}
-                        </span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          Total Relasi Tersimpan
-                        </span>
-                      </div>
-                      <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 text-center">
-                        <span className="block text-xl font-extrabold text-slate-900 dark:text-white">
-                          {interactionsCount}
-                        </span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          Log Riwayat Interaksi
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex flex-wrap items-center gap-2 justify-between">
-                      <button
-                        type="button"
-                        onClick={() => setIsSyncOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-colors"
-                      >
-                        <Smartphone className="w-3.5 h-3.5" />
-                        <span>Sinkronisasi Buku Telepon</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleSeedContacts}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Isi Data Contoh (Demo Seed)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleExportBackup}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Ekspor Backup JSON</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleResetData}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/15 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Hapus Semua Data</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Software Update (Pembaruan Perangkat Lunak) */}
-                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-2xl bg-cyan-50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
-                          <Rocket className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                            Pembaruan Aplikasi (Software Update)
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Versi saat ini v{CURRENT_APP_VERSION} · Distribusi Rilis GitHub
-                          </p>
-                        </div>
-                      </div>
-                      {appUpdate?.hasUpdate ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
-                          Update Siap!
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
-                          Terbaru
-                        </span>
-                      )}
-                    </div>
-
-                    {appUpdate?.hasUpdate && (
-                      <div className="p-3 bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/60 dark:border-amber-500/20 rounded-2xl flex items-center justify-between">
-                        <div className="text-xs text-amber-900 dark:text-amber-200">
-                          <span className="font-bold">Sapa-ai v{appUpdate.latestVersion}</span> tersedia untuk diinstal!
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsUpdateModalOpen(true)}
-                          className="px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 transition-colors"
-                        >
-                          Lihat Update
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Cek ketersediaan file rilis APK terbaru dari GitHub
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleCheckAppUpdate}
-                        disabled={isCheckingUpdate}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 disabled:opacity-50 transition-colors active:scale-95"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
-                        <span>{isCheckingUpdate ? 'Memeriksa...' : 'Periksa Pembaruan'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Card 4: About Application & Tutorial */}
-                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-2xl border border-white/80 dark:border-white/12 rounded-[28px] p-5 shadow-xs space-y-3 text-xs text-slate-600 dark:text-slate-300">
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-slate-800 dark:text-white text-sm">
-                        Tentang Sapa v2.0
-                      </h3>
-                      <p>
-                        Aplikasi manajemen relasi dan silaturahmi personal yang dirancang dengan filosofi
-                        Denyut Sapa & Radar, dual WhatsApp native intent, serta pengingat jam 08:00 WIB otomatis.
-                      </p>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        Didukung arsitektur Local-First Dexie.js, Capacitor Native Plugins, Tailwind CSS, dan Google Gemini AI.
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                        Ingin mengulang panduan awal?
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          tutorial.replay();
-                          setActiveTab('radar');
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-colors"
-                      >
-                        <HelpCircle className="w-3.5 h-3.5" />
-                        <span>Ulangi Tutorial</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </main>
-
-        {/* Global Bottom Navigation Bar */}
-        <BottomNavBar
-          tabs={navTabs}
-          activeTab={
-            activeTab === 'home' ? 'radar' : activeTab === 'calendar' ? 'notifications' : activeTab
-          }
-          onTabChange={(tabId) => setActiveTab(tabId)}
-          centerAction={{
-            label: 'Catat Kabar dengan Suara',
-            icon: <Mic className="w-6 h-6" />,
-            onClick: () => setVoiceNote({ open: true, contact: null }),
-            tourId: 'voice-global',
-          }}
-        />
-
-        {/* Kinship Contact Dossier Modal */}
-        <KinshipContactDossierModal
-          contact={selectedContact}
-          isOpen={Boolean(selectedContact)}
-          onClose={() => setSelectedContact(null)}
-          onEditContact={handleOpenEditContact}
-          onOpenAiDraft={(c) => {
-            setSelectedContact(null);
-            setDraftContact(c);
-          }}
-          onOpenLogEncounter={(c) => {
-            setSelectedContact(null);
-            setLogEncounterContact(c);
-          }}
-          onOpenVoiceNote={(c) => setVoiceNote({ open: true, contact: c })}
-          onUpdateContact={handleUpdateContact}
-          interactions={activeInteractionsForSelected}
-        />
-
-        {/* Kinship Log Interaction Modal */}
-        <KinshipLogInteractionModal
-          contact={logEncounterContact}
-          isOpen={Boolean(logEncounterContact)}
-          onClose={() => setLogEncounterContact(null)}
-          onSave={handleSaveEncounter}
-        />
-
-        {/* Kinship Phonebook Sync Modal / View */}
-        {isSyncOpen && (
-          <div className="fixed inset-0 z-50 bg-[#f8f9ff] flex flex-col">
-            <KinshipPhonebookSyncView
-              isOpen={isSyncOpen}
-              onClose={() => setIsSyncOpen(false)}
-              onImportComplete={(result) => {
-                refreshData();
-                setIsSyncOpen(false);
-                showToast(
-                  `Berhasil mengimpor ${result.importedCount} kontak baru, ${result.updatedCount} diperbarui`,
-                  'success'
-                );
-              }}
-            />
-          </div>
-        )}
-
-        {/* AI WhatsApp Draft Modal */}
-        <AiDraftModal
-          contact={draftContact}
-          isOpen={Boolean(draftContact)}
-          onClose={() => setDraftContact(null)}
-          apiKey={apiKey}
-          onLogChatCompleted={async (c) => {
-            await handleLogChat(c);
-            setDraftContact(null);
-          }}
-        />
-
-        {/* Contact Edit Modal */}
-        <EditContactModal
-          contact={editingContact}
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setEditingContact(null);
-          }}
-          onSave={handleSaveContact}
-          onDelete={handleDeleteContact}
-        />
-
-        {/* Navigation Drawer */}
-        <NavigationDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          contacts={contacts}
-          interactions={interactions}
-          onSelectFilter={handleDrawerSelectFilter}
-          onSelectLabel={(label) => {
-            setIsDrawerOpen(false);
-            showContactsWith({ kind: 'label', label });
-          }}
-          onRemapLabel={handleRemapLabel}
-          onExportBackup={handleExportBackup}
-          onImportBackup={handleImportBackup}
-        />
-
-        {/* First-time Onboarding Modal */}
-        <VoiceNoteModal
-          isOpen={voiceNote.open}
-          contact={voiceNote.contact}
-          contacts={contacts}
-          onClose={() => setVoiceNote({ open: false, contact: null })}
-          onSave={handleSaveVoiceNote}
-        />
-        <OnboardingModal
-          isOpen={tutorial.showIntro}
-          onClose={tutorial.skip}
-          onFinish={tutorial.finishIntro}
-        />
-        {tutorial.showTour && tutorial.currentStep && (
-          <TourSpotlight
-            step={tutorial.currentStep}
-            stepIndex={tutorial.stepIndex}
-            total={tutorial.total}
-            onNext={tutorial.next}
-            onSkip={tutorial.skip}
+          <BottomNavBar
+            tabs={navTabs}
+            activeTab={tabKey}
+            onTabChange={(tabId) => {
+              if (tabId !== tabKey) tapHaptic();
+              setActiveTab(tabId);
+            }}
+            centerAction={{
+              label: 'Catat Kabar dengan Suara',
+              icon: <Mic className="w-6 h-6" />,
+              onClick: () => {
+                tapHaptic('medium');
+                setVoiceNote({ open: true, contact: null });
+              },
+              tourId: 'voice-global',
+            }}
           />
-        )}
 
-        {/* In-App Auto Update Modal */}
-        <AppUpdateModal
-          isOpen={isUpdateModalOpen}
-          update={appUpdate}
-          onClose={() => setIsUpdateModalOpen(false)}
-          onDismissForever={(ver) => dismissUpdate(ver)}
-        />
+          <KinshipContactDossierModal
+            contact={selectedContact}
+            isOpen={Boolean(selectedContact)}
+            onClose={() => setSelectedContact(null)}
+            onEditContact={handleOpenEditContact}
+            onSapa={openSapa}
+            onOpenAiDraft={(c) => {
+              setSelectedContact(null);
+              setDraftContact(c);
+            }}
+            onOpenLogEncounter={(c) => {
+              setSelectedContact(null);
+              setLogEncounterContact(c);
+            }}
+            onOpenVoiceNote={(c) => setVoiceNote({ open: true, contact: c })}
+            onUpdateContact={handleUpdateContact}
+            interactions={activeInteractionsForSelected}
+          />
 
-        {/* Global Toast Notification */}
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onClose={hideToast}
-        />
-      </div>
-    </DeviceEmulatorFrame>
+          <SapaActionSheet
+            contact={sapaContact}
+            onClose={() => setSapaContact(null)}
+            onWriteWithAi={(c) => {
+              setSapaContact(null);
+              setSelectedContact(null);
+              setDraftContact(c);
+            }}
+          />
+
+          <LabelPickerSheet contact={labelContact} onClose={() => setLabelContact(null)} onChange={handleUpdateContact} />
+
+          <LabelManagerSheet
+            isOpen={isLabelManagerOpen}
+            onClose={() => setIsLabelManagerOpen(false)}
+            contacts={contacts}
+            onRemapLabel={handleRemapLabel}
+          />
+
+          <ResyncDialog
+            result={resyncResult}
+            onClose={() => setResyncResult(null)}
+            onPickNew={() => {
+              setResyncResult(null);
+              setIsSyncOpen(true);
+            }}
+            onDeleteMissing={handleDeleteMissing}
+          />
+
+          <KinshipLogInteractionModal
+            contact={logEncounterContact}
+            isOpen={Boolean(logEncounterContact)}
+            onClose={() => setLogEncounterContact(null)}
+            onSave={handleSaveEncounter}
+          />
+
+          {isSyncOpen && (
+            <div className="fixed inset-0 z-50 bg-[#f8f9ff] dark:bg-[#090A0F] flex flex-col animate-rise">
+              <KinshipPhonebookSyncView
+                isOpen={isSyncOpen}
+                onClose={() => setIsSyncOpen(false)}
+                onImportComplete={(result) => {
+                  refreshData();
+                  setIsSyncOpen(false);
+                  showToast(`${result.importedCount} kontak baru ditambahkan`, 'success');
+                }}
+              />
+            </div>
+          )}
+
+          <AiDraftModal
+            contact={draftContact}
+            isOpen={Boolean(draftContact)}
+            onClose={() => setDraftContact(null)}
+            apiKey={apiKey}
+            onLogChatCompleted={async (c) => {
+              await handleLogChat(c);
+              setDraftContact(null);
+            }}
+          />
+
+          <EditContactModal
+            contact={editingContact}
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setEditingContact(null);
+            }}
+            onSave={handleSaveContact}
+            onDelete={handleDeleteContact}
+          />
+
+          <VoiceNoteModal
+            isOpen={voiceNote.open}
+            contact={voiceNote.contact}
+            contacts={contacts}
+            onClose={() => setVoiceNote({ open: false, contact: null })}
+            onSave={handleSaveVoiceNote}
+          />
+          <OnboardingModal isOpen={tutorial.showIntro} onClose={tutorial.skip} onFinish={tutorial.finishIntro} />
+          {tutorial.showTour && tutorial.currentStep && (
+            <TourSpotlight
+              step={tutorial.currentStep}
+              stepIndex={tutorial.stepIndex}
+              total={tutorial.total}
+              onNext={tutorial.next}
+              onSkip={tutorial.skip}
+            />
+          )}
+
+          <AppUpdateModal
+            isOpen={isUpdateModalOpen}
+            update={appUpdate}
+            onClose={() => setIsUpdateModalOpen(false)}
+            onDismissForever={(ver) => dismissUpdate(ver)}
+          />
+
+          <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={hideToast} />
+          <SplashScreen />
+        </div>
+      </DeviceEmulatorFrame>
+    </MotionConfig>
   );
 };

@@ -33,22 +33,22 @@ export interface KinshipLogInteractionModalProps {
 const FORMAT_OPTIONS: { type: InteractionType; label: string; icon: React.ReactNode }[] = [
   {
     type: 'meetup',
-    label: '☕ Kopi / Makan',
+    label: 'Kopi / Makan',
     icon: <Coffee className="w-4 h-4 text-amber-600" />,
   },
   {
     type: 'call',
-    label: '📞 Telepon',
+    label: 'Telepon',
     icon: <Phone className="w-4 h-4 text-blue-600" />,
   },
   {
     type: 'whatsapp',
-    label: '💬 WhatsApp',
+    label: 'WhatsApp',
     icon: <MessageSquare className="w-4 h-4 text-emerald-600" />,
   },
   {
     type: 'other',
-    label: '👥 Acara / Majelis',
+    label: 'Acara / Majelis',
     icon: <Users className="w-4 h-4 text-purple-600" />,
   },
 ];
@@ -132,7 +132,7 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
       aria-labelledby="log-interaction-title"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 dark:bg-black/85 animate-fade-in p-0 sm:p-4"
     >
-      <div className="w-full max-w-lg bg-white dark:bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200/90 dark:border-white/12 text-slate-900 dark:text-white transition-colors">
+      <div className="animate-rise w-full max-w-lg bg-white dark:bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200/90 dark:border-white/12 text-slate-900 dark:text-white transition-colors">
         {/* Top Grabber Handle & Header */}
         <div className="pt-3 pb-3 px-5 border-b border-slate-100 dark:border-white/10 flex flex-col bg-slate-50/70 dark:bg-white/5">
           {/* Bottom Sheet Grabber Pill */}
@@ -246,7 +246,6 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
                 <FileText className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 Poin Obrolan & Catatan Penting
               </label>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">NOTION BULLET</span>
             </div>
             <textarea
               id="encounter-talking-points"
@@ -266,7 +265,6 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
                 <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
                 Fakta Baru / Topik Personal
               </label>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">Sync otomatis</span>
             </div>
 
             {/* Display Tags */}

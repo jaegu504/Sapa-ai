@@ -75,7 +75,6 @@ describe('KinshipContactDossierModal', () => {
     );
 
     expect(screen.getByRole('dialog')).toBeDefined();
-    expect(screen.getByText('Profil Relasi')).toBeDefined();
     expect(screen.getByText('Raditya Pratama')).toBeDefined();
     expect(screen.getByText('+6281234567890')).toBeDefined();
 
@@ -90,36 +89,12 @@ describe('KinshipContactDossierModal', () => {
     expect(screen.getByTestId('cadence-dot')).toBeDefined();
   });
 
-  it('renders Dual WhatsApp buttons and triggers outreach', () => {
-    render(
-      <KinshipContactDossierModal
-        contact={mockContact}
-        isOpen={true}
-        onClose={vi.fn()}
-      />
-    );
+  it('opens the Sapa choices from the green button', () => {
+    const onSapa = vi.fn();
+    render(<KinshipContactDossierModal contact={mockContact} isOpen={true} onClose={vi.fn()} onSapa={onSapa} />);
 
-    expect(screen.getByText(/Kirim via WhatsApp$/i)).toBeDefined();
-    expect(screen.getByText(/Kirim via WhatsApp Business/i)).toBeDefined();
-  });
-
-  it('allows toggling favorite star button', () => {
-    render(
-      <KinshipContactDossierModal
-        contact={mockContact}
-        isOpen={true}
-        onClose={vi.fn()}
-      />
-    );
-
-    const starBtn = screen.getByLabelText(/Tandai favorit|Favorit/i);
-    expect(starBtn).toBeDefined();
-
-    fireEvent.click(starBtn);
-    expect(starBtn.getAttribute('aria-pressed')).toBe('true');
-
-    fireEvent.click(starBtn);
-    expect(starBtn.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: /Sapa Raditya/i }));
+    expect(onSapa).toHaveBeenCalledWith(mockContact);
   });
 
   it('calls onClose when close button is clicked', () => {
@@ -348,7 +323,7 @@ describe('KinshipContactDossierModal', () => {
       />
     );
 
-    expect(screen.getByText('Interaction Timeline')).toBeDefined();
+    expect(screen.getByText('Riwayat Interaksi')).toBeDefined();
     expect(screen.getByText('Coffee catchup di Senopati. Bahas roadmap.')).toBeDefined();
     expect(screen.getByText('Ucapin selamat promosi jabatan baru.')).toBeDefined();
   });
@@ -381,10 +356,8 @@ describe('KinshipContactDossierModal', () => {
     const ubahBtn = screen.getByRole('button', { name: /Ubah Asosiasi Kontak/i });
     fireEvent.click(ubahBtn);
 
-    expect(screen.getByText(/Pilih Label \/ Hubungan:/i)).toBeDefined();
-
-    // Toggle 'Hoca' (currently mockContact only has ['Ihvan'])
-    const hocaBtn = screen.getByRole('button', { name: /\+ Hoca/i });
+    // Toggle 'Hoca' (not on the contact yet)
+    const hocaBtn = screen.getByRole('button', { name: 'Hoca', pressed: false });
     await act(async () => {
       fireEvent.click(hocaBtn);
     });
