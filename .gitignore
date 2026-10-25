@@ -11,3 +11,4 @@ android/app/build/
 .agent/
 .agents/
 .codebase-memory/
+*.mp4
