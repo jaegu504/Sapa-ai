@@ -199,11 +199,11 @@ const shimmer = (t0) => {
   });
 };
 
-hit(0.1, 0.12); // soft opening impact
+hit(0.1, 0.07); // soft opening impact
 // Riser into the drop
-whoosh(DROP - 0.05, 0.9, 0.12);
+whoosh(DROP - 0.05, 0.6, 0.03);
 // Whooshes peaking on every cut
-[72, 101, 173, 246, 318, 376, 435, 493, 537].forEach((f) => whoosh(sec(f) - 0.02, 0.18, f === 72 ? 0.12 : 0.18));
+[72, 101, 173, 246, 318, 376, 435, 493, 537].forEach((f) => whoosh(sec(f) - 0.02, 0.16, f === 72 ? 0.05 : 0.1));
 // Taps
 [69, 113, 147, 197, 225, 418].forEach((f) => click(sec(f)));
 // Typing ticks in the voice box (S5 local 12–40)

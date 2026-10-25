@@ -1,7 +1,11 @@
 // Integrated loudness (ITU-R BS.1770, K-weighted, gated) and 4x-oversampled peak of a 48 kHz 16-bit WAV.
 import { readFileSync } from 'node:fs';
-const buf = readFileSync(process.argv[2]);
-const n = (buf.length - 44) / 4;
+const file = readFileSync(process.argv[2]);
+// Find the "data" chunk (ffmpeg adds extra chunks before it).
+let off = 12;
+while (file.toString('ascii', off, off + 4) !== 'data') off += 8 + file.readUInt32LE(off + 4);
+const buf = file.subarray(off + 8 - 44, off + 8 + file.readUInt32LE(off + 4));
+const n = Math.floor((buf.length - 44) / 4);
 const ch = [new Float64Array(n), new Float64Array(n)];
 for (let i = 0; i < n; i++) {
   ch[0][i] = buf.readInt16LE(44 + i * 4) / 32768;

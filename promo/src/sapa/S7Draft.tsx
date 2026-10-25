@@ -1,114 +1,108 @@
 import React from 'react';
 import { C, Fill, INTER, Touch, clamp, expoIn, expoOut, kf, useF } from './lib';
+import { Headline, Phone, SCREEN_W, toStage } from './phone';
 
-// Shot 7 (global f376–434, local 0–58): the Draf AI sheet rises over the blurred profile,
-// the greeting writes itself and the touch sends it on WhatsApp.
+// Shot 7 (global f376–434, local 0–58): the Draf AI sheet rises inside the phone, the greeting
+// writes itself and the touch opens WhatsApp with it.
 const MESSAGE = 'Selamün aleyküm hocam, umreden döndüğünüzü duydum, Allah kabul etsin. Oğlunuzun üniversitesi nasıl gidiyor?';
+const SHEET_H = 640;
 
 export const S7Draft: React.FC = () => {
   const f = useF();
 
-  const top = kf(f, [[0, 900], [4, 520], [9, 400], [13, 350], [18, 318]], expoOut) - Math.max(0, f - 18) * 3;
-  const cardBlur = kf(f, [[0, 0], [2, 3.8], [14, 0]], expoOut);
+  const sheet = kf(f, [[0, 0], [4, 0.55], [9, 0.85], [14, 1]], expoOut);
+  const cardBlur = kf(f, [[0, 0], [2, 3.8], [12, 0]], expoOut);
   const exit = f > 50 ? kf(f, [[50, 0], [58, 1]], expoIn) : 0;
   const shown = Math.floor(clamp((f - 10) / 26) * MESSAGE.length);
   const press = kf(f, [[41, 0], [43, 1], [46, 0]]);
   const sent = kf(f, [[44, 0], [50, 1]], expoOut);
 
-  const tx = kf(f, [[24, 1500], [40, 1040]], expoOut);
-  const ty = kf(f, [[24, 1000], [40, top + 560]], expoOut);
+  const btn = toStage(SCREEN_W / 2 + 60, 1016 - SHEET_H + 520);
+  const tx = kf(f, [[24, 1760], [40, btn.x]], expoOut);
+  const ty = kf(f, [[24, 980], [40, btn.y]], expoOut);
 
   return (
     <Fill style={{ background: C.page, overflow: 'hidden', fontFamily: INTER, filter: exit > 0.01 ? `blur(${1 + exit * 6}px)` : undefined }}>
-      {/* Profile behind, softly blurred */}
-      <Fill style={{ filter: 'blur(2.5px)', opacity: 0.9 }}>
-        <div style={{ position: 'absolute', left: 260, top: 150, fontSize: 104, fontWeight: 700, color: C.ink, letterSpacing: -3 }}>Ahmet Hoca</div>
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} style={{ position: 'absolute', left: 260, top: 330 + i * 78, width: 1300 - i * 160, height: 26, borderRadius: 13, background: '#E6E7EA' }} />
-        ))}
-      </Fill>
-      <Fill style={{ background: 'rgba(17,18,22,0.18)', opacity: clamp(f / 8) }} />
-
-      <div
-        style={{
-          position: 'absolute',
-          left: 410,
-          top,
-          width: 1100,
-          height: 900,
-          borderRadius: 64,
-          background: '#FFFFFF',
-          boxShadow: '0 -20px 80px -30px rgba(17,18,22,0.45)',
-          filter: cardBlur > 0.05 ? `blur(${cardBlur}px)` : undefined,
-          scale: String(1 - exit * 0.05),
-          translate: `0px ${-exit * 40}px`,
-        }}
-      >
-        <div style={{ position: 'absolute', left: 520, top: 18, width: 60, height: 8, borderRadius: 4, background: '#D6D9DF' }} />
-        <div style={{ position: 'absolute', left: 56, top: 60, display: 'flex', alignItems: 'center', gap: 18 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: `linear-gradient(135deg, ${C.blue}, ${C.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width={32} height={32} viewBox="0 0 24 24" fill="#FFF">
-              <path d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6Z" />
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontSize: 40, fontWeight: 700, color: C.ink }}>Draf Sapaan</div>
-            <div style={{ fontSize: 26, color: '#7A8190' }}>Untuk Ahmet Hoca</div>
-          </div>
+      <Fill style={{ background: 'radial-gradient(ellipse 60% 60% at 70% 50%, #E3EFFC, transparent 70%)' }} />
+      <Headline f={f} text="Sapaan hangat, siap dikirim" start={4} end={58} sub="Ditulis AI dari catatanmu" />
+      <Phone scale={1 - exit * 0.04}>
+        {/* Profile behind */}
+        <div style={{ position: 'absolute', inset: 0, background: '#EEF1F6', filter: 'blur(2.5px)' }}>
+          <div style={{ position: 'absolute', left: 20, right: 20, top: 104, height: 104, borderRadius: 26, background: '#FFF' }} />
+          <div style={{ position: 'absolute', left: 20, right: 20, top: 222, height: 58, borderRadius: 18, background: '#25D366' }} />
         </div>
-        <div style={{ position: 'absolute', left: 56, top: 180, display: 'flex', gap: 14 }}>
-          {['Kabar & Doa', 'Bahas Topik', 'Ajak Temu'].map((label, i) => (
-            <span
-              key={label}
-              style={{
-                padding: '12px 26px',
-                borderRadius: 999,
-                fontSize: 28,
-                fontWeight: 600,
-                color: i === 0 ? '#0E7FA6' : '#3B4254',
-                background: i === 0 ? 'rgba(60,200,240,0.14)' : '#F3F5F8',
-                boxShadow: i === 0 ? 'inset 0 0 0 2px rgba(60,200,240,0.8)' : undefined,
-              }}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-        <div style={{ position: 'absolute', left: 56, right: 56, top: 270, height: 230, borderRadius: 32, background: '#F6F8FB', padding: '28px 34px', fontSize: 38, lineHeight: 1.45, color: C.ink }}>
-          {MESSAGE.slice(0, shown)}
-        </div>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(17,18,22,0.3)', opacity: clamp(f / 6) }} />
         <div
           style={{
             position: 'absolute',
-            left: 56,
-            right: 56,
-            top: 530,
-            height: 100,
-            borderRadius: 30,
-            background: '#25D366',
-            color: '#FFF',
-            fontSize: 38,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 16,
-            scale: String(1 - 0.04 * press),
-            boxShadow: '0 16px 34px -16px rgba(37,211,102,0.9)',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: SHEET_H,
+            translate: `0px ${(1 - sheet) * SHEET_H}px`,
+            borderRadius: '40px 40px 0 0',
+            background: '#F2F2F7',
+            filter: cardBlur > 0.05 ? `blur(${cardBlur}px)` : undefined,
           }}
         >
-          {sent > 0.5 ? (
-            <svg width={44} height={44} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" style={{ scale: String(sent) }}>
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          ) : (
-            <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.2}>
-              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-            </svg>
-          )}
-          {sent > 0.5 ? 'Siap dikirim di WhatsApp' : 'Kirim via WhatsApp'}
+          <div style={{ position: 'absolute', left: SCREEN_W / 2 - 22, top: 12, width: 44, height: 5, borderRadius: 3, background: '#CDD2DA' }} />
+          <div style={{ position: 'absolute', left: 20, top: 36, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 13, background: `linear-gradient(135deg, ${C.blue}, ${C.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width={22} height={22} viewBox="0 0 24 24" fill="#FFF"><path d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6Z" /></svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.ink }}>Draf Sapaan</div>
+              <div style={{ fontSize: 14, color: '#7A8190' }}>Untuk Ahmet Hoca</div>
+            </div>
+          </div>
+          <div style={{ position: 'absolute', right: 20, top: 44, display: 'flex', padding: 3, borderRadius: 999, background: '#E3E6EC', fontSize: 13, fontWeight: 700 }}>
+            <span style={{ padding: '4px 9px', color: '#7A8190' }}>ID</span>
+            <span style={{ padding: '4px 9px', borderRadius: 999, background: '#FFF', color: C.ink }}>TR</span>
+          </div>
+          <div style={{ position: 'absolute', left: 20, top: 104, display: 'flex', gap: 8 }}>
+            {['Kabar & Doa', 'Bahas Topik', 'Ajak Temu'].map((label, i) => (
+              <span key={label} style={{ padding: '8px 13px', borderRadius: 999, fontSize: 14, fontWeight: 600, color: i === 0 ? '#0E7FA6' : '#3B4254', background: i === 0 ? 'rgba(60,200,240,0.14)' : '#FFF', boxShadow: i === 0 ? 'inset 0 0 0 1.5px rgba(60,200,240,0.8)' : undefined }}>
+                {label}
+              </span>
+            ))}
+          </div>
+          <div style={{ position: 'absolute', left: 20, right: 20, top: 158, height: 220, borderRadius: 22, background: '#FFFFFF', padding: '16px 18px', fontSize: 20, lineHeight: 1.45, color: C.ink, boxShadow: 'inset 0 0 0 1px #E6E9EF' }}>
+            {MESSAGE.slice(0, shown)}
+          </div>
+          <div style={{ position: 'absolute', left: 20, right: 20, top: 392, padding: '10px 14px', borderRadius: 14, background: 'rgba(47,107,255,0.08)', fontSize: 14, color: '#3B4254' }}>
+            <b style={{ color: C.blue }}>Topik:</b> Tanyakan kabar umrahnya
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              left: 20,
+              right: 20,
+              top: 490,
+              height: 64,
+              borderRadius: 20,
+              background: '#25D366',
+              color: '#FFF',
+              fontSize: 20,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              scale: String(1 - 0.04 * press),
+              boxShadow: '0 12px 26px -14px rgba(37,211,102,0.9)',
+            }}
+          >
+            {sent > 0.5 ? (
+              <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" style={{ scale: String(sent) }}>
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : (
+              <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.4}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
+            )}
+            {sent > 0.5 ? 'Siap dikirim di WhatsApp' : 'Kirim via WhatsApp'}
+          </div>
         </div>
-      </div>
+      </Phone>
       {f > 24 && f < 50 && <Touch x={tx} y={ty} press={press} opacity={clamp((f - 24) / 3)} />}
     </Fill>
   );

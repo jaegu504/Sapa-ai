@@ -1,13 +1,14 @@
 import React from 'react';
 import { BlurDef, C, Fill, INTER, clamp, expoIn, expoOut, hash, kf, useF } from './lib';
+import { Headline, Phone, SCREEN_W } from './phone';
 
-// Shot 5 (global f246–317, local 0–71): a frosted voice box springs open over the blue sky,
-// the waveform moves and the user's story types in, then the scene whips up.
+// Shot 5 (global f246–317, local 0–71): inside the phone the Catat Suara sheet springs up,
+// the mic pulses, the waveform moves and the user's story types in; then the scene whips up.
 const STORY = 'Ahmet baru pulang umrah, anaknya mulai kuliah.';
 
-/** Characters shown: about 1 per frame with a 1-frame hold every 2–3 characters. */
+/** Characters shown: about 1 per frame with a short hold every few characters. */
 function typed(f: number): number {
-  const start = 12;
+  const start = 14;
   if (f < start) return 0;
   let n = 0;
   let t = start;
@@ -21,88 +22,78 @@ function typed(f: number): number {
 export const S5Voice: React.FC = () => {
   const f = useF();
 
-  const open = clamp(f / 20);
-  const spring = 1 - Math.exp(-5.5 * open) * Math.cos(8 * open);
-  const boxW = 1160 * spring;
-  const boxH = 420 * clamp(0.35 + 0.65 * spring);
   const enterBlur = kf(f, [[0, 10], [8, 0]], expoOut);
-  const rise = f > 52 ? kf(f, [[52, 0], [71, -700]], expoIn) : 0;
-  const whip = f > 56 ? kf(f, [[56, 0], [71, 8]], expoIn) : 0;
+  const sheet = kf(f, [[0, 0], [14, 1]], (x) => 1 - Math.exp(-6 * x) * Math.cos(7.5 * x));
+  const rise = f > 52 ? kf(f, [[52, 0], [71, -900]], expoIn) : 0;
+  const whip = f > 56 ? kf(f, [[56, 0], [71, 9]], expoIn) : 0;
   const tint = kf(f, [[66, 0], [71, 1]]);
   const shown = Math.floor(typed(f));
-  const listening = f < 54 ? 1 : 0;
+  const listening = f < 50 ? 1 : 0;
+  const ring = (d: number) => 1 + 0.12 * Math.max(0, Math.sin((f / 14.5) * Math.PI * 2 + d)) * listening;
 
   return (
-    <Fill style={{ overflow: 'hidden', fontFamily: INTER, background: `linear-gradient(180deg, ${C.deep}, ${C.sky})` }}>
+    <Fill style={{ background: C.page, overflow: 'hidden', fontFamily: INTER }}>
+      <Fill style={{ background: 'radial-gradient(ellipse 60% 60% at 70% 50%, #E3EFFC, transparent 70%)' }} />
       <BlurDef id="s5whip" x={0.4} y={whip} />
       <Fill style={{ translate: `0px ${rise}px`, filter: whip > 0.05 ? 'url(#s5whip)' : enterBlur > 0.05 ? `blur(${enterBlur}px)` : undefined }}>
-        <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0 }}>
-          <defs>
-            <radialGradient id="s5glow" cx="0.8" cy="0.15" r="0.5">
-              <stop offset="0" stopColor="#7FE3F0" stopOpacity="0.45" />
-              <stop offset="1" stopColor="#7FE3F0" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <rect width={1920} height={1080} fill="url(#s5glow)" />
-          <g stroke="rgba(255,255,255,0.3)" strokeWidth={2} fill="none">
-            <circle cx={1360} cy={560} r={420} />
-            <line x1={0} y1={300} x2={1920} y2={300} />
-            <line x1={0} y1={830} x2={1920} y2={830} />
-            <line x1={420} y1={0} x2={420} y2={1080} />
-          </g>
-        </svg>
-
-        <div
-          style={{
-            position: 'absolute',
-            left: 960 - boxW / 2,
-            top: 540 - boxH / 2,
-            width: boxW,
-            height: boxH,
-            borderRadius: 64,
-            overflow: 'hidden',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(224,238,252,0.55))',
-            backdropFilter: 'blur(26px) saturate(1.35)',
-            boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.95), inset 0 0 0 1px rgba(255,255,255,0.5), 0 40px 90px -30px rgba(10,25,60,0.6)',
-          }}
-        >
-          <div style={{ position: 'absolute', left: 56, top: 44, display: 'flex', alignItems: 'center', gap: 18, opacity: clamp((f - 6) / 6) }}>
-            <div style={{ width: 60, height: 60, borderRadius: 30, background: 'linear-gradient(135deg, #2F54EB, #4F5BE8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width={30} height={30} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.2} strokeLinecap="round">
-                <rect x={9} y={2} width={6} height={12} rx={3} />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" />
-              </svg>
-            </div>
-            <span style={{ fontSize: 34, fontWeight: 700, color: C.navy }}>Catat Suara</span>
-            <span style={{ fontSize: 26, fontWeight: 600, color: '#2E7D52', background: 'rgba(78,214,160,0.22)', padding: '6px 18px', borderRadius: 999 }}>Ahmet Hoca</span>
-          </div>
-          {/* Waveform */}
-          <div style={{ position: 'absolute', right: 60, top: 50, display: 'flex', gap: 7, alignItems: 'center', height: 50 }}>
-            {Array.from({ length: 16 }, (_, i) => {
-              const h = 10 + 38 * Math.abs(Math.sin(f * 0.45 + i * 0.9 + hash(i) * 3)) * listening;
-              return <span key={i} style={{ width: 6, height: Math.max(8, h), borderRadius: 3, background: i % 3 === 0 ? C.blue : C.cyan, opacity: 0.85 }} />;
-            })}
-          </div>
-          <div style={{ position: 'absolute', left: 56, right: 56, top: 150, fontSize: 52, fontWeight: 500, lineHeight: 1.3, color: C.ink, letterSpacing: -0.5 }}>
-            {STORY.slice(0, shown)}
-            <span style={{ display: 'inline-block', width: 4, height: 58, marginLeft: 4, verticalAlign: '-10px', background: C.blue, borderRadius: 2 }} />
-          </div>
-          {/* Bottom tools */}
-          <div style={{ position: 'absolute', left: 56, bottom: 40, display: 'flex', gap: 30, opacity: 0.85 }}>
-            {[0, 1, 2].map((i) => (
-              <svg key={i} width={40} height={40} viewBox="0 0 24 24" fill="none" stroke={C.navy} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                {i === 0 && <path d="M12 5v14M5 12h14" />}
-                {i === 1 && <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2Z" />}
-                {i === 2 && <circle cx={12} cy={12} r={9} />}
-              </svg>
+        <Headline f={f} text="Cukup ceritakan kabarnya" start={6} end={72} sub="Sapa merapikan ceritamu" />
+        <Phone>
+          {/* App behind the sheet, dimmed */}
+          <div style={{ position: 'absolute', inset: 0, background: '#EEF1F6', filter: 'blur(3px)' }}>
+            <div style={{ position: 'absolute', left: 28, top: 70, fontSize: 40, fontWeight: 800, color: C.ink }}>Radar Sapa</div>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ position: 'absolute', left: 20, right: 20, top: 150 + i * 110, height: 90, borderRadius: 24, background: '#FFFFFF' }} />
             ))}
           </div>
-          <div style={{ position: 'absolute', right: 44, bottom: 30, width: 70, height: 70, borderRadius: 35, background: C.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width={34} height={34} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(17,18,22,0.35)', opacity: clamp(f / 6) }} />
+
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 760,
+              translate: `0px ${(1 - sheet) * 760}px`,
+              borderRadius: '40px 40px 0 0',
+              background: C.page,
+              boxShadow: '0 -20px 50px -20px rgba(0,0,0,0.35)',
+            }}
+          >
+            <div style={{ position: 'absolute', left: SCREEN_W / 2 - 22, top: 12, width: 44, height: 5, borderRadius: 3, background: '#CDD2DA' }} />
+            <div style={{ position: 'absolute', left: 24, right: 24, top: 36, display: 'flex', justifyContent: 'space-between', fontSize: 19 }}>
+              <span style={{ color: C.blue }}>Batal</span>
+              <b style={{ color: C.ink }}>Catat Suara</b>
+              <span style={{ fontSize: 14, fontWeight: 700, padding: '4px 10px', borderRadius: 999, background: '#E6E9EF', color: C.ink }}>ID</span>
+            </div>
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 84, textAlign: 'center', fontSize: 16, color: '#7A8190' }}>Kabar tentang Ahmet Hoca</div>
+            {/* Pulsing mic */}
+            <div style={{ position: 'absolute', left: SCREEN_W / 2 - 100, top: 120, width: 200, height: 200 }}>
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', scale: String(ring(0)) }} />
+              <div style={{ position: 'absolute', inset: 26, borderRadius: '50%', background: 'rgba(99,102,241,0.25)', scale: String(ring(0.8)) }} />
+              <div style={{ position: 'absolute', inset: 56, borderRadius: '50%', background: listening ? 'linear-gradient(135deg, #F43F5E, #FB7185)' : 'linear-gradient(135deg, #2F54EB, #4F5BE8)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 26px -10px rgba(99,102,241,0.9)' }}>
+                <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={2.2} strokeLinecap="round"><rect x={9} y={2} width={6} height={12} rx={3} /><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" /></svg>
+              </div>
+            </div>
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 330, display: 'flex', justifyContent: 'center', gap: 5, alignItems: 'center', height: 34 }}>
+              {Array.from({ length: 15 }, (_, i) => (
+                <span key={i} style={{ width: 4, height: Math.max(6, 8 + 26 * Math.abs(Math.sin(f * 0.5 + i * 0.9 + hash(i) * 3)) * listening), borderRadius: 2, background: C.cyan }} />
+              ))}
+            </div>
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 372, textAlign: 'center', fontSize: 16, color: '#7A8190' }}>{listening ? 'Mendengarkan...' : 'Selesai'}</div>
+            {/* Story card */}
+            <div style={{ position: 'absolute', left: 20, right: 20, top: 412, height: 170, borderRadius: 22, background: '#FFFFFF', boxShadow: 'inset 0 0 0 1px #E6E9EF', padding: '18px 20px' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#5B6782', marginBottom: 6 }}>Cerita Anda</div>
+              <div style={{ fontSize: 24, lineHeight: 1.35, fontWeight: 500, color: C.ink }}>
+                {STORY.slice(0, shown)}
+                <span style={{ display: 'inline-block', width: 3, height: 26, marginLeft: 2, verticalAlign: '-5px', background: C.blue, borderRadius: 2 }} />
+              </div>
+            </div>
+            <div style={{ position: 'absolute', left: 20, right: 20, top: 602, height: 64, borderRadius: 20, background: C.blue, color: '#FFF', fontSize: 21, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: shown >= STORY.length ? 1 : 0.4 }}>
+              Proses Catatan
+            </div>
           </div>
-        </div>
+        </Phone>
       </Fill>
       <Fill style={{ background: '#E6F4FE', opacity: tint }} />
     </Fill>
