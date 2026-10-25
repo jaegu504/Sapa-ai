@@ -12,7 +12,7 @@ Capacitor; UI in **Indonesian and Turkish** (Pengaturan → Bahasa), AI drafts i
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.5.0 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.5.1 at time of writing).
 
 ## Stack
 

@@ -1,22 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { t } from '../../i18n';
-import {
-  X,
-  Search,
-  CheckSquare,
-  Square,
-  Smartphone,
-  RefreshCw,
-  FileText,
-  ShieldAlert,
-  ShieldCheck,
-  CheckCircle2,
-  Circle,
-  Loader2,
-  Users,
-  Upload,
-  AlertCircle,
-} from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, FileText, Loader2, RefreshCw, Search, ShieldAlert, ShieldCheck, Smartphone, Upload, X } from 'lucide-react';
+import { motion } from 'motion/react';
+import { crmDb } from '../../db/crmDatabase';
+import { normalizePhoneNumber } from '../../utils/phone';
+import { avatarTone } from '../../utils/display';
 import type { RawPhoneContact, ImportResult } from '../../types/crm';
 import {
   getDeviceContactsWithStatus,
@@ -88,6 +76,21 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [visibleLimit, setVisibleLimit] = useState<number>(50);
+  // Numbers already in Sapa: shown as "Sudah di Sapa" and not selectable.
+  const [existingPhones, setExistingPhones] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!isOpen) return;
+    crmDb.contacts
+      .toArray()
+      .then((all) => setExistingPhones(new Set(all.map((c) => c.phoneNumber))))
+      .catch(() => setExistingPhones(new Set()));
+  }, [isOpen, importResult]);
+
+  const isInSapa = useCallback(
+    (c: RawPhoneContact) => existingPhones.has(normalizePhoneNumber(c.phoneNumber)),
+    [existingPhones]
+  );
 
   const loadContacts = useCallback(async () => {
     setLoading(true);
@@ -187,16 +190,21 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
   };
 
   // Filter contacts by search query
+  // A to Z, like the phone's own contact list.
   const filteredContacts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return contacts;
-    return contacts.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.phoneNumber.toLowerCase().includes(q) ||
-        (c.associations && c.associations.some((a) => a.toLowerCase().includes(q)))
-    );
+    const list = !q
+      ? contacts
+      : contacts.filter(
+          (c) =>
+            c.name.toLowerCase().includes(q) ||
+            c.phoneNumber.toLowerCase().includes(q) ||
+            (c.associations && c.associations.some((a) => a.toLowerCase().includes(q)))
+        );
+    return [...list].sort((a, b) => a.name.localeCompare(b.name, 'tr', { sensitivity: 'base' }));
   }, [contacts, searchQuery]);
+
+  const selectableFiltered = useMemo(() => filteredContacts.filter((c) => !isInSapa(c)), [filteredContacts, isInSapa]);
 
   // Windowed visible contacts to prevent rendering thousands of DOM elements
   const displayedContacts = useMemo(() => {
@@ -204,15 +212,14 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
   }, [filteredContacts, visibleLimit]);
 
   const areAllFilteredSelected =
-    filteredContacts.length > 0 &&
-    filteredContacts.every((c) => selectedPhones.has(c.phoneNumber));
+    selectableFiltered.length > 0 && selectableFiltered.every((c) => selectedPhones.has(c.phoneNumber));
 
   const handleToggleSelectAll = () => {
     const nextSelected = new Set(selectedPhones);
     if (areAllFilteredSelected) {
-      filteredContacts.forEach((c) => nextSelected.delete(c.phoneNumber));
+      selectableFiltered.forEach((c) => nextSelected.delete(c.phoneNumber));
     } else {
-      filteredContacts.forEach((c) => nextSelected.add(c.phoneNumber));
+      selectableFiltered.forEach((c) => nextSelected.add(c.phoneNumber));
     }
     setSelectedPhones(nextSelected);
   };
@@ -253,482 +260,315 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
 
   if (isOpen === false) return null;
 
-  const showPermissionWarning = activeTab === 'phonebook' && permissionStatus !== 'granted';
+  // Desktop browsers report 'unsupported' and show demo contacts: no permission card there.
+  const showPermissionWarning = activeTab === 'phonebook' && (permissionStatus === 'denied' || permissionStatus === 'prompt');
 
+  const tabBtn = (id: SyncSourceTab, label: string, Icon: typeof Smartphone, count?: number, onClick?: () => void, shortLabel?: string) => (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={activeTab === id}
+      onClick={onClick ?? (() => setActiveTab(id))}
+      className={`press flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2 py-2 rounded-full text-[12.5px] font-semibold whitespace-nowrap ${
+        activeTab === id ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{shortLabel ?? label}</span>
+      {count !== undefined && count > 0 && <span className="opacity-60">{count}</span>}
+    </button>
+  );
+
+  const card = 'rounded-[20px] bg-white dark:bg-[#1C1C1E] border border-slate-200/70 dark:border-white/10';
+  const uploadButton = (inputId: string, label: string) => (
+    <>
+      <input type="file" accept=".vcf,.vcard,.csv,text/csv,text/vcard,text/x-vcard" onChange={handleFileUpload} className="hidden" id={inputId} />
+      <label
+        htmlFor={inputId}
+        className="press w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-[14px] font-semibold text-white bg-blue-600 dark:bg-blue-500 cursor-pointer"
+      >
+        <Upload className="w-4 h-4" />
+        <span>{label}</span>
+      </label>
+    </>
+  );
+
+  let lastLetter = '';
   return (
     <div
       role="region"
       aria-label={t("Sinkronisasi & Impor Kontak")}
-      className="w-full max-w-2xl mx-auto h-full flex flex-col bg-[#f8f9ff] text-slate-900 font-sans dark:bg-[#090A0F] dark:text-white"
+      className="w-full max-w-2xl mx-auto h-full flex flex-col bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white font-sans"
     >
-      {/* Top Header */}
-      <header className="shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between pt-[env(safe-area-inset-top,12px)] dark:bg-[#1C1C1E]/95 dark:border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-            <Users className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-bold text-slate-900 dark:text-white">{t("Impor Kontak")}</h1>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t("Pilih kontak HP yang ingin disapa")}</p>
-          </div>
+      <header className="shrink-0 px-4 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[26px] leading-tight font-extrabold tracking-tight">{t("Impor Kontak")}</h1>
+          <p className="text-[13px] text-slate-500 dark:text-slate-400">{t("Pilih kontak HP yang ingin disapa")}</p>
         </div>
-
         {onClose && (
           <button
             type="button"
             onClick={onClose}
             aria-label={t("Tutup")}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer dark:text-slate-400"
+            className="press w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/70 dark:bg-white/10 text-slate-600 dark:text-slate-300 shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         )}
       </header>
 
-      {/* Scrollable Content Body */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {/* Banner / Helper Info */}
-        <div className="relative overflow-hidden bg-white border border-slate-200/70 rounded-3xl p-4 shadow-sm dark:bg-[#1C1C1E] dark:border-white/10">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 dark:bg-emerald-500/15">
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">{t("Sinkronisasi & Impor Kontak")}</h2>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed dark:text-slate-400">
-                {t("Pilih kontak dari buku telepon ponsel atau unggah file vCard/CSV untuk dipantau ritme follow-up-nya secara berkala.")}
-              </p>
-            </div>
-          </div>
+      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+        <div className="flex p-1 rounded-full bg-slate-200/70 dark:bg-white/10">
+          {tabBtn('phonebook', t('Buku Telepon'), Smartphone, activeTab === 'phonebook' ? contacts.length : undefined, () => {
+            setActiveTab('phonebook');
+            loadContacts();
+          })}
+          {tabBtn('google', t('Google Kontak'), RefreshCw, undefined, undefined, 'Google')}
+          {tabBtn('csv', t('File'), FileText, uploadedFileName ? contacts.length : undefined)}
         </div>
 
-        {/* Sync Sources Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('phonebook');
-              loadContacts();
-            }}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === 'phonebook'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100 dark:bg-[#1C1C1E] dark:text-slate-300 dark:border-white/10'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Buku Telepon (HP) {activeTab === 'phonebook' && contacts.length > 0 ? `(${contacts.length})` : ''}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('google')}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === 'google'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100 dark:bg-[#1C1C1E] dark:text-slate-300 dark:border-white/10'
-            }`}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{t("Google Kontak")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('csv')}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === 'csv'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200/70 hover:bg-slate-100 dark:bg-[#1C1C1E] dark:text-slate-300 dark:border-white/10'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>File CSV / VCF {uploadedFileName ? `(${contacts.length})` : ''}</span>
-          </button>
-        </div>
-
-        {/* Google Contacts Tab with Step-by-Step Sync Guide & File Upload */}
         {activeTab === 'google' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 dark:bg-[#1C1C1E] dark:border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <RefreshCw className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t("Sinkronisasi Google Kontak")}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {t("Impor kontak akun Google Anda ke Sapa CRM dalam 3 langkah mudah:")}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 dark:text-slate-300 dark:bg-white/5 dark:border-white/10">
-              <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+          <div className={`${card} p-4 space-y-3`}>
+            <h3 className="text-[15px] font-bold">{t("Sinkronisasi Google Kontak")}</h3>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400">{t("Impor kontak akun Google Anda ke Sapa CRM dalam 3 langkah mudah:")}</p>
+            <ol className="space-y-2.5 text-[13px] text-slate-700 dark:text-slate-200">
+              <li className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
                 <span>{t("Buka")} <strong>contacts.google.com</strong> {t("di browser ponsel atau laptop.")}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
                 <span>{t("Klik")} <strong>{t("Ekspor (Export)")}</strong> {t("lalu pilih format")} <strong>Google CSV</strong> {t("atau")} <strong>vCard</strong>.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
                 <span>{t("Unggah file hasil ekspor tersebut di bawah ini untuk langsung dipilih & diatur ritme sapaannya.")}</span>
-              </div>
-            </div>
-
-            <div className="pt-1">
-              <input
-                type="file"
-                accept=".vcf,.vcard,.csv,text/csv,text/vcard,text/x-vcard"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="google-contacts-file-input"
-              />
-              <label
-                htmlFor="google-contacts-file-input"
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-semibold cursor-pointer shadow-sm transition-all"
-              >
-                <Upload className="w-4 h-4" />
-                <span>{t("Unggah File Google Contacts (.csv / .vcf)")}</span>
-              </label>
-            </div>
+              </li>
+            </ol>
+            {uploadButton('google-contacts-file-input', t("Unggah File Google Contacts (.csv / .vcf)"))}
           </div>
         )}
 
-        {/* CSV / VCF File Tab */}
         {activeTab === 'csv' && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 dark:bg-[#1C1C1E] dark:border-white/10">
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-500/15">
-                <FileText className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t("Unggah File Kontak (.vcf / .csv)")}</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto dark:text-slate-400">
-                {t("Mendukung file vCard dari Google, iPhone, Android, WhatsApp, atau file spreadsheet CSV.")}
-              </p>
-            </div>
-
+          <div className={`${card} p-4 space-y-3 text-center`}>
+            <span className="mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <FileText className="w-6 h-6" />
+            </span>
+            <h3 className="text-[15px] font-bold">{t("Unggah File Kontak (.vcf / .csv)")}</h3>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400">{t("Mendukung file vCard dari Google, iPhone, Android, WhatsApp, atau file spreadsheet CSV.")}</p>
             {uploadedFileName && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs dark:bg-emerald-500/15">
-                <div className="flex items-center gap-2 min-w-0">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-semibold text-emerald-900 truncate">
-                    File dimuat: {uploadedFileName} ({contacts.length} kontak)
-                  </span>
-                </div>
-              </div>
+              <p className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="w-4 h-4" />
+                {uploadedFileName} · {t('{n} kontak', { n: contacts.length })}
+              </p>
             )}
-
-            {fileError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-xs text-rose-800">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{fileError}</span>
-              </div>
-            )}
-
-            <input
-              type="file"
-              accept=".vcf,.vcard,.csv,text/csv,text/vcard,text/x-vcard"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="csv-vcf-file-input"
-            />
-            <label
-              htmlFor="csv-vcf-file-input"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-semibold cursor-pointer shadow-sm transition-all"
-            >
-              <Upload className="w-4 h-4" />
-              <span>{uploadedFileName ? t('Ganti File Kontak') : t('Pilih File dari Perangkat')}</span>
-            </label>
+            {uploadButton('csv-vcf-file-input', uploadedFileName ? t('Ganti File Kontak') : t('Pilih File dari Perangkat'))}
           </div>
         )}
 
-        {/* Native Permission Card for Phonebook */}
+        {fileError && (
+          <div className="p-3 rounded-2xl flex items-center gap-2 text-[13px] bg-rose-500/10 text-rose-700 dark:text-rose-300">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{fileError}</span>
+          </div>
+        )}
+
         {showPermissionWarning && (
-          <div className="border border-amber-300 bg-amber-50/90 rounded-3xl p-4 space-y-3 shadow-sm dark:bg-amber-500/10 dark:border-amber-500/30">
+          <div className="rounded-[20px] p-4 space-y-3 bg-amber-500/10 border border-amber-500/30">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                  {t("Akses Kontak Belum Diizinkan")}
-                </h3>
-                <p className="text-xs text-amber-800 mt-1 leading-relaxed dark:text-amber-200">
+              <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-[14px] font-bold text-amber-900 dark:text-amber-200">{t("Akses Kontak Belum Diizinkan")}</h3>
+                <p className="text-[13px] text-amber-800 dark:text-amber-200/90 mt-1 leading-relaxed">
                   {t("Diperlukan izin sistem Android agar Sapa dapat membaca kontak dari buku telepon Anda secara offline & aman.")}
                 </p>
               </div>
             </div>
-
-            <div className="pt-1 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={handleRequestPermission}
-                disabled={requestingPermission}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-              >
-                {requestingPermission && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{t("Izinkan Akses Kontak")}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleRequestPermission}
+              disabled={requestingPermission}
+              className="press w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-[13px] font-semibold text-white bg-amber-500 disabled:opacity-60"
+            >
+              {requestingPermission && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t("Izinkan Akses Kontak")}
+            </button>
           </div>
         )}
 
-        {/* Success Banner */}
         {importResult && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-3 dark:bg-emerald-500/15">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="text-xs">
-              <p className="font-bold text-emerald-800">
+          <div className="flex items-start gap-3 p-3.5 rounded-[20px] bg-emerald-500/10 border border-emerald-500/25">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <div className="text-[13px]">
+              <p className="font-bold text-emerald-800 dark:text-emerald-200">
                 {t('Berhasil menyinkronkan {a} kontak baru, {b} kontak diperbarui.', { a: importResult.importedCount, b: importResult.updatedCount })}
               </p>
-              <p className="text-emerald-600 mt-0.5">
-                {t("Kontak sudah diberi ritme sapaan.")}
-              </p>
+              <p className="text-emerald-700 dark:text-emerald-300/90 mt-0.5">{t("Kontak sudah diberi ritme sapaan.")}</p>
             </div>
           </div>
         )}
 
-        {/* Empty state for phonebook when device contacts list is empty */}
-        {activeTab === 'phonebook' && !loading && !searchQuery && contacts.length === 0 && !showPermissionWarning && (
-          <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-8 text-center space-y-3 dark:bg-[#1C1C1E] dark:border-white/10">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto dark:bg-white/10 dark:text-slate-400">
-              <Users className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">{t("Buku Telepon Kosong")}</h3>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto dark:text-slate-400">
-                {t("Tidak ada kontak ditemukan di buku telepon HP Anda, atau izin membaca kontak belum aktif.")}
-              </p>
-            </div>
-            <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
-              <button
-                type="button"
-                onClick={loadContacts}
-                className="px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-semibold hover:bg-slate-800 transition-all cursor-pointer"
-              >
-                {t("Muat Ulang Buku Telepon")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('csv')}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold hover:bg-slate-200 transition-all cursor-pointer dark:bg-white/10 dark:text-slate-200"
-              >
-                {t("Unggah File CSV / VCF")}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Contact List Section (available for Phonebook, or uploaded CSV/Google) */}
-        {(contacts.length > 0 || loading || searchQuery) && (
+        {(activeTab === 'phonebook' || uploadedFileName) && !showPermissionWarning && (
           <>
-            {/* Search Input */}
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("Cari nama atau nomor telepon...")}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all shadow-sm dark:bg-[#1C1C1E] dark:border-white/10"
-                />
-              </div>
-
-              {/* Selection Counter & Select All Toggle */}
-              <div className="flex items-center justify-between px-1 text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                  <span>
-                    {t('Dipilih: {a} dari {b} kontak', { a: selectedPhones.size, b: contacts.length })}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleToggleSelectAll}
-                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
-                >
-                  {areAllFilteredSelected ? t('Batalkan Pilihan') : t('Pilih Semua')}
+            {!loading && contacts.length === 0 && activeTab === 'phonebook' ? (
+              <div className={`${card} p-6 text-center space-y-3`}>
+                <span className="mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 dark:bg-white/10 text-slate-500">
+                  <Smartphone className="w-6 h-6" />
+                </span>
+                <h3 className="text-[15px] font-bold">{t("Buku Telepon Kosong")}</h3>
+                <p className="text-[13px] text-slate-500 dark:text-slate-400">{t("Tidak ada kontak ditemukan di buku telepon HP Anda, atau izin membaca kontak belum aktif.")}</p>
+                <button type="button" onClick={loadContacts} className="press px-4 py-2 rounded-full text-[13px] font-semibold bg-slate-100 dark:bg-white/10">
+                  {t("Muat Ulang Buku Telepon")}
                 </button>
               </div>
-            </div>
-
-            {/* Contact Checklist Cards */}
-            <div className="space-y-2">
-              {loading ? (
-                <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2">
-                  <Loader2 className="w-6 h-6 animate-spin text-slate-600 dark:text-slate-300" />
-                  <span className="text-xs">{t("Memuat kontak telepon...")}</span>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t("Cari nama atau nomor telepon...")}
+                    className="w-full pl-10 pr-3 py-2.5 rounded-xl text-[15px] bg-slate-200/60 dark:bg-white/[0.08] placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
                 </div>
-              ) : filteredContacts.length === 0 ? (
-                <div className="p-8 text-center bg-white border border-dashed border-slate-200 rounded-3xl text-slate-400 text-xs dark:bg-[#1C1C1E] dark:border-white/10">
-                  {t("Tidak ada kontak ditemukan.")}
-                </div>
-              ) : (
-                <>
-                  {displayedContacts.map((contact) => {
-                    const isSelected = selectedPhones.has(contact.phoneNumber);
-                    return (
-                      <div
-                        key={contact.phoneNumber}
-                        onClick={() => handleToggleContact(contact.phoneNumber)}
-                        className={`flex items-center justify-between p-3 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs dark:bg-[#1C1C1E] ${
-                          isSelected
-                            ? 'border-emerald-500/70 bg-emerald-50/20 shadow-sm ring-1 ring-emerald-400/30'
-                            : 'border-slate-200/70 hover:border-slate-300 dark:border-white/10'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Squircle Avatar with Initials */}
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-white/10 dark:to-white/5 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 shrink-0 dark:border-white/10 dark:text-slate-200">
-                            {getInitials(contact.name)}
-                          </div>
 
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="text-xs font-bold text-slate-900 truncate dark:text-white">
-                                {contact.name}
-                              </h3>
-                              {contact.associations && contact.associations.length > 0 && (
-                                <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold truncate max-w-[120px] dark:bg-white/10 dark:text-slate-300">
-                                  {contact.associations[0]}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-slate-500 truncate mt-0.5 dark:text-slate-400">
-                              {contact.phoneNumber}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="pl-2 shrink-0">
-                          <label
-                            htmlFor={`contact-${contact.phoneNumber}`}
-                            className="cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              id={`contact-${contact.phoneNumber}`}
-                              aria-label={`Pilih ${contact.name}`}
-                              checked={isSelected}
-                              onChange={() => handleToggleContact(contact.phoneNumber)}
-                              className="sr-only"
-                            />
-                            {isSelected ? (
-                              <CheckSquare className="w-5 h-5 text-emerald-600" />
-                            ) : (
-                              <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
-                            )}
-                          </label>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Load more button when contacts exceed visible limit */}
-                  {filteredContacts.length > visibleLimit && (
-                    <button
-                      type="button"
-                      onClick={() => setVisibleLimit((prev) => prev + 50)}
-                      className="w-full py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-xs transition-colors cursor-pointer dark:text-slate-200 dark:bg-[#1C1C1E] dark:border-white/10"
-                    >
-                      Tampilkan 50 Kontak Lainnya ({filteredContacts.length - visibleLimit} tersisa)
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[13px] text-slate-500 dark:text-slate-400">
+                    {t('Dipilih: {a} dari {b} kontak', { a: selectedPhones.size, b: contacts.length })}
+                  </span>
+                  {selectableFiltered.length > 0 && (
+                    <button type="button" onClick={handleToggleSelectAll} className="text-[13px] font-semibold text-blue-600 dark:text-cyan-400">
+                      {areAllFilteredSelected ? t('Batalkan Pilihan') : t('Pilih Semua')}
                     </button>
                   )}
-                </>
-              )}
-            </div>
-
-            {/* Intentional Care Cadence Selector */}
-            <div className="bg-white border border-slate-200/70 rounded-3xl p-4 space-y-3 shadow-xs dark:bg-[#1C1C1E] dark:border-white/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                    {t("Tentukan Ritme Sapaan Awal")}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5 dark:text-slate-400">
-                    {t("Frekuensi pengingat follow-up untuk kontak yang dipilih")}
-                  </p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
-                  {t("Ritme sapa")}
-                </span>
-              </div>
 
-              {/* Cadence Cards */}
-              <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label={t("Ritme Sapaan")}>
-                {CADENCE_OPTIONS.map((opt) => {
-                  const isChecked = selectedCadence === opt.days;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isChecked}
-                      data-testid={`cadence-${opt.days}`}
-                      onClick={() => setSelectedCadence(opt.days)}
-                      className={`text-left p-3 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                        isChecked
-                          ? 'border-slate-900 bg-slate-900/5 ring-1 ring-slate-900 text-slate-900 shadow-xs dark:text-white'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-[#1C1C1E] dark:text-slate-200'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold flex items-center gap-1.5">
-                          {isChecked && (
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                          )}
-                          <span>{t(opt.title)}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-tight dark:text-slate-400">
-                          {t(opt.subtitle)}
-                        </p>
-                      </div>
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-slate-500">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {t("Memuat kontak telepon...")}
+                  </div>
+                ) : filteredContacts.length === 0 ? (
+                  <p className="py-8 text-center text-[13px] text-slate-500">{t("Tidak ada kontak ditemukan.")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {displayedContacts.map((contact, index) => {
+                      const letter = /[a-zçğıöşü]/i.test(contact.name.trim()[0] || '') ? contact.name.trim()[0].toLocaleUpperCase('tr') : '#';
+                      const showLetter = letter !== lastLetter;
+                      lastLetter = letter;
+                      const inSapa = isInSapa(contact);
+                      const selected = selectedPhones.has(contact.phoneNumber);
+                      return (
+                        <React.Fragment key={`${contact.phoneNumber}-${index}`}>
+                          {showLetter && <p className="px-2 pt-1 text-xs font-bold text-slate-500 dark:text-slate-400">{letter}</p>}
+                          <motion.button
+                            type="button"
+                            role="checkbox"
+                            aria-checked={selected}
+                            aria-label={t('Pilih {name}', { name: contact.name })}
+                            disabled={inSapa}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: Math.min(index, 10) * 0.025 }}
+                            onClick={() => handleToggleContact(contact.phoneNumber)}
+                            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[18px] text-left border ${
+                              selected
+                                ? 'bg-blue-500/10 border-blue-500/40'
+                                : 'bg-white dark:bg-[#1C1C1E] border-slate-200/70 dark:border-white/10'
+                            } ${inSapa ? 'opacity-55' : 'active:scale-[0.99]'}`}
+                          >
+                            <span className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 ${avatarTone(contact.name)}`}>
+                              {getInitials(contact.name)}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-[15px] font-semibold truncate">{contact.name}</span>
+                              <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">{contact.phoneNumber}</span>
+                            </span>
+                            {inSapa ? (
+                              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">{t('Sudah di Sapa')}</span>
+                            ) : (
+                              <span
+                                className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 ${
+                                  selected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-white/25'
+                                }`}
+                              >
+                                {selected && <Check className="w-3.5 h-3.5" />}
+                              </span>
+                            )}
+                          </motion.button>
+                        </React.Fragment>
+                      );
+                    })}
+                    {filteredContacts.length > visibleLimit && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleLimit((v) => v + 50)}
+                        className="press w-full py-2.5 rounded-2xl text-[13px] font-semibold bg-white dark:bg-[#1C1C1E] border border-slate-200/70 dark:border-white/10"
+                      >
+                        {t('Tampilkan {n} lagi', { n: Math.min(50, filteredContacts.length - visibleLimit) })}
+                      </button>
+                    )}
+                  </div>
+                )}
 
-                      <div className="pl-3 shrink-0">
-                        {isChecked ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-slate-300" />
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                <div className={`${card} p-4 space-y-3`}>
+                  <div>
+                    <h3 className="text-[15px] font-bold">{t("Tentukan Ritme Sapaan Awal")}</h3>
+                    <p className="text-[12.5px] text-slate-500 dark:text-slate-400">{t("Frekuensi pengingat follow-up untuk kontak yang dipilih")}</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label={t("Ritme Sapaan")}>
+                    {CADENCE_OPTIONS.map((opt) => {
+                      const on = selectedCadence === opt.days;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          data-testid={`cadence-${opt.days}`}
+                          onClick={() => setSelectedCadence(opt.days)}
+                          className={`press flex items-center gap-3 p-3 rounded-2xl text-left border ${
+                            on ? 'border-blue-500/50 bg-blue-500/10' : 'border-slate-200/70 dark:border-white/10'
+                          }`}
+                        >
+                          <span className={`w-5 h-5 rounded-full shrink-0 ${on ? 'border-[6px] border-blue-600' : 'border-2 border-slate-300 dark:border-white/25'}`} />
+                          <span className="min-w-0">
+                            <span className="block text-[14px] font-semibold">{t(opt.title)}</span>
+                            <span className="block text-[12px] text-slate-500 dark:text-slate-400">{t(opt.subtitle)}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
 
-      {/* Sticky Bottom Action Bar */}
-      <footer className="shrink-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 space-y-2 dark:bg-[#1C1C1E]/95 dark:border-white/10">
+      <footer className="shrink-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)] space-y-2 bg-[#F2F2F7]/90 dark:bg-[#090A0F]/90 backdrop-blur-xl border-t border-slate-200/70 dark:border-white/10">
         <button
           type="button"
           onClick={handleImport}
           disabled={selectedPhones.size === 0 || importing}
-          className="w-full bg-slate-900 text-white rounded-full py-3.5 font-semibold hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm active:scale-[0.99] cursor-pointer"
+          className="press w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15.5px] font-bold text-white bg-blue-600 dark:bg-blue-500 disabled:bg-slate-300 dark:disabled:bg-white/10 disabled:text-slate-500"
         >
           {importing ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t("Menyinkronkan Kontak...")}</span>
             </>
           ) : (
             <span>{t('Sinkronkan {n} Kontak', { n: selectedPhones.size })}</span>
           )}
         </button>
-
-        <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px] dark:text-slate-400">
+        <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>{t("Kontak hanya disimpan di HP ini")}</span>
-        </div>
+          {t("Kontak hanya disimpan di HP ini")}
+        </p>
       </footer>
     </div>
   );

@@ -448,4 +448,9 @@ export const TR: Record<string, string> = {
   "7 hari": "7 gün",
   "File ini bukan file cadangan Sapa.": "Bu dosya bir Sapa yedeği değil.",
   "Tidak ada data kontak di file cadangan ini.": "Bu yedek dosyasında kişi verisi yok.",
+  "Buku Telepon": "Rehber",
+  "File": "Dosya",
+  "Pilih {name}": "{name} seç",
+  "Sudah di Sapa": "Sapa'da var",
+  "Tampilkan {n} lagi": "{n} tane daha göster",
 };

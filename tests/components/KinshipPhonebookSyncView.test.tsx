@@ -248,9 +248,30 @@ describe('KinshipPhonebookSyncView', () => {
   it('allows uploading and parsing CSV/VCF file on CSV tab', async () => {
     render(<KinshipPhonebookSyncView isOpen={true} />);
 
-    const csvTab = screen.getByRole('button', { name: /File CSV \/ VCF/i });
+    const csvTab = screen.getByRole('button', { name: /^File$/ });
     fireEvent.click(csvTab);
 
     expect(screen.getByText(/Unggah File Kontak/i)).toBeDefined();
+  });
+
+  it('lists contacts A to Z and marks people already in Sapa as not selectable', async () => {
+    vi.spyOn(nativeContactsAdapter, 'getDeviceContactsWithStatus').mockResolvedValue({
+      contacts: [mockContacts[2], mockContacts[0], mockContacts[1]],
+      permissionStatus: 'granted',
+    });
+    await crmDb.contacts.add({
+      id: 'in-sapa', name: 'Bunda Sarah', phoneNumber: '+6281122334455', associations: [], isProfessional: false,
+      lastContactedDate: null, followUpCycleDays: 15, nextSpecificFollowUp: null, metContext: '', lastUpdateNotes: '',
+      possibleFollowUpTopic: '', createdAt: '', updatedAt: '',
+    });
+    render(<KinshipPhonebookSyncView isOpen={true} />);
+
+    await waitFor(() => expect(screen.getByText('Sudah di Sapa')).toBeDefined());
+    const names = screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'));
+    expect(names).toEqual(['Pilih Abi Syihab', 'Pilih Bunda Sarah', 'Pilih Dimas Anggara']);
+    expect(screen.getByRole('checkbox', { name: 'Pilih Bunda Sarah' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Pilih Semua/i }));
+    expect(screen.getByText(/Dipilih: 2 dari 3 kontak/i)).toBeDefined();
   });
 });
