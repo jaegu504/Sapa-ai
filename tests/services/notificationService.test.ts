@@ -424,7 +424,7 @@ describe('notificationService', () => {
 
         expect(mockSchedule).toHaveBeenCalledTimes(1);
         const scheduledNotif = mockSchedule.mock.calls[0][0].notifications[0];
-        expect(scheduledNotif.title).toBe('Jadwal Follow-up: Ahmad Faiz');
+        expect(scheduledNotif.title).toBe('Jadwal sapa: Ahmad Faiz');
         expect(scheduledNotif.body).toBe('Diskusi proyek');
         expect(scheduledNotif.channelId).toBe(CHANNEL_TARGETED_ALARMS);
         expect(scheduledNotif.id).toBe(hashContactId('test-1'));

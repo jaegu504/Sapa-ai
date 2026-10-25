@@ -37,6 +37,11 @@ export function normalizePhoneNumber(raw: string, defaultCountryCode: string = '
     return '';
   }
 
+  // Turkish mobiles are written "05xx xxx xx xx" (11 digits); Indonesian mobiles start with 08.
+  if (cleanCountry === '62' && /^05\d{9}$/.test(allDigits)) {
+    return `+90${allDigits.slice(1)}`;
+  }
+
   // If starts with single '0', replace leading 0 with +defaultCountryCode
   if (allDigits.startsWith('0')) {
     return `+${cleanCountry}${allDigits.slice(1)}`;

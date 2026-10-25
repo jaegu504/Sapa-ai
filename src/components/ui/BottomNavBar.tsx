@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { motion } from 'motion/react';
 import {
   RadarNavIcon,
@@ -23,10 +24,10 @@ export interface BottomNavBarProps {
 }
 
 const DEFAULT_TABS: NavTabItem[] = [
-  { id: 'dashboard', label: 'Beranda', icon: <RadarNavIcon size={20} /> },
-  { id: 'contacts', label: 'Kontak', icon: <ContactsNavIcon size={20} /> },
-  { id: 'schedules', label: 'Jadwal', icon: <ScheduleNavIcon size={20} /> },
-  { id: 'settings', label: 'Pengaturan', icon: <SettingsNavIcon size={20} /> },
+  { id: 'dashboard', label: t('Beranda'), icon: <RadarNavIcon size={20} /> },
+  { id: 'contacts', label: t('Kontak'), icon: <ContactsNavIcon size={20} /> },
+  { id: 'schedules', label: t('Jadwal'), icon: <ScheduleNavIcon size={20} /> },
+  { id: 'settings', label: t('Pengaturan'), icon: <SettingsNavIcon size={20} /> },
 ];
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
@@ -39,7 +40,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   const columns = tabs.length + (centerAction ? 1 : 0);
   return (
     <nav
-      aria-label="Navigasi Utama"
+      aria-label={t("Navigasi Utama")}
       // Equal-width grid columns keep the center action exactly in the middle, whatever the label lengths.
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-4 right-4 max-w-md mx-auto z-40 rounded-full px-2 py-1.5 grid items-center bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-2xl border border-white/90 dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.6)] transition-colors"

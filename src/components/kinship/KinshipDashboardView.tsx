@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { t } from '../../i18n';
 import { motion } from 'motion/react';
 import { Bell, Check, ChevronRight, MessageCircle, UserPlus } from 'lucide-react';
 import { Contact } from '../../types/crm';
@@ -59,10 +60,10 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
   return (
     <div className="relative w-full max-w-2xl mx-auto px-4 pt-3 pb-32 space-y-6 text-slate-900 dark:text-white">
       <header className="flex items-center justify-between">
-        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">Radar Sapa</h1>
+        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">{t("Radar Sapa")}</h1>
         <button
           type="button"
-          aria-label="Lihat kontak yang perlu disapa"
+          aria-label={t("Lihat kontak yang perlu disapa")}
           onClick={onOpenNotifications}
           className="press relative w-10 h-10 rounded-full bg-white/80 dark:bg-white/10 border border-white/80 dark:border-white/15 text-slate-700 dark:text-slate-200 flex items-center justify-center"
         >
@@ -78,26 +79,26 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
         </button>
       </header>
 
-      <section aria-label="Denyut Sapa" data-tour="radar-pulse">
+      <section aria-label={t("Denyut Sapa")} data-tour="radar-pulse">
         <KinshipPulseArc score={healthScore} activeCount={activeCount} dueCount={dueCount} pausedCount={pausedCount} />
       </section>
 
       {contacts.length === 0 ? (
         <EmptyState
           icon={<UserPlus className="w-7 h-7" />}
-          title="Belum ada kontak"
-          body="Tambahkan orang-orang yang ingin Anda jaga silaturahminya."
-          actionLabel={onAddContact ? 'Tambah kontak' : undefined}
+          title={t("Belum ada kontak")}
+          body={t('Tambahkan orang-orang yang ingin Anda jaga silaturahminya.')}
+          actionLabel={onAddContact ? t('Tambah kontak') : undefined}
           onAction={onAddContact}
         />
       ) : (
         <>
-          <section aria-label="Perlu disapa" className="space-y-2">
+          <section aria-label={t("Perlu disapa")} className="space-y-2">
             <div className="flex items-baseline justify-between px-1">
-              <h2 className="text-[17px] font-bold">Perlu disapa</h2>
+              <h2 className="text-[17px] font-bold">{t("Perlu disapa")}</h2>
               {dueContacts.length > 0 && (
                 <button type="button" onClick={onOpenNotifications} className="text-sm font-semibold text-blue-600 dark:text-cyan-400">
-                  Lihat semua
+                  {t("Lihat semua")}
                 </button>
               )}
             </div>
@@ -106,8 +107,8 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
               <EmptyState
                 tone="success"
                 icon={<Check className="w-7 h-7" />}
-                title="Semua aman hari ini"
-                body="Tidak ada yang perlu disapa sekarang."
+                title={t("Semua aman hari ini")}
+                body={t('Tidak ada yang perlu disapa sekarang.')}
               />
             ) : (
               <div className="rounded-[22px] bg-white/85 dark:bg-[#1C1C1E]/80 border border-white/80 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/[0.07]">
@@ -126,13 +127,13 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
                       <p className="text-[15px] font-semibold truncate">{contact.name}</p>
                       <p className="text-xs font-semibold text-rose-500 dark:text-rose-400">{dueLabel(status, contact.lastContactedDate)}</p>
                       {contact.possibleFollowUpTopic && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Topik: {contact.possibleFollowUpTopic}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t('Topik:')} {contact.possibleFollowUpTopic}</p>
                       )}
                     </div>
                     {onLogChat && (
                       <button
                         type="button"
-                        aria-label={`Tandai sudah sapa ${contact.name}`}
+                        aria-label={t('Tandai sudah sapa {name}', { name: contact.name })}
                         onClick={(e) => {
                           e.stopPropagation();
                           onLogChat(contact);
@@ -145,7 +146,7 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
                     {onSapa && (
                       <button
                         type="button"
-                        aria-label={`Sapa ${contact.name}`}
+                        aria-label={t('Sapa {name}', { name: contact.name })}
                         onClick={(e) => {
                           e.stopPropagation();
                           onSapa(contact);
@@ -162,8 +163,8 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
           </section>
 
           {upcoming.length > 0 && (
-            <section aria-label="7 hari ke depan" className="space-y-2">
-              <h2 className="text-[17px] font-bold px-1">7 hari ke depan</h2>
+            <section aria-label={t("7 hari ke depan")} className="space-y-2">
+              <h2 className="text-[17px] font-bold px-1">{t("7 hari ke depan")}</h2>
               <div className="rounded-[22px] bg-white/85 dark:bg-[#1C1C1E]/80 border border-white/80 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/[0.07]">
                 {upcoming.map(({ contact, status }, i) => {
                   const date = dueDate(contact.nextSpecificFollowUp, status);

@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { openWhatsApp } from '../../utils/whatsapp';
 
 export interface DualWhatsAppButtonProps {
@@ -79,7 +80,7 @@ export const DualWhatsAppButton: React.FC<DualWhatsAppButtonProps> = ({
       {/* Regular WhatsApp Button */}
       <button
         type="button"
-        aria-label="Kirim via WhatsApp"
+        aria-label={t("Kirim via WhatsApp")}
         onClick={handleRegularClick}
         disabled={isDisabled}
         className={`flex-1 min-w-0 inline-flex items-center justify-center font-semibold rounded-full text-white bg-[#25D366] hover:bg-emerald-600 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-[#25D366] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(37,211,102,0.25)] ${sizeClasses}`}
@@ -91,7 +92,7 @@ export const DualWhatsAppButton: React.FC<DualWhatsAppButtonProps> = ({
       {/* WhatsApp Business Button */}
       <button
         type="button"
-        aria-label="Kirim via WhatsApp Business"
+        aria-label={t("Kirim via WhatsApp Business")}
         onClick={handleBusinessClick}
         disabled={isDisabled}
         className={`flex-1 min-w-0 inline-flex items-center justify-center font-semibold rounded-full text-white bg-slate-900 hover:bg-slate-800 dark:bg-white/15 dark:hover:bg-white/20 dark:border dark:border-white/20 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${sizeClasses}`}

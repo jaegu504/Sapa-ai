@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { t } from '../../i18n';
 import { Bell, Users, Check, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 import {
   PermissionState,
@@ -34,11 +35,11 @@ const PermissionCard: React.FC<CardProps> = ({ icon: Icon, title, desc, state, a
       </div>
       {state === 'granted' ? (
         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-          <Check className="w-4 h-4" /> Diizinkan
+          <Check className="w-4 h-4" /> {t("Diizinkan")}
         </span>
       ) : state === 'unavailable' ? (
         <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0 text-right max-w-[90px]">
-          Tidak tersedia di perangkat ini
+          {t("Tidak tersedia di perangkat ini")}
         </span>
       ) : askedAndDenied ? (
         <button
@@ -46,7 +47,7 @@ const PermissionCard: React.FC<CardProps> = ({ icon: Icon, title, desc, state, a
           onClick={() => openAppSettings()}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 shrink-0"
         >
-          <SettingsIcon className="w-3.5 h-3.5" /> Buka Pengaturan
+          <SettingsIcon className="w-3.5 h-3.5" /> {t("Buka Pengaturan")}
         </button>
       ) : (
         <button
@@ -55,13 +56,13 @@ const PermissionCard: React.FC<CardProps> = ({ icon: Icon, title, desc, state, a
           disabled={state === null}
           className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-slate-900 dark:bg-blue-600 shrink-0 disabled:opacity-50"
         >
-          Izinkan
+          {t("Izinkan")}
         </button>
       )}
     </div>
     {askedAndDenied && state === 'denied' && (
       <p className="text-[11px] text-amber-700 dark:text-amber-300">
-        Izin belum aktif. Aktifkan di Pengaturan HP, lalu kembali ke Sapa.
+        {t("Izin belum aktif. Aktifkan di Pengaturan HP, lalu kembali ke Sapa.")}
       </p>
     )}
   </div>
@@ -92,16 +93,16 @@ export const PermissionStep: React.FC<PermissionStepProps> = ({ onContinue }) =>
     <div className="my-auto py-2 space-y-4">
       <div className="text-center space-y-1.5">
         <h2 id="onboarding-title" className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Izinkan Akses Penting
+          {t("Izinkan Akses Penting")}
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed px-2">
-          Dua izin ini membuat Sapa bisa bekerja penuh. Anda tetap bisa lanjut walau belum mengizinkan.
+          {t("Dua izin ini membuat Sapa bisa bekerja penuh. Anda tetap bisa lanjut walau belum mengizinkan.")}
         </p>
       </div>
       <PermissionCard
         icon={Users}
-        title="Akses Kontak"
-        desc="Agar Anda bisa mengimpor kontak dari buku telepon."
+        title={t("Akses Kontak")}
+        desc={t('Agar Anda bisa mengimpor kontak dari buku telepon.')}
         state={contacts}
         askedAndDenied={contactsDenied}
         onRequest={async () => {
@@ -112,8 +113,8 @@ export const PermissionStep: React.FC<PermissionStepProps> = ({ onContinue }) =>
       />
       <PermissionCard
         icon={Bell}
-        title="Notifikasi"
-        desc="Agar Sapa bisa mengingatkan Anda untuk menyapa."
+        title={t("Notifikasi")}
+        desc={t('Agar Sapa bisa mengingatkan Anda untuk menyapa.')}
         state={notifications}
         askedAndDenied={notificationsDenied}
         onRequest={async () => {
@@ -128,7 +129,7 @@ export const PermissionStep: React.FC<PermissionStepProps> = ({ onContinue }) =>
         className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white font-bold text-sm shadow-lg active:scale-95 transition-all"
       >
         <Sparkles className="w-4 h-4" />
-        <span>Mulai Tutorial</span>
+        <span>{t("Mulai Tutorial")}</span>
       </button>
     </div>
   );

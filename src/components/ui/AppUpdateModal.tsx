@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { ArrowRight, Rocket, Download, X, Sparkles, ExternalLink } from 'lucide-react';
 import type { UpdateCheckResult } from '../../services/updateService';
 import { openUpdateDownload } from '../../services/updateService';
@@ -45,7 +46,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
           type="button"
           onClick={handleDismiss}
           className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white bg-slate-100/60 dark:bg-white/10 hover:bg-slate-200/60 dark:hover:bg-white/20 transition-colors"
-          aria-label="Tutup"
+          aria-label={t("Tutup")}
         >
           <X className="w-4 h-4" />
         </button>
@@ -58,10 +59,10 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-blue-600 dark:text-cyan-400 text-xs font-bold tracking-wide uppercase">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Versi Baru Siap Diinstal</span>
+              <span>{t("Versi Baru Siap Diinstal")}</span>
             </div>
             <h2 id="update-modal-title" className="text-lg font-extrabold tracking-tight">
-              Pembaruan Sapa-ai
+              {t("Pembaruan Sapa-ai")}
             </h2>
           </div>
         </div>
@@ -70,7 +71,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
         <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 flex items-center justify-between">
           <div className="text-center flex-1">
             <span className="block text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-              Versi Anda
+              {t("Versi Anda")}
             </span>
             <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
               v{update.currentVersion}
@@ -79,7 +80,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
           <ArrowRight className="w-5 h-5 mx-2 text-blue-500 dark:text-cyan-400 shrink-0" aria-hidden="true" />
           <div className="text-center flex-1">
             <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider">
-              Versi Terbaru
+              {t("Versi Terbaru")}
             </span>
             <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
               v{update.latestVersion}
@@ -91,7 +92,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
         {update.releaseNotes && (
           <div className="space-y-1.5">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Catatan Pembaruan:
+              {t("Catatan Pembaruan:")}
             </span>
             <div className="max-h-40 overflow-y-auto p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 text-xs text-slate-600 dark:text-slate-300 space-y-1 leading-relaxed whitespace-pre-line font-mono text-[11px]">
               {update.releaseNotes}
@@ -107,7 +108,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
             className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all"
           >
             <Download className="w-4 h-4" />
-            <span>Unduh & Perbarui Sekarang (APK)</span>
+            <span>{t("Unduh & Perbarui Sekarang (APK)")}</span>
           </button>
 
           <div className="flex items-center justify-between pt-1 text-xs">
@@ -117,7 +118,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
               className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-cyan-400 flex items-center gap-1 font-medium transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              <span>Lihat di GitHub</span>
+              <span>{t("Lihat di GitHub")}</span>
             </button>
 
             <button
@@ -125,7 +126,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
               onClick={handleDismiss}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium transition-colors"
             >
-              Nanti Saja
+              {t("Nanti Saja")}
             </button>
           </div>
         </div>

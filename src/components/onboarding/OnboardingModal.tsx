@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { t } from '../../i18n';
 import {
   Sparkles,
   ChevronRight,
@@ -44,7 +45,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       description:
         'Sapa membantu Anda menjaga silaturahmi: mengingatkan siapa yang sudah waktunya disapa, mencatat kabar mereka, dan membantu menyusun pesan WhatsApp yang santun.',
       visual: (
-        <img src={sapaLogo} alt="Sapa Logo" className="w-28 h-28 mx-auto rounded-[28px] shadow-xl object-cover" />
+        <img src={sapaLogo} alt={t("Sapa Logo")} className="w-28 h-28 mx-auto rounded-[28px] shadow-xl object-cover" />
       ),
       highlights: [
         { icon: Heart, label: 'Ingat Siapa Disapa', desc: 'Pengingat sesuai ritme tiap relasi' },
@@ -83,7 +84,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     92%
                   </span>
                   <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-1">
-                    Harmonis
+                    {t("Harmonis")}
                   </span>
                 </div>
               </div>
@@ -117,7 +118,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-                Sisa 1 hr
+                {t("Sisa 1 hr")}
               </span>
             </div>
 
@@ -132,7 +133,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               </div>
               <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-full bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-semibold shadow-xs">
                 <Briefcase className="w-3.5 h-3.5" />
-                <span>W4B Bisnis</span>
+                <span>{t("W4B Bisnis")}</span>
               </div>
             </div>
           </div>
@@ -159,7 +160,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <span className="text-base font-extrabold text-slate-800 dark:text-white">08:00</span>
             <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>100% Offline</span>
+              <span>{t("100% Offline")}</span>
             </div>
           </div>
         </div>
@@ -222,14 +223,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         {/* Top Header Actions */}
         <div className="flex items-center justify-between pb-2">
           <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400">
-            {showPermissions ? 'Izin Akses' : activeSlide.badge}
+            {showPermissions ? t('Izin Akses') : t(activeSlide.badge)}
           </span>
           <button
             type="button"
             onClick={handleFinish}
             className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           >
-            Lewati
+            {t("Lewati")}
           </button>
         </div>
 
@@ -246,10 +247,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               id="onboarding-title"
               className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white"
             >
-              {activeSlide.title}
+              {t(activeSlide.title)}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed px-2">
-              {activeSlide.description}
+              {t(activeSlide.description)}
             </p>
           </div>
 
@@ -267,10 +268,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   </div>
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold text-slate-800 dark:text-white truncate">
-                      {h.label}
+                      {t(h.label)}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                      {h.desc}
+                      {t(h.desc)}
                     </p>
                   </div>
                 </div>
@@ -287,7 +288,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               <button
                 key={index}
                 type="button"
-                aria-label={`Buka slide ${index + 1}`}
+                aria-label={t('Buka slide {n}', { n: index + 1 })}
                 onClick={() => setCurrentSlide(index)}
                 className={`transition-all duration-300 ${
                   currentSlide === index
@@ -305,7 +306,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 type="button"
                 onClick={handlePrev}
                 className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 dark:border-white/15 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-                aria-label="Kembali"
+                aria-label={t("Kembali")}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -317,7 +318,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 onClick={handleNext}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-semibold text-xs sm:text-sm hover:bg-slate-800 dark:hover:bg-blue-500 shadow-md transition-all active:scale-95"
               >
-                <span>Lanjut</span>
+                <span>{t("Lanjut")}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
@@ -327,7 +328,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all active:scale-95"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Lanjutkan</span>
+                <span>{t("Lanjutkan")}</span>
               </button>
             )}
           </div>

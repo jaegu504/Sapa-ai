@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { t } from '../../i18n';
 import { createPortal } from 'react-dom';
 import type { TourStep } from '../../services/tutorialService';
 
@@ -124,13 +125,13 @@ export const TourSpotlight: React.FC<TourSpotlightProps> = ({ step, stepIndex, t
 
       <div
         role="dialog"
-        aria-label={step.title}
+        aria-label={t(step.title)}
         data-fallback={fallback ? 'true' : undefined}
         className="absolute left-4 right-4 mx-auto max-w-sm pointer-events-auto bg-white dark:bg-[#1C1C1E] text-slate-800 dark:text-white border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-2xl p-4 space-y-2"
         style={tooltipStyle}
       >
-        <p className="text-sm font-bold text-slate-900 dark:text-white">{step.title}</p>
-        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{step.body}</p>
+        <p className="text-sm font-bold text-slate-900 dark:text-white">{t(step.title)}</p>
+        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{t(step.body)}</p>
         <div className="flex items-center justify-between pt-1">
           <span className="text-[11px] text-slate-400 dark:text-slate-500">
             Langkah {stepIndex + 1} dari {total}
@@ -141,7 +142,7 @@ export const TourSpotlight: React.FC<TourSpotlightProps> = ({ step, stepIndex, t
               onClick={onSkip}
               className="px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
             >
-              Lewati
+              {t("Lewati")}
             </button>
             {!step.hideNext && (
               <button
@@ -149,7 +150,7 @@ export const TourSpotlight: React.FC<TourSpotlightProps> = ({ step, stepIndex, t
                 onClick={handleNext}
                 className="px-4 py-1.5 rounded-full text-xs font-bold text-white bg-slate-900 dark:bg-blue-600"
               >
-                Berikutnya
+                {t("Berikutnya")}
               </button>
             )}
           </div>

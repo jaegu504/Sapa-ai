@@ -1,5 +1,6 @@
 import type { Contact } from '../types/crm';
 import { calculateContactStatus } from './status';
+import { t } from '../i18n';
 
 export type ContactsFilter =
   | { kind: 'label'; label: string }
@@ -10,13 +11,13 @@ export type ContactsFilter =
 export function describeContactsFilter(filter: ContactsFilter): string {
   switch (filter.kind) {
     case 'label':
-      return `Label: ${filter.label}`;
+      return `${t('Label')}: ${filter.label}`;
     case 'overdue':
-      return 'Perlu Disapa';
+      return t('Perlu Disapa');
     case 'week':
-      return 'Jadwal 7 Hari ke Depan';
+      return t('Jadwal 7 Hari ke Depan');
     case 'never':
-      return 'Belum Pernah Disapa';
+      return t('Belum Pernah Disapa');
   }
 }
 

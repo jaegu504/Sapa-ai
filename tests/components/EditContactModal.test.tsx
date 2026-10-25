@@ -109,12 +109,11 @@ describe('EditContactModal', () => {
     const hocaPill = screen.getByRole('button', { name: /Hoca/i });
     fireEvent.click(hocaPill);
 
-    // Toggle professional switch
-    const proCheckbox = screen.getByLabelText(/Kontak Profesional/i);
-    fireEvent.click(proCheckbox);
+    // Profesional is a label pill too
+    fireEvent.click(screen.getByRole('button', { name: 'Profesional' }));
 
     // Fill notes
-    fireEvent.change(screen.getByLabelText(/Ketemu di mana/i), {
+    fireEvent.change(screen.getByLabelText(/Pertama Ketemu/i), {
       target: { value: 'Kajian Subuh' },
     });
 
@@ -129,7 +128,8 @@ describe('EditContactModal', () => {
           associations: expect.arrayContaining(['Hoca']),
           isProfessional: true,
           metContext: 'Kajian Subuh',
-        })
+        }),
+        { saveToPhone: false }
       );
       expect(onClose).toHaveBeenCalled();
     });

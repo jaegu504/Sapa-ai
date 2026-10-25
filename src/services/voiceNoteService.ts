@@ -41,6 +41,7 @@ export function buildVoiceNotePrompt(transcript: string, contact: Contact | null
     '- facts: hal yang MENETAP tentang relasi, pendek, maksimal 5 kata per item. Contoh: "Punya anak", "Punya toko kue", "Hobi futsal". Jangan masukkan nama, gelar (Ustadz, Pak, Hoca), atau acara sekali jalan. [] jika tidak ada.',
     '- topic: apa yang sebaiknya pengguna tanyakan/bahas saat menyapa berikutnya, pakai NAMA relasi dan TANGGAL PASTI. Contoh: "Tanyakan kabar pembukaan toko Ahmad (31 Oktober 2026)."',
     '- followUpDate: tanggal pasti acara/janji berikutnya, hitung dari Hari ini ("minggu depan", "lusa", "tanggal 31"). null jika tidak ada.',
+    '- Tulis kabar, facts dan topic dalam BAHASA YANG SAMA dengan cerita pengguna (Indonesia atau Turki).',
     '- JANGAN pernah menulis kata waktu relatif ("minggu depan", "besok") di kabar/topic: selalu ubah ke tanggal pasti.',
   ].join('\n');
 }

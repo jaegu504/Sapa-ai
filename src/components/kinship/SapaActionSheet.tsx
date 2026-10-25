@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { Sparkles, ChevronRight } from 'lucide-react';
 import type { Contact } from '../../types/crm';
 import { Sheet, useSticky } from '../ui/Sheet';
@@ -27,7 +28,7 @@ export const SapaActionSheet: React.FC<SapaActionSheetProps> = ({ contact: liveC
       {contact && (
         <div className="px-4 pb-6 pt-1">
           <h2 id="sapa-sheet-title" className="text-center text-[17px] font-bold mb-4">
-            Sapa {contact.name}
+            {t('Sapa {name}', { name: contact.name })}
           </h2>
 
           <button
@@ -42,12 +43,12 @@ export const SapaActionSheet: React.FC<SapaActionSheetProps> = ({ contact: liveC
               <Sparkles className="w-5 h-5" />
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[15px] font-semibold">Tulis dengan AI</span>
+              <span className="block text-[15px] font-semibold">{t("Tulis dengan AI")}</span>
               <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">
-                {contact.possibleFollowUpTopic ? `Pakai topik: ${contact.possibleFollowUpTopic}` : 'Sapa menyusun pesan pembuka untuk Anda'}
+                {contact.possibleFollowUpTopic ? t('Pakai topik: {topic}', { topic: contact.possibleFollowUpTopic }) : t('Sapa menyusun pesan pembuka untuk Anda')}
               </span>
             </span>
-            <span className="text-[10px] font-bold tracking-wider text-blue-600 dark:text-cyan-400">SARAN</span>
+            <span className="text-[10px] font-bold tracking-wider text-blue-600 dark:text-cyan-400">{t("SARAN")}</span>
           </button>
 
           <button
@@ -60,7 +61,7 @@ export const SapaActionSheet: React.FC<SapaActionSheetProps> = ({ contact: liveC
             </span>
             <span className="flex-1">
               <span className="block text-[15px] font-semibold">WhatsApp</span>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">Buka chat langsung</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{t("Buka chat langsung")}</span>
             </span>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </button>
@@ -75,7 +76,7 @@ export const SapaActionSheet: React.FC<SapaActionSheetProps> = ({ contact: liveC
             </span>
             <span className="flex-1">
               <span className="block text-[15px] font-semibold">WhatsApp Business</span>
-              <span className="block text-xs text-slate-500 dark:text-slate-400">Buka chat langsung</span>
+              <span className="block text-xs text-slate-500 dark:text-slate-400">{t("Buka chat langsung")}</span>
             </span>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </button>
@@ -85,7 +86,7 @@ export const SapaActionSheet: React.FC<SapaActionSheetProps> = ({ contact: liveC
             onClick={onClose}
             className="press mt-3 w-full py-3 rounded-2xl text-[15px] font-semibold text-blue-600 dark:text-cyan-400"
           >
-            Batal
+            {t("Batal")}
           </button>
         </div>
       )}

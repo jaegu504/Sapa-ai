@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { motion } from 'motion/react';
 
 export interface KinshipPulseArcProps {
@@ -87,7 +88,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
             {Math.round(clampedScore)}%
           </span>
           <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider mt-1">
-            Denyut Sapa
+            {t("Denyut Sapa")}
           </span>
         </div>
       </div>
@@ -99,11 +100,11 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs" />
             <span className="text-xs font-semibold truncate">
-              {activeCount} Aktif
+              {t('{n} Aktif', { n: activeCount })}
             </span>
           </div>
           <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 hidden sm:inline">
-            Aman
+            {t("Aman")}
           </span>
         </div>
 
@@ -126,7 +127,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
                 dueCount > 0 ? 'text-rose-600 dark:text-rose-300 font-bold' : ''
               }`}
             >
-              {dueCount} Perlu Disapa
+              {t('{n} Perlu Disapa', { n: dueCount })}
             </span>
           </div>
         </div>
@@ -136,11 +137,11 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
             <span className="text-xs font-medium truncate">
-              {pausedCount} Dijeda
+              {t('{n} Dijeda', { n: pausedCount })}
             </span>
           </div>
           <span className="text-[10px] text-slate-400 hidden sm:inline">
-            Nonaktif
+            {t("Nonaktif")}
           </span>
         </div>
       </div>
@@ -154,7 +155,7 @@ export const KinshipPulseArc: React.FC<KinshipPulseArcProps> = ({
       <button
         type="button"
         onClick={onPulseClick}
-        aria-label={`Denyut Sapa ${Math.round(clampedScore)}%`}
+        aria-label={`${t('Denyut Sapa')} ${Math.round(clampedScore)}%`}
         className={`${containerBaseClass} text-left hover:border-white dark:hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-[0.99] ${className}`}
       >
         {content}

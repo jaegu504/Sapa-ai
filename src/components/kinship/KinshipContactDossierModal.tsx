@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { t } from '../../i18n';
 import {
   Calendar,
   Check,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Contact, InteractionLog } from '../../types/crm';
 import { calculateContactStatus } from '../../utils/status';
-import { dueLabel, formatLongDate, formatShortDate, getInitials } from '../../utils/display';
+import { dueLabel, formatLongDate, formatShortDate, getInitials, monthName } from '../../utils/display';
 import { getLabels, hasAssociation, toggleAssociation } from '../../services/labelService';
 import { Sheet, useSticky } from '../ui/Sheet';
 import { tapHaptic } from '../../services/haptics';
@@ -38,13 +39,11 @@ export interface KinshipContactDossierModalProps {
   now?: Date;
 }
 
-const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
 /** "2026-10-24" → "24 Okt 2026" (manual so it reads the same on every phone locale). */
 export function formatFactDate(date: string): string {
   const [y, m, d] = date.split('T')[0].split('-').map(Number);
   if (!y || !m || !d || m > 12) return date;
-  return `${d} ${MONTHS_ID[m - 1]} ${y}`;
+  return `${d} ${monthName(m - 1)} ${y}`;
 }
 
 export function computeDateOffset(baseDate?: Date, daysOffset?: number | null): string | null {
@@ -199,16 +198,16 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
     <>
       {/* Navigation bar */}
       <div className="shrink-0 flex items-center justify-between px-3 pb-2">
-        <button type="button" onClick={onClose} aria-label="Tutup" className="press flex items-center gap-0.5 px-1 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
+        <button type="button" onClick={onClose} aria-label={t("Tutup")} className="press flex items-center gap-0.5 px-1 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
           <ChevronLeft className="w-5 h-5" />
-          Kembali
+          {t("Kembali")}
         </button>
         <span className="text-[11px] font-semibold text-slate-400" aria-live="polite">
-          {saveStatus === 'saving' ? 'Menyimpan...' : saveStatus === 'saved' ? 'Tersimpan' : ''}
+          {saveStatus === 'saving' ? t('Menyimpan...') : saveStatus === 'saved' ? t('Tersimpan') : ''}
         </span>
         {onEditContact ? (
-          <button type="button" onClick={() => onEditContact(contact)} aria-label="Edit Relasi" className="press px-2 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
-            Edit
+          <button type="button" onClick={() => onEditContact(contact)} aria-label={t("Edit Relasi")} className="press px-2 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
+            {t("Edit")}
           </button>
         ) : (
           <span className="w-12" />
@@ -234,13 +233,13 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
                 ))}
                 <button
                   type="button"
-                  aria-label="Ubah Asosiasi Kontak"
+                  aria-label={t("Ubah Asosiasi Kontak")}
                   aria-expanded={isEditingAssociations}
                   onClick={() => setIsEditingAssociations((v) => !v)}
                   className="press inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
                 >
                   <Tag className="w-3 h-3" />
-                  {isEditingAssociations ? 'Selesai' : 'Ubah label'}
+                  {isEditingAssociations ? t('Selesai') : t('Ubah label')}
                 </button>
               </div>
             </div>
@@ -284,11 +283,11 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
           <div className="flex justify-between gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.07] text-xs font-medium text-slate-600 dark:text-slate-300">
             <span className="inline-flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              {contact.lastContactedDate ? `Terakhir ${formatShortDate(contact.lastContactedDate)}` : 'Belum pernah disapa'}
+              {contact.lastContactedDate ? t('Terakhir {date}', { date: formatShortDate(contact.lastContactedDate) }) : t('Belum pernah disapa')}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Repeat className="w-3.5 h-3.5 text-slate-400" />
-              Tiap {contact.followUpCycleDays || 15} hari
+              {t('Tiap {n} hari', { n: contact.followUpCycleDays || 15 })}
             </span>
           </div>
         </Card>
@@ -304,7 +303,7 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
             className="press w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-bold text-white bg-[#25D366] shadow-[0_10px_22px_-10px_rgba(37,211,102,0.9)]"
           >
             <MessageCircle className="w-5 h-5" />
-            Sapa {contact.name.split(' ')[0]}
+            {t('Sapa {name}', { name: contact.name.split(' ')[0] })}
           </button>
         )}
         <div className="grid grid-cols-4 gap-2">
@@ -314,7 +313,7 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
             className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-white dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/10"
           >
             <PenLine className="w-5 h-5" />
-            Catat
+            {t("Catat")}
           </button>
           <button
             type="button"
@@ -323,31 +322,31 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
             className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300"
           >
             <Sparkles className="w-5 h-5" />
-            Draf AI
+            {t("Draf AI")}
           </button>
           <button
             type="button"
             data-tour="dossier-voice"
-            aria-label="Catat Kabar dengan Suara"
+            aria-label={t("Catat Kabar dengan Suara")}
             onClick={() => onOpenVoiceNote?.(contact)}
             className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-indigo-500/15 border border-indigo-500/35 text-indigo-700 dark:text-indigo-300"
           >
             <Mic className="w-5 h-5" />
-            Suara
+            {t("Suara")}
           </button>
           <a
             href={`tel:${contact.phoneNumber}`}
             className="press flex flex-col items-center gap-1 py-2.5 rounded-2xl text-[11.5px] font-semibold bg-white dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/10"
           >
             <Phone className="w-5 h-5" />
-            Panggil
+            {t("Panggil")}
           </a>
         </div>
 
         {/* Notes */}
         <Card className="space-y-4">
           <div data-tour="field-facts">
-            <FieldLabel icon={<Star className="w-3.5 h-3.5 text-slate-400" />}>Fakta Penting</FieldLabel>
+            <FieldLabel icon={<Star className="w-3.5 h-3.5 text-slate-400" />}>{t("Fakta Penting")}</FieldLabel>
             {contact.facts && contact.facts.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {contact.facts.map((f) => (
@@ -361,54 +360,54 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 dark:text-slate-500">Belum ada. Hal yang menetap seperti "punya anak" atau "punya toko" muncul di sini.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">{t("Belum ada. Hal yang menetap seperti \"punya anak\" atau \"punya toko\" muncul di sini.")}</p>
             )}
           </div>
 
           <div data-tour="field-met">
             <FieldLabel icon={<Compass className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-met-context">
-              Pertama Ketemu & Konteks
+              {t("Pertama Ketemu & Konteks")}
             </FieldLabel>
             <textarea
               id="dossier-met-context"
-              aria-label="Pertama Ketemu & Konteks Pertemuan"
+              aria-label={t("Pertama Ketemu & Konteks Pertemuan")}
               rows={2}
               value={metContext}
               onChange={(e) => setMetContext(e.target.value)}
               onBlur={() => metContext !== (contact.metContext || '') && handleUpdate({ metContext })}
-              placeholder="Di mana dan bagaimana kalian kenal"
+              placeholder={t("Di mana dan bagaimana kalian kenal")}
               className={fieldBox}
             />
           </div>
 
           <div data-tour="field-notes">
             <FieldLabel icon={<MessageSquare className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-last-notes">
-              Pembaruan Kabar Terakhir
+              {t("Pembaruan Kabar Terakhir")}
             </FieldLabel>
             <textarea
               id="dossier-last-notes"
-              aria-label="Pembaruan Kabar Terakhir"
+              aria-label={t("Pembaruan Kabar Terakhir")}
               rows={2}
               value={lastUpdateNotes}
               onChange={(e) => setLastUpdateNotes(e.target.value)}
               onBlur={() => lastUpdateNotes !== (contact.lastUpdateNotes || '') && handleUpdate({ lastUpdateNotes })}
-              placeholder="Kabar keluarga, pekerjaan, atau kesehatan terakhir"
+              placeholder={t("Kabar keluarga, pekerjaan, atau kesehatan terakhir")}
               className={fieldBox}
             />
           </div>
 
           <div data-tour="field-topic" className="rounded-2xl p-3 bg-emerald-500/[0.07] border border-emerald-500/25">
             <FieldLabel icon={<Sparkles className="w-3.5 h-3.5" />} htmlFor="dossier-topic" className="text-emerald-700 dark:text-emerald-300">
-              Bahan Obrolan Follow Up Berikutnya
+              {t("Bahan Obrolan Follow Up Berikutnya")}
             </FieldLabel>
             <textarea
               id="dossier-topic"
-              aria-label="Bahan Obrolan & Topik Follow Up"
+              aria-label={t("Bahan Obrolan & Topik Follow Up")}
               rows={2}
               value={followUpTopic}
               onChange={(e) => setFollowUpTopic(e.target.value)}
               onBlur={() => followUpTopic !== (contact.possibleFollowUpTopic || '') && handleUpdate({ possibleFollowUpTopic: followUpTopic })}
-              placeholder="Yang ingin ditanyakan saat menyapa berikutnya"
+              placeholder={t("Yang ingin ditanyakan saat menyapa berikutnya")}
               className={`${fieldBox} bg-white dark:bg-[#1C1C1E]/70 border-emerald-500/25`}
             />
           </div>
@@ -418,20 +417,20 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
         <Card className="space-y-4">
           <div data-tour="field-schedule">
             <FieldLabel icon={<Calendar className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-next-followup">
-              Jadwal Follow Up Khusus
+              {t("Jadwal Follow Up Khusus")}
             </FieldLabel>
             <div className="flex flex-wrap gap-2">
               <input
                 id="dossier-next-followup"
                 type="date"
-                aria-label="Jadwal Follow Up Khusus"
+                aria-label={t("Jadwal Follow Up Khusus")}
                 value={scheduleDate}
                 onChange={(e) => setSchedule(e.target.value || null)}
                 className="px-3 py-1.5 rounded-full text-[13px] font-semibold bg-blue-500/15 text-blue-700 dark:text-blue-200 border border-blue-500/30 focus:outline-none"
               />
               <input
                 type="time"
-                aria-label="Jam Follow Up"
+                aria-label={t("Jam Follow Up")}
                 value={followUpTime}
                 onChange={(e) => {
                   const timeVal = e.target.value;
@@ -450,11 +449,11 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
                 <button
                   key={chip.label}
                   type="button"
-                  aria-label={chip.days === null ? 'Hapus Jadwal' : chip.days === 1 ? 'Besok (+1 hr)' : chip.label}
+                  aria-label={chip.days === null ? t('Hapus Jadwal') : chip.days === 1 ? t('Besok (+1 hr)') : t(chip.label)}
                   onClick={() => setSchedule(chip.days === null ? null : computeDateOffset(now, chip.days))}
                   className={`${chipBase} ${chip.days === null ? 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-300' : chipIdle}`}
                 >
-                  {chip.label}
+                  {t(chip.label)}
                 </button>
               ))}
             </div>
@@ -462,22 +461,22 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
 
           <div>
             <FieldLabel icon={<Repeat className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-cycle-days">
-              Ritme Sapa
+              {t("Ritme Sapa")}
             </FieldLabel>
             <div className="flex flex-wrap items-center gap-1.5">
               {CYCLE_CHIPS.map((d) => (
                 <button key={d} type="button" aria-pressed={followUpCycleDays === d} onClick={() => setCycle(d)} className={`${chipBase} ${followUpCycleDays === d ? chipOn : chipIdle}`}>
-                  {d} hari
+                  {t('{n} hari', { n: d })}
                 </button>
               ))}
               <span className="inline-flex items-center gap-1 text-[12.5px] text-slate-500 dark:text-slate-400">
-                atau
+                {t("atau")}
                 <input
                   id="dossier-cycle-days"
                   type="number"
                   min="1"
                   max="365"
-                  aria-label="Ritme Sapa"
+                  aria-label={t("Ritme Sapa")}
                   value={followUpCycleDays}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
@@ -487,19 +486,19 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
                   onBlur={() => followUpCycleDays === '' && setFollowUpCycleDays(contact.followUpCycleDays ?? 15)}
                   className="w-14 px-2 py-1 rounded-lg text-center text-[13px] bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 />
-                hari
+                {t("hari")}
               </span>
             </div>
           </div>
 
           <div>
             <FieldLabel icon={<Clock className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-last-contact">
-              Terakhir Disapa
+              {t("Terakhir Disapa")}
             </FieldLabel>
             <input
               id="dossier-last-contact"
               type="date"
-              aria-label="Terakhir Sapa"
+              aria-label={t("Terakhir Sapa")}
               value={lastContactedDate ? lastContactedDate.split('T')[0] : ''}
               onChange={(e) => {
                 const val = e.target.value || null;
@@ -516,10 +515,10 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
           <div className="flex items-center justify-between mb-2">
             <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300">
               <History className="w-3.5 h-3.5 text-slate-400" />
-              Riwayat Interaksi
+              {t("Riwayat Interaksi")}
             </span>
             <button type="button" onClick={() => onOpenLogEncounter?.(contact)} className="press text-[13px] font-semibold text-blue-600 dark:text-cyan-400">
-              + Catat Interaksi
+              {t("+ Catat Interaksi")}
             </button>
           </div>
           {sortedInteractions.length > 0 ? (
@@ -530,7 +529,7 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
                   <li key={log.id} className="relative pl-4">
                     <span className={`absolute -left-[6px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-[#232325] ${type.dot}`} />
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${type.pill}`}>{type.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${type.pill}`}>{t(type.label)}</span>
                       <span className="text-[11.5px] text-slate-400">{formatFactDate(log.date)}</span>
                     </div>
                     {log.notes && <p className="text-[13.5px] text-slate-700 dark:text-slate-200 mt-1 leading-relaxed">{log.notes}</p>}
@@ -539,7 +538,7 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
               })}
             </ol>
           ) : (
-            <p className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">Belum ada riwayat interaksi.</p>
+            <p className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">{t("Belum ada riwayat interaksi.")}</p>
           )}
         </Card>
       </div>

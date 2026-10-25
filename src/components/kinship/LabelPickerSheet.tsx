@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { t } from '../../i18n';
 import { Check, Plus } from 'lucide-react';
 import type { Contact } from '../../types/crm';
 import { Sheet, useSticky } from '../ui/Sheet';
@@ -41,7 +42,7 @@ export const LabelPickerSheet: React.FC<LabelPickerSheetProps> = ({ contact: liv
   const create = () => {
     const next = addLabel(labels, newLabel);
     if (!next) {
-      setError('Nama label kosong atau sudah ada.');
+      setError(t('Nama label kosong atau sudah ada.'));
       return;
     }
     saveLabels(next);
@@ -58,9 +59,9 @@ export const LabelPickerSheet: React.FC<LabelPickerSheetProps> = ({ contact: liv
       {contact && draft && (
         <div className="px-4 pb-6 pt-1">
           <h2 id="label-sheet-title" className="text-center text-[17px] font-bold">
-            Label untuk {contact.name}
+            {t('Label untuk {name}', { name: contact.name })}
           </h2>
-          <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">Bisa pilih lebih dari satu</p>
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">{t("Bisa pilih lebih dari satu")}</p>
 
           <div className="flex flex-wrap justify-center gap-2">
             {[...new Set([...labels, ...draft.associations])].map((label) => {
@@ -89,7 +90,7 @@ export const LabelPickerSheet: React.FC<LabelPickerSheetProps> = ({ contact: liv
                 className="press inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold border border-dashed border-blue-400/60 text-blue-600 dark:text-cyan-400"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Label baru
+                {t("Label baru")}
               </button>
             )}
           </div>
@@ -101,12 +102,12 @@ export const LabelPickerSheet: React.FC<LabelPickerSheetProps> = ({ contact: liv
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && create()}
-                aria-label="Nama label baru"
-                placeholder="Misal: Tetangga"
+                aria-label={t("Nama label baru")}
+                placeholder={t("Misal: Tetangga")}
                 className="flex-1 min-w-0 px-4 py-2.5 rounded-full text-sm bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button type="button" onClick={create} className="press px-4 py-2.5 rounded-full text-sm font-semibold text-white bg-blue-600 dark:bg-blue-500">
-                Tambah
+                {t("Tambah")}
               </button>
             </div>
           )}
@@ -117,7 +118,7 @@ export const LabelPickerSheet: React.FC<LabelPickerSheetProps> = ({ contact: liv
             onClick={onClose}
             className="press mt-5 w-full py-3 rounded-2xl text-[15px] font-semibold bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/10"
           >
-            Selesai
+            {t("Selesai")}
           </button>
         </div>
       )}

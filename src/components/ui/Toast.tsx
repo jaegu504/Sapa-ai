@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { CheckCircle, Info, AlertTriangle, XCircle, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'info' | 'warning' | 'error';
@@ -37,7 +38,7 @@ export const Toast: React.FC<ToastProps> = ({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup"
+          aria-label={t('Tutup')}
           className="ml-1 text-slate-400 hover:text-white transition-colors p-0.5 rounded-full focus:outline-none"
         >
           <X size={14} />

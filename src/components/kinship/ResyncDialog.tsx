@@ -1,4 +1,5 @@
 import React from 'react';
+import { t } from '../../i18n';
 import { AnimatePresence, motion } from 'motion/react';
 import { RefreshCw } from 'lucide-react';
 import type { Contact } from '../../types/crm';
@@ -37,15 +38,15 @@ export const ResyncDialog: React.FC<ResyncDialogProps> = ({ result, onClose, onP
               <RefreshCw className="w-5 h-5" />
             </span>
             <h2 id="resync-title" className="text-[17px] font-bold">
-              Sinkron selesai
+              {t("Sinkron selesai")}
             </h2>
             <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-300">
-              {result.newCount > 0 ? `${result.newCount} kontak di HP belum ada di Sapa.` : 'Tidak ada kontak baru di HP.'}
+              {result.newCount > 0 ? t('{n} kontak di HP belum ada di Sapa.', { n: result.newCount }) : t('Tidak ada kontak baru di HP.')}
             </p>
             {result.missing.length > 0 && (
               <>
                 <p className="mt-3 text-[13px] text-slate-600 dark:text-slate-300">
-                  {result.missing.length} kontak sudah tidak ada di HP:
+                  {t('{n} kontak sudah tidak ada di HP:', { n: result.missing.length })}
                 </p>
                 <ul className="mt-1.5 max-h-28 overflow-y-auto text-left text-[13px] font-semibold rounded-xl bg-slate-100 dark:bg-white/[0.06] px-3 py-2 space-y-0.5">
                   {result.missing.map((c) => (
@@ -55,7 +56,7 @@ export const ResyncDialog: React.FC<ResyncDialogProps> = ({ result, onClose, onP
                   ))}
                 </ul>
                 <p className="mt-2 text-[11.5px] text-slate-500 dark:text-slate-400">
-                  Jika dihapus, catatan dan riwayatnya ikut terhapus. Kontak lain tidak berubah.
+                  {t("Jika dihapus, catatan dan riwayatnya ikut terhapus. Kontak lain tidak berubah.")}
                 </p>
               </>
             )}
@@ -63,7 +64,7 @@ export const ResyncDialog: React.FC<ResyncDialogProps> = ({ result, onClose, onP
           <div className="border-t border-slate-200 dark:border-white/10 divide-y divide-slate-200 dark:divide-white/10 text-[15px]">
             {result.newCount > 0 && (
               <button type="button" onClick={onPickNew} className="w-full py-3 font-semibold text-blue-600 dark:text-cyan-400">
-                Pilih kontak baru
+                {t("Pilih kontak baru")}
               </button>
             )}
             {result.missing.length > 0 && (
@@ -72,11 +73,11 @@ export const ResyncDialog: React.FC<ResyncDialogProps> = ({ result, onClose, onP
                 onClick={() => onDeleteMissing(result.missing.map((c) => c.id))}
                 className="w-full py-3 font-semibold text-rose-600 dark:text-rose-400"
               >
-                Hapus {result.missing.length} kontak
+                {t('Hapus {n} kontak', { n: result.missing.length })}
               </button>
             )}
             <button type="button" onClick={onClose} className="w-full py-3 text-blue-600 dark:text-cyan-400">
-              {result.missing.length > 0 ? 'Simpan saja' : 'Tutup'}
+              {result.missing.length > 0 ? t('Simpan saja') : t('Tutup')}
             </button>
           </div>
         </motion.div>

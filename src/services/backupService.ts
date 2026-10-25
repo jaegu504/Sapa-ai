@@ -4,6 +4,7 @@ import { Share } from '@capacitor/share';
 import { crmDb } from '../db/crmDatabase';
 import type { Contact, InteractionLog } from '../types/crm';
 import { getLabels, saveLabels } from './labelService';
+import { t } from '../i18n';
 
 export interface BackupFile {
   version: string;
@@ -35,7 +36,7 @@ export async function exportBackup(): Promise<number> {
 
   if (Capacitor.isNativePlatform()) {
     const { uri } = await Filesystem.writeFile({ path: fileName, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
-    await Share.share({ title: 'Cadangan Sapa', text: 'File cadangan data Sapa', files: [uri], dialogTitle: 'Simpan cadangan Sapa' });
+    await Share.share({ title: t('Cadangan Sapa'), text: t('File cadangan data Sapa'), files: [uri], dialogTitle: t('Simpan cadangan Sapa') });
   } else {
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
     const link = document.createElement('a');

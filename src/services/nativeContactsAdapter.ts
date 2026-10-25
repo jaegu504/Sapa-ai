@@ -264,3 +264,42 @@ export async function getDeviceContacts(): Promise<RawPhoneContact[]> {
   return result.contacts;
 }
 
+
+export type SaveToPhoneResult = 'saved' | 'exists' | 'denied' | 'unsupported' | 'failed';
+
+/** Last 10 digits: enough to match "0532 000 11 22" with "+90 532 000 11 22" across formats. */
+function phoneKey(phone: string): string {
+  return phone.replace(/\D/g, '').slice(-10);
+}
+
+/**
+ * Adds a contact to the phone's own address book (Android). Skips it when a contact
+ * with the same number already exists there, so nothing is duplicated.
+ */
+export async function saveToPhoneContacts(name: string, phoneNumber: string): Promise<SaveToPhoneResult> {
+  if (!isNativePlatform()) return 'unsupported';
+  const plugin = getContactsPlugin();
+  if (!plugin || typeof plugin.createContact !== 'function') return 'unsupported';
+  try {
+    if (typeof plugin.checkPermissions === 'function') {
+      let status = (await plugin.checkPermissions())?.contacts;
+      if (status !== 'granted' && typeof plugin.requestPermissions === 'function') {
+        status = (await plugin.requestPermissions())?.contacts;
+      }
+      if (status !== 'granted') return 'denied';
+    }
+    const key = phoneKey(phoneNumber);
+    if (key && typeof plugin.getContacts === 'function') {
+      const result = await plugin.getContacts({ projection: { phones: true } });
+      const list: any[] = result?.contacts || [];
+      const exists = list.some((c) => (c?.phones || []).some((p: any) => p?.number && phoneKey(p.number) === key));
+      if (exists) return 'exists';
+    }
+    await plugin.createContact({
+      contact: { name: { given: name }, phones: [{ type: 'mobile', number: phoneNumber, isPrimary: true }] },
+    });
+    return 'saved';
+  } catch {
+    return 'failed';
+  }
+}

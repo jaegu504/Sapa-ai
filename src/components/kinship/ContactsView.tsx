@@ -1,4 +1,5 @@
 import React, { useMemo, useRef } from 'react';
+import { t } from '../../i18n';
 import { motion, type PanInfo } from 'motion/react';
 import { MessageCircle, Plus, RefreshCw, Search, Tag, Users, X } from 'lucide-react';
 import type { Contact } from '../../types/crm';
@@ -65,7 +66,7 @@ const ContactRow: React.FC<{
     <motion.div {...rowMotion(index)} className="relative overflow-hidden">
       <div className="absolute inset-0 flex items-center gap-2 pl-5 bg-amber-500 text-white text-sm font-bold" aria-hidden="true">
         <Tag className="w-4 h-4" />
-        Label
+        {t("Label")}
       </div>
       <motion.div
         role="button"
@@ -87,14 +88,14 @@ const ContactRow: React.FC<{
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-semibold truncate">{contact.name}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{labels.join(', ') || 'Tanpa label'}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{labels.join(', ') || t('Tanpa label')}</p>
         </div>
         <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${pillClass(status)}`}>
           {dueLabel(status, contact.lastContactedDate)}
         </span>
         <button
           type="button"
-          aria-label={`Sapa ${contact.name}`}
+          aria-label={t('Sapa {name}', { name: contact.name })}
           onClick={(e) => {
             e.stopPropagation();
             onSapa();
@@ -165,13 +166,13 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   return (
     <div className="w-full max-w-2xl mx-auto px-4 pt-3 pb-32 text-slate-900 dark:text-white">
       <header className="flex items-center justify-between mb-3">
-        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">Kontak</h1>
+        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">{t("Kontak")}</h1>
         <div className="flex items-center gap-2" data-tour="add-actions">
           <button
             type="button"
             onClick={onResync}
             disabled={isSyncing}
-            aria-label="Sinkron ulang dengan kontak HP"
+            aria-label={t("Sinkron ulang dengan kontak HP")}
             className="press w-10 h-10 rounded-full flex items-center justify-center bg-white/80 dark:bg-white/10 border border-white/80 dark:border-white/15 text-slate-700 dark:text-slate-200 disabled:opacity-60"
           >
             <RefreshCw className={`w-[18px] h-[18px] ${isSyncing ? 'animate-spin' : ''}`} />
@@ -179,7 +180,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
           <button
             type="button"
             onClick={onAddContact}
-            aria-label="Tambah Kontak Baru"
+            aria-label={t("Tambah Kontak Baru")}
             className="press w-10 h-10 rounded-full flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.9)]"
           >
             <Plus className="w-5 h-5" />
@@ -193,14 +194,14 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Cari nama atau topik"
-          aria-label="Cari kontak"
+          placeholder={t("Cari nama atau topik")}
+          aria-label={t("Cari kontak")}
           className="w-full pl-10 pr-9 py-2.5 rounded-xl text-[15px] bg-slate-200/60 dark:bg-white/[0.08] placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         />
         {search && (
           <button
             type="button"
-            aria-label="Hapus pencarian"
+            aria-label={t("Hapus pencarian")}
             onClick={() => onSearchChange('')}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-slate-500"
           >
@@ -209,9 +210,9 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1 mb-3" aria-label="Filter kontak">
-        {chip('Semua', null, contacts.length)}
-        {QUICK_FILTERS.map((f) => chip(f.label, f.filter))}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1 mb-3" aria-label={t("Filter kontak")}>
+        {chip(t('Semua'), null, contacts.length)}
+        {QUICK_FILTERS.map((f) => chip(t(f.label), f.filter))}
         {labels.map((l) => chip(l, { kind: 'label', label: l }))}
       </div>
 
@@ -219,13 +220,13 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         {contacts.length === 0 ? (
           <EmptyState
             icon={<Users className="w-7 h-7" />}
-            title="Belum ada kontak"
-            body="Tambah sendiri atau ambil dari kontak HP."
-            actionLabel="Tambah kontak"
+            title={t("Belum ada kontak")}
+            body={t('Tambah sendiri atau ambil dari kontak HP.')}
+            actionLabel={t('Tambah kontak')}
             onAction={onAddContact}
           />
         ) : groups.total === 0 ? (
-          <EmptyState icon={<Search className="w-7 h-7" />} title="Tidak ada yang cocok" body="Coba kata lain atau pilih filter Semua." />
+          <EmptyState icon={<Search className="w-7 h-7" />} title={t("Tidak ada yang cocok")} body={t('Coba kata lain atau pilih filter Semua.')} />
         ) : (
           <div className="space-y-3">
             {groups.entries.map(([letter, list]) => (
@@ -246,7 +247,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                 </div>
               </section>
             ))}
-            <p className="text-center text-xs text-slate-400 dark:text-slate-500 pt-1">Geser kontak ke kanan untuk memberi label</p>
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 pt-1">{t("Geser kontak ke kanan untuk memberi label")}</p>
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { t } from '../i18n';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Contact, DigestResult, AlarmItem } from '../types/crm';
 import { calculateContactStatus } from '../utils/status';
@@ -144,11 +145,11 @@ export function getDailyDigestItems(
   });
 
   const totalOverdue = overdueContacts.length;
-  let digestSummary = 'Semua relasi aman hari ini';
+  let digestSummary = t('Semua relasi aman hari ini');
   if (totalOverdue === 1) {
-    digestSummary = '1 relasi perlu disapa hari ini';
+    digestSummary = t('1 relasi perlu disapa hari ini');
   } else if (totalOverdue > 1) {
-    digestSummary = `${totalOverdue} relasi perlu disapa hari ini`;
+    digestSummary = t('{n} relasi perlu disapa hari ini', { n: totalOverdue });
   }
 
   return {
@@ -313,22 +314,22 @@ export async function initNotificationService(): Promise<void> {
 
     await plugin.createChannel({
       id: CHANNEL_MORNING_DIGEST,
-      name: 'Ringkasan Sapaan Pagi Sapa',
-      description: 'Ringkasan sapaan harian setiap pagi',
+      name: t('Ringkasan Sapaan Pagi Sapa'),
+      description: t('Ringkasan sapaan harian setiap pagi'),
       importance: 4,
     });
 
     await plugin.createChannel({
       id: CHANNEL_TARGETED_ALARMS,
-      name: 'Pengingat Jadwal Sapa',
-      description: 'Pengingat jadwal follow up khusus',
+      name: t('Pengingat Jadwal Sapa'),
+      description: t('Pengingat jadwal follow up khusus'),
       importance: 5,
     });
 
     await plugin.createChannel({
       id: CHANNEL_APP_UPDATES,
-      name: 'Pembaruan Aplikasi Sapa',
-      description: 'Notifikasi rilis versi terbaru Sapa',
+      name: t('Pembaruan Aplikasi Sapa'),
+      description: t('Notifikasi rilis versi terbaru Sapa'),
       importance: 4,
     });
   } catch (err) {
@@ -372,7 +373,7 @@ export async function scheduleDailyMorningDigest(
       notifications: [
         {
           id: MORNING_DIGEST_NOTIFICATION_ID,
-          title: 'Sapa: Waktunya Menyapa Relasi',
+          title: t('Sapa: Waktunya Menyapa Relasi'),
           body: digest.digestSummary,
           channelId: CHANNEL_MORNING_DIGEST,
           schedule: {
@@ -459,7 +460,7 @@ export async function scheduleTargetedFollowUpAlarm(contact: Contact): Promise<b
 
   const hashId = hashContactId(contact.id);
   const topic = contact.possibleFollowUpTopic?.trim() || '';
-  const body = topic || 'Waktunya menyapa kembali';
+  const body = topic || t('Waktunya menyapa kembali');
 
   try {
     const plugin = getLocalNotificationsPlugin();
@@ -471,7 +472,7 @@ export async function scheduleTargetedFollowUpAlarm(contact: Contact): Promise<b
       notifications: [
         {
           id: hashId,
-          title: `Jadwal Follow-up: ${contact.name}`,
+          title: t('Jadwal sapa: {name}', { name: contact.name }),
           body,
           channelId: CHANNEL_TARGETED_ALARMS,
           schedule: {
@@ -529,8 +530,8 @@ export async function scheduleAppUpdateNotification(update: {
       notifications: [
         {
           id: UPDATE_NOTIFICATION_ID,
-          title: `Pembaruan Sapa v${update.latestVersion} Tersedia`,
-          body: 'Versi baru sudah siap diunduh. Ketuk untuk memperbarui aplikasi.',
+          title: t('Pembaruan Sapa v{v} Tersedia', { v: update.latestVersion }),
+          body: t('Versi baru sudah siap diunduh. Ketuk untuk memperbarui aplikasi.'),
           channelId: CHANNEL_APP_UPDATES,
           schedule: {
             at: new Date(Date.now() + 1000), // Fire in 1 second

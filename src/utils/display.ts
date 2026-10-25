@@ -1,7 +1,17 @@
 import type { ContactStatusResult } from '../types/crm';
+import { getUiLanguage, t } from '../i18n';
 
-const DAYS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const DAYS = {
+  id: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+  tr: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+};
+const MONTHS = {
+  id: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+  tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+};
+
+export const monthName = (m: number): string => MONTHS[getUiLanguage()][m];
+const dayName = (d: number): string => DAYS[getUiLanguage()][d];
 
 export function getInitials(name: string): string {
   const parts = (name || '').trim().split(/\s+/).filter(Boolean);
@@ -39,33 +49,33 @@ function parseLocalDate(date: string): Date | null {
 export function dateParts(date: string): { day: string; weekday: string; month: string } | null {
   const d = parseLocalDate(date);
   if (!d) return null;
-  return { day: String(d.getDate()), weekday: DAYS_ID[d.getDay()], month: MONTHS_ID[d.getMonth()] };
+  return { day: String(d.getDate()), weekday: dayName(d.getDay()), month: monthName(d.getMonth()) };
 }
 
 /** "2026-10-31" → "Sab, 31 Okt 2026" */
 export function formatLongDate(date: string): string {
   const d = parseLocalDate(date);
   if (!d) return date;
-  return `${DAYS_ID[d.getDay()]}, ${d.getDate()} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
+  return `${dayName(d.getDay())}, ${d.getDate()} ${monthName(d.getMonth())} ${d.getFullYear()}`;
 }
 
 /** "2026-10-16" → "16 Okt" */
 export function formatShortDate(date: string): string {
   const d = parseLocalDate(date);
   if (!d) return date;
-  return `${d.getDate()} ${MONTHS_ID[d.getMonth()]}`;
+  return `${d.getDate()} ${monthName(d.getMonth())}`;
 }
 
 /** Short status text such as "Lewat 9 hari", "Hari ini" or "3 hari lagi". */
 export function dueLabel(status: ContactStatusResult, lastContactedDate?: string | null): string {
   if (status.isOverdue) {
-    if (lastContactedDate === null && status.daysOverdue === 0) return 'Belum disapa';
-    return status.daysOverdue > 0 ? `Lewat ${status.daysOverdue} hari` : 'Hari ini';
+    if (lastContactedDate === null && status.daysOverdue === 0) return t('Belum disapa');
+    return status.daysOverdue > 0 ? t('Lewat {n} hari', { n: status.daysOverdue }) : t('Hari ini');
   }
   const left = status.daysRemaining ?? 0;
-  if (left <= 0) return 'Hari ini';
-  if (left === 1) return 'Besok';
-  return `${left} hari lagi`;
+  if (left <= 0) return t('Hari ini');
+  if (left === 1) return t('Besok');
+  return t('{n} hari lagi', { n: left });
 }
 
 /** The date the next greeting is due: the specific follow-up when set, else the cadence date. */

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { t } from '../../i18n';
 import {
   X,
   Search,
@@ -168,7 +169,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
       }
 
       if (parsed.length === 0) {
-        setFileError('Tidak ditemukan kontak dengan nomor telepon valid dalam file ini.');
+        setFileError(t('Tidak ditemukan kontak dengan nomor telepon valid dalam file ini.'));
         return;
       }
 
@@ -178,7 +179,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
       setSelectedPhones(new Set(parsed.map((c) => c.phoneNumber)));
     } catch (err: any) {
       console.error('Failed to parse file:', err);
-      setFileError('Gagal memproses file: ' + (err?.message || 'Format tidak didukung'));
+      setFileError(t('Gagal memproses file: ') + (err?.message || t('Format tidak didukung')));
     } finally {
       setLoading(false);
       e.target.value = '';
@@ -257,7 +258,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
   return (
     <div
       role="region"
-      aria-label="Sinkronisasi & Impor Kontak"
+      aria-label={t("Sinkronisasi & Impor Kontak")}
       className="w-full max-w-2xl mx-auto h-full flex flex-col bg-[#f8f9ff] text-slate-900 font-sans dark:bg-[#090A0F] dark:text-white"
     >
       {/* Top Header */}
@@ -268,9 +269,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-bold text-slate-900 dark:text-white">Impor Kontak</h1>
+              <h1 className="text-base font-bold text-slate-900 dark:text-white">{t("Impor Kontak")}</h1>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Pilih kontak HP yang ingin disapa</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t("Pilih kontak HP yang ingin disapa")}</p>
           </div>
         </div>
 
@@ -278,7 +279,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t("Tutup")}
             className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer dark:text-slate-400"
           >
             <X className="w-5 h-5" />
@@ -295,10 +296,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               <Smartphone className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Sinkronisasi & Impor Kontak</h2>
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">{t("Sinkronisasi & Impor Kontak")}</h2>
               <p className="text-xs text-slate-500 mt-0.5 leading-relaxed dark:text-slate-400">
-                Pilih kontak dari buku telepon ponsel atau unggah file vCard/CSV untuk dipantau ritme
-                follow-up-nya secara berkala.
+                {t("Pilih kontak dari buku telepon ponsel atau unggah file vCard/CSV untuk dipantau ritme follow-up-nya secara berkala.")}
               </p>
             </div>
           </div>
@@ -332,7 +332,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Google Kontak</span>
+            <span>{t("Google Kontak")}</span>
           </button>
 
           <button
@@ -357,9 +357,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 <RefreshCw className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sinkronisasi Google Kontak</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t("Sinkronisasi Google Kontak")}</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Impor kontak akun Google Anda ke Sapa CRM dalam 3 langkah mudah:
+                  {t("Impor kontak akun Google Anda ke Sapa CRM dalam 3 langkah mudah:")}
                 </p>
               </div>
             </div>
@@ -367,15 +367,15 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             <div className="space-y-2.5 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 dark:text-slate-300 dark:bg-white/5 dark:border-white/10">
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
-                <span>Buka <strong>contacts.google.com</strong> di browser ponsel atau laptop.</span>
+                <span>{t("Buka")} <strong>contacts.google.com</strong> {t("di browser ponsel atau laptop.")}</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
-                <span>Klik <strong>Ekspor (Export)</strong> lalu pilih format <strong>Google CSV</strong> atau <strong>vCard</strong>.</span>
+                <span>{t("Klik")} <strong>{t("Ekspor (Export)")}</strong> {t("lalu pilih format")} <strong>Google CSV</strong> {t("atau")} <strong>vCard</strong>.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
-                <span>Unggah file hasil ekspor tersebut di bawah ini untuk langsung dipilih & diatur ritme sapaannya.</span>
+                <span>{t("Unggah file hasil ekspor tersebut di bawah ini untuk langsung dipilih & diatur ritme sapaannya.")}</span>
               </div>
             </div>
 
@@ -392,7 +392,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-semibold cursor-pointer shadow-sm transition-all"
               >
                 <Upload className="w-4 h-4" />
-                <span>Unggah File Google Contacts (.csv / .vcf)</span>
+                <span>{t("Unggah File Google Contacts (.csv / .vcf)")}</span>
               </label>
             </div>
           </div>
@@ -405,9 +405,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 dark:bg-emerald-500/15">
                 <FileText className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Unggah File Kontak (.vcf / .csv)</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t("Unggah File Kontak (.vcf / .csv)")}</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto dark:text-slate-400">
-                Mendukung file vCard dari Google, iPhone, Android, WhatsApp, atau file spreadsheet CSV.
+                {t("Mendukung file vCard dari Google, iPhone, Android, WhatsApp, atau file spreadsheet CSV.")}
               </p>
             </div>
 
@@ -441,7 +441,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-semibold cursor-pointer shadow-sm transition-all"
             >
               <Upload className="w-4 h-4" />
-              <span>{uploadedFileName ? 'Ganti File Kontak' : 'Pilih File dari Perangkat'}</span>
+              <span>{uploadedFileName ? t('Ganti File Kontak') : t('Pilih File dari Perangkat')}</span>
             </label>
           </div>
         )}
@@ -455,11 +455,10 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                  Akses Kontak Belum Diizinkan
+                  {t("Akses Kontak Belum Diizinkan")}
                 </h3>
                 <p className="text-xs text-amber-800 mt-1 leading-relaxed dark:text-amber-200">
-                  Diperlukan izin sistem Android agar Sapa dapat membaca kontak dari buku
-                  telepon Anda secara offline & aman.
+                  {t("Diperlukan izin sistem Android agar Sapa dapat membaca kontak dari buku telepon Anda secara offline & aman.")}
                 </p>
               </div>
             </div>
@@ -472,7 +471,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 {requestingPermission && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Izinkan Akses Kontak</span>
+                <span>{t("Izinkan Akses Kontak")}</span>
               </button>
             </div>
           </div>
@@ -484,11 +483,10 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div className="text-xs">
               <p className="font-bold text-emerald-800">
-                Berhasil menyinkronkan {importResult.importedCount} kontak baru,{' '}
-                {importResult.updatedCount} kontak diperbarui.
+                {t('Berhasil menyinkronkan {a} kontak baru, {b} kontak diperbarui.', { a: importResult.importedCount, b: importResult.updatedCount })}
               </p>
               <p className="text-emerald-600 mt-0.5">
-                Kontak telah disetel dengan ritme sapaan Intentional Care.
+                {t("Kontak sudah diberi ritme sapaan.")}
               </p>
             </div>
           </div>
@@ -501,9 +499,9 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               <Users className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Buku Telepon Kosong</h3>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">{t("Buku Telepon Kosong")}</h3>
               <p className="text-xs text-slate-500 max-w-xs mx-auto dark:text-slate-400">
-                Tidak ada kontak ditemukan di buku telepon HP Anda, atau izin membaca kontak belum aktif.
+                {t("Tidak ada kontak ditemukan di buku telepon HP Anda, atau izin membaca kontak belum aktif.")}
               </p>
             </div>
             <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
@@ -512,14 +510,14 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 onClick={loadContacts}
                 className="px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-semibold hover:bg-slate-800 transition-all cursor-pointer"
               >
-                Muat Ulang Buku Telepon
+                {t("Muat Ulang Buku Telepon")}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('csv')}
                 className="px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold hover:bg-slate-200 transition-all cursor-pointer dark:bg-white/10 dark:text-slate-200"
               >
-                Unggah File CSV / VCF
+                {t("Unggah File CSV / VCF")}
               </button>
             </div>
           </div>
@@ -536,7 +534,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nama atau nomor telepon..."
+                  placeholder={t("Cari nama atau nomor telepon...")}
                   className="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all shadow-sm dark:bg-[#1C1C1E] dark:border-white/10"
                 />
               </div>
@@ -546,7 +544,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                 <div className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                   <span>
-                    Dipilih: {selectedPhones.size} dari {contacts.length} kontak
+                    {t('Dipilih: {a} dari {b} kontak', { a: selectedPhones.size, b: contacts.length })}
                   </span>
                 </div>
 
@@ -555,7 +553,7 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                   onClick={handleToggleSelectAll}
                   className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
                 >
-                  {areAllFilteredSelected ? 'Batalkan Pilihan' : 'Pilih Semua'}
+                  {areAllFilteredSelected ? t('Batalkan Pilihan') : t('Pilih Semua')}
                 </button>
               </div>
             </div>
@@ -565,11 +563,11 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               {loading ? (
                 <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-600 dark:text-slate-300" />
-                  <span className="text-xs">Memuat kontak telepon...</span>
+                  <span className="text-xs">{t("Memuat kontak telepon...")}</span>
                 </div>
               ) : filteredContacts.length === 0 ? (
                 <div className="p-8 text-center bg-white border border-dashed border-slate-200 rounded-3xl text-slate-400 text-xs dark:bg-[#1C1C1E] dark:border-white/10">
-                  Tidak ada kontak ditemukan.
+                  {t("Tidak ada kontak ditemukan.")}
                 </div>
               ) : (
                 <>
@@ -652,19 +650,19 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                    Tentukan Ritme Sapaan Awal
+                    {t("Tentukan Ritme Sapaan Awal")}
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5 dark:text-slate-400">
-                    Frekuensi pengingat follow-up untuk kontak yang dipilih
+                    {t("Frekuensi pengingat follow-up untuk kontak yang dipilih")}
                   </p>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
-                  Intentional Care
+                  {t("Ritme sapa")}
                 </span>
               </div>
 
               {/* Cadence Cards */}
-              <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label="Ritme Sapaan">
+              <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label={t("Ritme Sapaan")}>
                 {CADENCE_OPTIONS.map((opt) => {
                   const isChecked = selectedCadence === opt.days;
                   return (
@@ -686,10 +684,10 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
                           {isChecked && (
                             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                           )}
-                          <span>{opt.title}</span>
+                          <span>{t(opt.title)}</span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5 leading-tight dark:text-slate-400">
-                          {opt.subtitle}
+                          {t(opt.subtitle)}
                         </p>
                       </div>
 
@@ -720,16 +718,16 @@ export const KinshipPhonebookSyncView: React.FC<KinshipPhonebookSyncViewProps> =
           {importing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-              <span>Menyinkronkan Kontak...</span>
+              <span>{t("Menyinkronkan Kontak...")}</span>
             </>
           ) : (
-            <span>Sinkronkan {selectedPhones.size} Kontak</span>
+            <span>{t('Sinkronkan {n} Kontak', { n: selectedPhones.size })}</span>
           )}
         </button>
 
         <div className="flex items-center justify-center gap-1.5 text-slate-500 text-[11px] dark:text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Kontak hanya disimpan di HP ini</span>
+          <span>{t("Kontak hanya disimpan di HP ini")}</span>
         </div>
       </footer>
     </div>

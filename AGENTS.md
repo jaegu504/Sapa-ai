@@ -7,12 +7,12 @@ Read this first. Keep it up to date when something here changes.
 
 **Sapa** (formerly "GrowSphere") is a local-first personal relationship CRM for keeping in touch
 (silaturahmi) with family, teachers (Hoca), friends (Ihvan) and colleagues. Android app built with
-Capacitor; UI copy is **Indonesian** (AI drafts also support Turkish).
+Capacitor; UI in **Indonesian and Turkish** (Pengaturan → Bahasa), AI drafts in both.
 
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.4.0 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.5.0 at time of writing).
 
 ## Stack
 
@@ -104,6 +104,13 @@ After a change is done and tests pass:
 - Tutorial: anchors are `data-tour="..."` attributes on real elements; steps live in `TOUR_STEPS`
   (`tutorialService.ts`). Adding/removing a step changes the step-count test. New user-facing features should get a step.
 - localStorage access is always wrapped in try/catch.
+- **Translations**: every user-facing text goes through `t('Indonesian text', { vars })` from `src/i18n`.
+  The Indonesian text is the key; add its Turkish version to `src/i18n/tr.ts`. `tests/i18n.test.ts` fails when a
+  literal `t()` text has no Turkish entry. Data-driven texts (tutorial steps, option lists) are translated where they
+  render (`t(step.title)`). Changing language remounts the app tree (key = language) behind a short greeting overlay.
+  Dates use `utils/display` (Indonesian/Turkish day and month names). Contact labels are user data: not translated.
+- New contacts can also be saved to the phone address book (`saveToPhoneContacts`, create only, no edit/delete sync);
+  they are then marked `source: 'phone'`. Local numbers "05xx…" (11 digits) are treated as Turkish (+90).
 - UI style: no emoji as icons (lucide SVG only; the ID/TR flag emoji in Draf AI are the agreed exception). No time zone
   labels ("WIB"): users are in Turkey and Indonesia, times follow the phone. Tailwind opacity steps are 5/10/15/20...
   (`/12` does not exist). Sheets use `Sheet`; centered modals use `animate-rise`. Tests set `MotionGlobalConfig.skipAnimations`.
@@ -114,5 +121,5 @@ After a change is done and tests pass:
 - Play Protect warns on install (unknown developer, debug signing). Options discussed: Android developer verification /
   Play Store (one-time ~$25), which requires a new release keystore.
 - Not yet tested on a real phone: Turkish voice input; v1.4.0 back button, haptics, backup share sheet, swipe-to-label, re-sync.
-- Next planned: full Turkish UI (dictionary-based `t()`, language switch with a fade animation).
+- Not yet checked by a native Turkish speaker: the Turkish UI texts (`src/i18n/tr.ts`).
 - `README.md` is outdated (old name, old AI engine).

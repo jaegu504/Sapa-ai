@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { t } from '../../i18n';
 import { motion } from 'motion/react';
 import { BellRing, CalendarCheck, MessageCircle } from 'lucide-react';
 import { Contact } from '../../types/crm';
@@ -87,7 +88,7 @@ const Row: React.FC<{ item: ScheduleItem; index: number; onSelect?: () => void; 
       {onSapa && (
         <button
           type="button"
-          aria-label={`Sapa ${item.contact.name}`}
+          aria-label={t('Sapa {name}', { name: item.contact.name })}
           onClick={(e) => {
             e.stopPropagation();
             onSapa();
@@ -105,7 +106,7 @@ const Group: React.FC<{ title: string; count?: number; children: React.ReactNode
   <section aria-label={title} className="space-y-2">
     <div className="flex items-baseline justify-between px-1">
       <h2 className="text-[17px] font-bold">{title}</h2>
-      {count !== undefined && <span className="text-xs text-slate-500 dark:text-slate-400">{count} jadwal</span>}
+      {count !== undefined && <span className="text-xs text-slate-500 dark:text-slate-400">{t('{n} jadwal', { n: count })}</span>}
     </div>
     {children}
   </section>
@@ -135,27 +136,27 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
   return (
     <div className="w-full max-w-2xl mx-auto px-4 pt-3 pb-32 space-y-6 text-slate-900 dark:text-white">
       <header>
-        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">Jadwal</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Pengingat harian jam {digestTime}</p>
+        <h1 className="text-[32px] leading-tight font-extrabold tracking-tight">{t("Jadwal")}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('Pengingat harian jam {time}', { time: digestTime })}</p>
       </header>
 
       {permission === false && (
         <div className="flex items-center gap-3 p-3.5 rounded-[20px] bg-amber-500/10 border border-amber-500/25">
           <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="flex-1 text-[13px] text-slate-700 dark:text-slate-200">Notifikasi belum diizinkan, jadi pengingat tidak muncul di HP.</p>
+          <p className="flex-1 text-[13px] text-slate-700 dark:text-slate-200">{t("Notifikasi belum diizinkan, jadi pengingat tidak muncul di HP.")}</p>
           <button
             type="button"
             onClick={handleAllow}
             className="press shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-semibold text-white bg-amber-500"
           >
-            Izinkan
+            {t("Izinkan")}
           </button>
         </div>
       )}
 
-      <Group title="Hari ini">
+      <Group title={t("Hari ini")}>
         {today.length === 0 ? (
-          <EmptyState tone="success" icon={<CalendarCheck className="w-7 h-7" />} title="Tidak ada jadwal hari ini" body="Semua kontak dalam ritme aman." />
+          <EmptyState tone="success" icon={<CalendarCheck className="w-7 h-7" />} title={t("Tidak ada jadwal hari ini")} body={t('Semua kontak dalam ritme aman.')} />
         ) : (
           <div className={listClass}>
             {today.map((item, i) => (
@@ -173,7 +174,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
       </Group>
 
       {week.length > 0 && (
-        <Group title="Minggu ini" count={week.length}>
+        <Group title={t("Minggu ini")} count={week.length}>
           <div className={listClass}>
             {week.map((item, i) => (
               <Row
@@ -189,7 +190,7 @@ export const KinshipNotificationsView: React.FC<KinshipNotificationsViewProps> =
       )}
 
       {later.length > 0 && (
-        <Group title="Nanti">
+        <Group title={t("Nanti")}>
           <div className={listClass}>
             {later.map((item, i) => (
               <Row

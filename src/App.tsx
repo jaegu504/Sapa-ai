@@ -16,9 +16,10 @@ import { initTheme, setThemePreference, getThemePreference, applyTheme, type The
 import { crmDb } from './db/crmDatabase';
 import type { Contact, InteractionLog, InteractionType } from './types/crm';
 import { deleteContacts, markChatCompleted, resyncPhoneContacts } from './services/contactService';
-import { getDeviceContactsWithStatus } from './services/nativeContactsAdapter';
+import { getDeviceContactsWithStatus, saveToPhoneContacts } from './services/nativeContactsAdapter';
 import { exportBackup, restoreBackup } from './services/backupService';
 import { getDefaultCycleDays } from './services/settingsService';
+import { normalizePhoneNumber } from './utils/phone';
 import {
   initNotificationService,
   scheduleDailyMorningDigest,
@@ -44,6 +45,7 @@ import { BottomNavBar, NavTabItem } from './components/ui/BottomNavBar';
 import { SplashScreen } from './components/ui/SplashScreen';
 import { Toast, ToastType } from './components/ui/Toast';
 import { useAndroidBack } from './hooks/useAndroidBack';
+import { t, getUiLanguage, setUiLanguage, type UiLanguage } from './i18n';
 
 const STORAGE_API_KEY = 'growSphere_gemini_api_key';
 const DIGEST_TIME_KEY = 'kinship_digest_time';
@@ -95,6 +97,8 @@ export const App: React.FC = () => {
   const [contactsFilter, setContactsFilter] = useState<ContactsFilter | null>(null);
 
   const [digestTime, setDigestTime] = useState<string>(() => readStorage(DIGEST_TIME_KEY, '08:00'));
+  const [uiLanguage, setUiLanguageState] = useState<UiLanguage>(getUiLanguage);
+  const [languageFlash, setLanguageFlash] = useState<UiLanguage | null>(null);
 
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: ToastType }>({
     visible: false,
@@ -136,7 +140,7 @@ export const App: React.FC = () => {
       if (contact) setSelectedContact(contact);
     },
     closeContact: () => setSelectedContact(null),
-    onComplete: () => showToast('Tutorial selesai. Selamat menyapa!', 'success'),
+    onComplete: () => showToast(t('Tutorial selesai. Selamat menyapa!'), 'success'),
   });
 
   useEffect(() => {
@@ -203,12 +207,12 @@ export const App: React.FC = () => {
       setAppUpdate(res);
       if (res.hasUpdate) {
         setIsUpdateModalOpen(true);
-        showToast(`Versi baru v${res.latestVersion} tersedia`, 'success');
+        showToast(t('Versi baru v{v} tersedia', { v: res.latestVersion }), 'success');
       } else {
-        showToast(`Sapa sudah versi terbaru (v${CURRENT_APP_VERSION})`, 'info');
+        showToast(t('Sapa sudah versi terbaru (v{v})', { v: CURRENT_APP_VERSION }), 'info');
       }
     } catch {
-      showToast('Gagal memeriksa pembaruan. Periksa internet, lalu coba lagi.', 'error');
+      showToast(t('Gagal memeriksa pembaruan. Periksa internet, lalu coba lagi.'), 'error');
     } finally {
       setIsCheckingUpdate(false);
     }
@@ -220,6 +224,20 @@ export const App: React.FC = () => {
     applyTheme(newTheme);
   };
 
+  // Switching language re-renders every screen in the new language behind a short greeting.
+  const handleLanguageChange = (lang: UiLanguage) => {
+    if (lang === uiLanguage) return;
+    setUiLanguage(lang);
+    setUiLanguageState(lang);
+    setLanguageFlash(lang);
+    window.setTimeout(() => setLanguageFlash(null), 900);
+    if (contacts.length > 0) scheduleDailyMorningDigest(contacts).catch(() => {});
+  };
+
+  useEffect(() => {
+    document.documentElement.lang = uiLanguage;
+  }, [uiLanguage]);
+
   const handleDigestTimeChange = async (time: string) => {
     setDigestTime(time);
     try {
@@ -230,21 +248,21 @@ export const App: React.FC = () => {
     const [hour, minute] = time.split(':').map(Number);
     if (!isNaN(hour) && !isNaN(minute)) {
       await scheduleDailyMorningDigest(contacts, { hour, minute }).catch(() => {});
-      showToast(`Pengingat harian jam ${time}`, 'success');
+      showToast(t('Pengingat harian jam {time}', { time }), 'success');
     }
   };
 
   const navTabs: NavTabItem[] = useMemo(
     () => [
-      { id: 'radar', label: 'Radar', icon: <RadarNavIcon size={20} /> },
-      { id: 'contacts', label: 'Kontak', icon: <ContactsNavIcon size={20} /> },
+      { id: 'radar', label: t('Radar'), icon: <RadarNavIcon size={20} /> },
+      { id: 'contacts', label: t('Kontak'), icon: <ContactsNavIcon size={20} /> },
       {
         id: 'notifications',
-        label: 'Jadwal',
+        label: t('Jadwal'),
         icon: <ScheduleNavIcon size={20} />,
         badge: upcomingAlarms.length > 0 ? upcomingAlarms.length : undefined,
       },
-      { id: 'settings', label: 'Pengaturan', icon: <SettingsNavIcon size={20} /> },
+      { id: 'settings', label: t('Pengaturan'), icon: <SettingsNavIcon size={20} /> },
     ],
     [upcomingAlarms.length]
   );
@@ -278,20 +296,21 @@ export const App: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveContact = async (contactData: Partial<Contact>) => {
+  const handleSaveContact = async (contactData: Partial<Contact>, options?: { saveToPhone: boolean }) => {
     try {
       const nowIso = new Date().toISOString();
       if (editingContact && editingContact.id) {
         await crmDb.contacts.update(editingContact.id, { ...contactData, updatedAt: nowIso });
         const updated = await crmDb.contacts.get(editingContact.id);
         if (updated) await scheduleTargetedFollowUpAlarm(updated);
-        showToast(`Kontak ${contactData.name || editingContact.name} diperbarui`, 'success');
+        showToast(t('Kontak {name} diperbarui', { name: contactData.name || editingContact.name }), 'success');
       } else {
         const newContact: Contact = {
           id: newId('c'),
           name: (contactData.name || '').trim(),
-          phoneNumber: (contactData.phoneNumber || '').trim(),
-          associations: contactData.associations && contactData.associations.length > 0 ? contactData.associations : ['Teman'],
+          // Stored in +E.164 like imported contacts, so import and re-sync can recognise it.
+          phoneNumber: normalizePhoneNumber(contactData.phoneNumber || '') || (contactData.phoneNumber || '').trim(),
+          associations: contactData.associations ?? ['Teman'],
           isProfessional: contactData.isProfessional ?? false,
           lastContactedDate: contactData.lastContactedDate || null,
           followUpCycleDays: contactData.followUpCycleDays || getDefaultCycleDays(),
@@ -303,16 +322,32 @@ export const App: React.FC = () => {
           createdAt: nowIso,
           updatedAt: nowIso,
         };
+        let phoneNote = '';
+        if (options?.saveToPhone) {
+          const result = await saveToPhoneContacts(newContact.name, newContact.phoneNumber);
+          // Saved to (or already in) the phone list, so a later re-sync treats it as a phone contact.
+          if (result === 'saved' || result === 'exists') newContact.source = 'phone';
+          phoneNote =
+            result === 'saved'
+              ? t(' dan disimpan ke kontak HP')
+              : result === 'exists'
+                ? t(' (sudah ada di kontak HP)')
+                : result === 'denied'
+                  ? t(', tapi izin kontak HP belum diberikan')
+                  : result === 'failed'
+                    ? t(', tapi gagal menyimpan ke kontak HP')
+                    : '';
+        }
         await crmDb.contacts.add(newContact);
         await scheduleTargetedFollowUpAlarm(newContact);
-        showToast(`${newContact.name} ditambahkan`, 'success');
+        showToast(t('{name} ditambahkan', { name: newContact.name }) + phoneNote, 'success');
       }
       await refreshData();
       setIsEditModalOpen(false);
       setEditingContact(null);
     } catch (err) {
       console.error('Failed to save contact', err);
-      showToast('Gagal menyimpan kontak', 'error');
+      showToast(t('Gagal menyimpan kontak'), 'error');
     }
   };
 
@@ -323,24 +358,24 @@ export const App: React.FC = () => {
       setIsEditModalOpen(false);
       setEditingContact(null);
       setSelectedContact(null);
-      showToast('Kontak dihapus', 'info');
+      showToast(t('Kontak dihapus'), 'info');
     } catch (err) {
       console.error('Failed to delete contact', err);
-      showToast('Gagal menghapus kontak', 'error');
+      showToast(t('Gagal menghapus kontak'), 'error');
     }
   };
 
   const handleLogChat = async (contact: Contact, notes?: string) => {
     try {
-      await markChatCompleted(contact.id, notes || 'Selesai berinteraksi via WhatsApp');
+      await markChatCompleted(contact.id, notes || t('Selesai berinteraksi via WhatsApp'));
       const updated = await crmDb.contacts.get(contact.id);
       if (updated) await scheduleTargetedFollowUpAlarm(updated);
       await refreshData();
       successHaptic();
-      showToast(`${contact.name} sudah disapa`, 'success');
+      showToast(t('{name} sudah disapa', { name: contact.name }), 'success');
     } catch (err) {
       console.error('Failed to log chat', err);
-      showToast('Gagal mencatat interaksi', 'error');
+      showToast(t('Gagal mencatat interaksi'), 'error');
     }
   };
 
@@ -357,7 +392,7 @@ export const App: React.FC = () => {
       setLabelContact(merge);
     } catch (err) {
       console.error('Failed to update contact inline', err);
-      showToast('Gagal memperbarui kontak', 'error');
+      showToast(t('Gagal memperbarui kontak'), 'error');
     }
   };
 
@@ -373,9 +408,9 @@ export const App: React.FC = () => {
     try {
       const nowIso = new Date().toISOString();
       const noteParts: string[] = [];
-      if (encounter.location) noteParts.push(`Lokasi: ${encounter.location}`);
+      if (encounter.location) noteParts.push(`${t('Lokasi')}: ${encounter.location}`);
       if (encounter.talkingPoints) noteParts.push(encounter.talkingPoints);
-      if (encounter.newFacts && encounter.newFacts.length > 0) noteParts.push(`Fakta baru: ${encounter.newFacts.join(', ')}`);
+      if (encounter.newFacts && encounter.newFacts.length > 0) noteParts.push(`${t('Fakta baru')}: ${encounter.newFacts.join(', ')}`);
 
       await crmDb.interactions.add({
         id: newId('int'),
@@ -408,10 +443,10 @@ export const App: React.FC = () => {
       await refreshData();
       setLogEncounterContact(null);
       successHaptic();
-      showToast('Interaksi dicatat', 'success');
+      showToast(t('Interaksi dicatat'), 'success');
     } catch (err) {
       console.error('Failed to save encounter', err);
-      showToast('Gagal mencatat interaksi', 'error');
+      showToast(t('Gagal mencatat interaksi'), 'error');
     }
   };
 
@@ -424,26 +459,26 @@ export const App: React.FC = () => {
         contactId: contact.id,
         date: updates.lastContactedDate as string,
         type: 'other',
-        notes: archivedKabar ? `Catatan suara • Kabar sebelumnya: ${archivedKabar}` : 'Catatan suara',
+        notes: archivedKabar ? `${t('Catatan suara')} • ${t('Kabar sebelumnya')}: ${archivedKabar}` : t('Catatan suara'),
         createdAt: new Date().toISOString(),
       });
       await handleUpdateContact(contact.id, updates);
       setVoiceNote({ open: false, contact: null });
       successHaptic();
-      showToast(`Kabar ${contact.name} diperbarui`, 'success');
+      showToast(t('Kabar {name} diperbarui', { name: contact.name }), 'success');
     } catch (err) {
       console.error('Failed to save voice note', err);
-      showToast('Gagal menyimpan catatan suara', 'error');
+      showToast(t('Gagal menyimpan catatan suara'), 'error');
     }
   };
 
   const handleExportBackup = async () => {
     try {
       const count = await exportBackup();
-      showToast(`Cadangan dibuat (${count} kontak)`, 'success');
+      showToast(t('Cadangan dibuat ({n} kontak)', { n: count }), 'success');
     } catch (err) {
       console.error('Failed to export backup', err);
-      showToast('Gagal membuat cadangan', 'error');
+      showToast(t('Gagal membuat cadangan'), 'error');
     }
   };
 
@@ -451,10 +486,10 @@ export const App: React.FC = () => {
     try {
       const count = await restoreBackup(jsonText);
       await refreshData();
-      showToast(`${count} kontak dipulihkan dari cadangan`, 'success');
+      showToast(t('{n} kontak dipulihkan dari cadangan', { n: count }), 'success');
     } catch (err: any) {
       console.error('Failed to restore backup', err);
-      showToast(err?.message || 'Gagal memulihkan cadangan', 'error');
+      showToast(err?.message ? t(err.message) : t('Gagal memulihkan cadangan'), 'error');
     }
   };
 
@@ -465,20 +500,20 @@ export const App: React.FC = () => {
     try {
       const device = await getDeviceContactsWithStatus();
       if (device.permissionStatus === 'denied') {
-        showToast('Izin kontak belum diberikan. Buka Pengaturan HP untuk mengizinkan.', 'error');
+        showToast(t('Izin kontak belum diberikan. Buka Pengaturan HP untuk mengizinkan.'), 'error');
         return;
       }
       const full = Capacitor.isNativePlatform() && device.permissionStatus === 'granted';
       const result = await resyncPhoneContacts(device.contacts, full);
       await refreshData();
       if (result.newOnPhone.length === 0 && result.missing.length === 0) {
-        showToast('Kontak sudah sinkron dengan HP', 'success');
+        showToast(t('Kontak sudah sinkron dengan HP'), 'success');
       } else {
         setResyncResult({ newCount: result.newOnPhone.length, missing: result.missing });
       }
     } catch (err) {
       console.error('Failed to resync contacts', err);
-      showToast('Gagal membaca kontak HP', 'error');
+      showToast(t('Gagal membaca kontak HP'), 'error');
     } finally {
       setIsResyncing(false);
     }
@@ -489,10 +524,10 @@ export const App: React.FC = () => {
       await deleteContacts(ids);
       await refreshData();
       setResyncResult(null);
-      showToast(`${ids.length} kontak dihapus`, 'info');
+      showToast(t('{n} kontak dihapus', { n: ids.length }), 'info');
     } catch (err) {
       console.error('Failed to delete contacts', err);
-      showToast('Gagal menghapus kontak', 'error');
+      showToast(t('Gagal menghapus kontak'), 'error');
     }
   };
 
@@ -514,10 +549,10 @@ export const App: React.FC = () => {
         setContactsFilter(to ? { kind: 'label', label: to } : null);
       }
       await refreshData();
-      showToast(to ? `Label "${from}" diubah menjadi "${to}"` : `Label "${from}" dihapus`, 'success');
+      showToast(to ? t('Label "{from}" diubah menjadi "{to}"', { from, to }) : t('Label "{from}" dihapus', { from }), 'success');
     } catch (err) {
       console.error('Failed to update label', err);
-      showToast('Gagal memperbarui label', 'error');
+      showToast(t('Gagal memperbarui label'), 'error');
     }
   };
 
@@ -526,10 +561,10 @@ export const App: React.FC = () => {
       await crmDb.contacts.clear();
       await crmDb.interactions.clear();
       await refreshData();
-      showToast('Semua data dihapus', 'info');
+      showToast(t('Semua data dihapus'), 'info');
     } catch (err) {
       console.error('Failed to reset database', err);
-      showToast('Gagal menghapus data', 'error');
+      showToast(t('Gagal menghapus data'), 'error');
     }
   };
 
@@ -543,7 +578,7 @@ export const App: React.FC = () => {
     }
     setApiKey(trimmed);
     setIsApiKeySaved(Boolean(trimmed));
-    showToast(trimmed ? 'Kunci AI pribadi disimpan' : 'Kembali memakai AI bawaan', trimmed ? 'success' : 'info');
+    showToast(trimmed ? t('Kunci AI pribadi disimpan') : t('Kembali memakai AI bawaan'), trimmed ? 'success' : 'info');
   };
 
   const openSapa = (contact: Contact) => {
@@ -561,7 +596,7 @@ export const App: React.FC = () => {
   return (
     <MotionConfig reducedMotion="user">
       <DeviceEmulatorFrame>
-        <div className="min-h-screen max-w-full w-full overflow-x-hidden bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors">
+        <div key={uiLanguage} className="min-h-screen max-w-full w-full overflow-x-hidden bg-[#F2F2F7] dark:bg-[#090A0F] text-slate-900 dark:text-white flex flex-col font-sans selection:bg-blue-600 selection:text-white transition-colors">
           <main className="flex-1 w-full max-w-full overflow-x-hidden pt-[env(safe-area-inset-top,0px)]">
             {loading ? (
               <div className="min-h-[60vh]" />
@@ -613,6 +648,8 @@ export const App: React.FC = () => {
                       contactsCount={contacts.length}
                       themePreference={themePreference}
                       onThemeChange={handleThemeChange}
+                      uiLanguage={uiLanguage}
+                      onLanguageChange={handleLanguageChange}
                       digestTime={digestTime}
                       onDigestTimeChange={handleDigestTimeChange}
                       hasUpdate={Boolean(appUpdate?.hasUpdate)}
@@ -648,7 +685,7 @@ export const App: React.FC = () => {
               setActiveTab(tabId);
             }}
             centerAction={{
-              label: 'Catat Kabar dengan Suara',
+              label: t('Catat Kabar dengan Suara'),
               icon: <Mic className="w-6 h-6" />,
               onClick: () => {
                 tapHaptic('medium');
@@ -721,7 +758,7 @@ export const App: React.FC = () => {
                 onImportComplete={(result) => {
                   refreshData();
                   setIsSyncOpen(false);
-                  showToast(`${result.importedCount} kontak baru ditambahkan`, 'success');
+                  showToast(t('{n} kontak baru ditambahkan', { n: result.importedCount }), 'success');
                 }}
               />
             </div>
@@ -747,6 +784,7 @@ export const App: React.FC = () => {
             }}
             onSave={handleSaveContact}
             onDelete={handleDeleteContact}
+            canSaveToPhone={Capacitor.isNativePlatform()}
           />
 
           <VoiceNoteModal
@@ -776,6 +814,26 @@ export const App: React.FC = () => {
 
           <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={hideToast} />
           <SplashScreen />
+          <AnimatePresence>
+            {languageFlash && (
+              <motion.div
+                aria-hidden="true"
+                className="fixed inset-0 z-[110] flex items-center justify-center bg-[#F2F2F7]/80 dark:bg-[#090A0F]/80 backdrop-blur-xl pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.35 } }}
+              >
+                <motion.span
+                  className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white"
+                  initial={{ y: 14, opacity: 0, scale: 0.94 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 220 }}
+                >
+                  {languageFlash === 'tr' ? 'Merhaba' : 'Halo'}
+                </motion.span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </DeviceEmulatorFrame>
     </MotionConfig>

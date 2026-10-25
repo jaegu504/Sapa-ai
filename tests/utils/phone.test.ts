@@ -36,3 +36,13 @@ describe('normalizePhoneNumber', () => {
     expect(normalizePhoneNumber('   ')).toBe('');
   });
 });
+
+import { normalizePhoneNumber as norm } from '../../src/utils/phone';
+
+describe('Turkish local mobile numbers', () => {
+  it('reads 05xx numbers as Turkey and keeps Indonesian 08xx as Indonesia', () => {
+    expect(norm('0532 000 11 22')).toBe('+905320001122');
+    expect(norm('0812-3456-7890')).toBe('+6281234567890');
+    expect(norm('+90 532 000 11 22')).toBe('+905320001122');
+  });
+});

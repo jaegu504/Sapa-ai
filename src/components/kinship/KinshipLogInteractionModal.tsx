@@ -1,18 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  Coffee,
-  Phone,
-  MessageSquare,
-  Users,
-  Calendar,
-  MapPin,
-  FileText,
-  Lightbulb,
-  Plus,
-  RefreshCw,
-  BookmarkCheck,
-} from 'lucide-react';
+import { t } from '../../i18n';
+import { Calendar, Coffee, FileText, MapPin, MessageSquare, Phone, Plus, Repeat, Star, Users, X } from 'lucide-react';
+import { Sheet, useSticky } from '../ui/Sheet';
+import { avatarTone, getInitials } from '../../utils/display';
 import { Contact, InteractionType } from '../../types/crm';
 
 export interface KinshipLogInteractionModalProps {
@@ -30,27 +20,11 @@ export interface KinshipLogInteractionModalProps {
   }) => Promise<void> | void;
 }
 
-const FORMAT_OPTIONS: { type: InteractionType; label: string; icon: React.ReactNode }[] = [
-  {
-    type: 'meetup',
-    label: 'Kopi / Makan',
-    icon: <Coffee className="w-4 h-4 text-amber-600" />,
-  },
-  {
-    type: 'call',
-    label: 'Telepon',
-    icon: <Phone className="w-4 h-4 text-blue-600" />,
-  },
-  {
-    type: 'whatsapp',
-    label: 'WhatsApp',
-    icon: <MessageSquare className="w-4 h-4 text-emerald-600" />,
-  },
-  {
-    type: 'other',
-    label: 'Acara / Majelis',
-    icon: <Users className="w-4 h-4 text-purple-600" />,
-  },
+const FORMAT_OPTIONS: { type: InteractionType; label: string; Icon: typeof Coffee; tone: string }[] = [
+  { type: 'meetup', label: 'Kopi / Makan', Icon: Coffee, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-300' },
+  { type: 'call', label: 'Telepon', Icon: Phone, tone: 'bg-blue-500/15 text-blue-600 dark:text-blue-300' },
+  { type: 'whatsapp', label: 'WhatsApp', Icon: MessageSquare, tone: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300' },
+  { type: 'other', label: 'Acara / Majelis', Icon: Users, tone: 'bg-violet-500/15 text-violet-600 dark:text-violet-300' },
 ];
 
 function getTodayString(): string {
@@ -62,11 +36,12 @@ function getTodayString(): string {
 }
 
 export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProps> = ({
-  contact,
+  contact: liveContact,
   isOpen,
   onClose,
   onSave,
 }) => {
+  const contact = useSticky(liveContact);
   const [selectedType, setSelectedType] = useState<InteractionType>('meetup');
   const [date, setDate] = useState<string>(getTodayString());
   const [location, setLocation] = useState<string>('');
@@ -89,8 +64,6 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
     }
   }, [isOpen, contact?.id]);
 
-  if (!isOpen || !contact) return null;
-
   const handleAddFact = () => {
     const trimmed = factInput.trim();
     if (!trimmed) return;
@@ -106,7 +79,7 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || !contact) return;
 
     setIsSubmitting(true);
     try {
@@ -125,251 +98,169 @@ export const KinshipLogInteractionModal: React.FC<KinshipLogInteractionModalProp
     }
   };
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="log-interaction-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 dark:bg-black/85 animate-fade-in p-0 sm:p-4"
-    >
-      <div className="animate-rise w-full max-w-lg bg-white dark:bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200/90 dark:border-white/12 text-slate-900 dark:text-white transition-colors">
-        {/* Top Grabber Handle & Header */}
-        <div className="pt-3 pb-3 px-5 border-b border-slate-100 dark:border-white/10 flex flex-col bg-slate-50/70 dark:bg-white/5">
-          {/* Bottom Sheet Grabber Pill */}
-          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-2.5 opacity-80" />
+  const group = 'rounded-[18px] bg-white dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/[0.07]';
 
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                  Catatan Interaksi Sapa
-                </span>
-              </div>
-              <h2
-                id="log-interaction-title"
-                className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-0.5"
-              >
-                Catat Interaksi: <span className="text-emerald-700 dark:text-emerald-400">{contact.name}</span>
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Tutup"
-              className="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
-            >
+  return (
+    <Sheet isOpen={isOpen && Boolean(liveContact)} onClose={onClose} labelledBy="log-interaction-title" size="full" zIndex="z-[56]">
+      {contact && (
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="shrink-0 flex items-center justify-between px-4 pb-3">
+            <button type="button" onClick={onClose} className="press text-[16px] text-blue-600 dark:text-cyan-400">
+              {t("Batal")}
+            </button>
+            <h2 id="log-interaction-title" className="text-[16px] font-bold">
+              {t("Catat Interaksi")}
+            </h2>
+            <button type="button" onClick={onClose} aria-label={t("Tutup")} className="press w-8 h-8 rounded-full flex items-center justify-center bg-slate-200/70 dark:bg-white/10 text-slate-500 dark:text-slate-300">
               <X className="w-4 h-4" />
             </button>
           </div>
-        </div>
 
-        {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">
-          {/* Format Interaksi Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>Format Interaksi</span>
-              <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">Pilih salah satu</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {FORMAT_OPTIONS.map((opt) => {
-                const isActive = selectedType === opt.type;
-                return (
-                  <button
-                    key={opt.type}
-                    type="button"
-                    data-active={isActive ? 'true' : 'false'}
-                    onClick={() => setSelectedType(opt.type)}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-[0.98] ${
-                      isActive
-                        ? 'bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-xs'
-                        : 'bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10'
-                    }`}
-                  >
-                    <span className="shrink-0">{opt.icon}</span>
-                    <span className="truncate">{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Waktu & Tempat (Date and Location) */}
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <label
-                htmlFor="encounter-date"
-                className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                Hari & Tanggal
-              </label>
-              <input
-                id="encounter-date"
-                type="date"
-                aria-label="Hari & Tanggal"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className="w-full text-xs font-mono bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="encounter-location"
-                className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                Lokasi Ketemu
-              </label>
-              <input
-                id="encounter-location"
-                type="text"
-                aria-label="Lokasi Ketemu"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Misal: Filosofi Kopi Senopati, Masjid At-Tin, Online WA..."
-                className="w-full text-xs bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-              />
-            </div>
-          </div>
-
-          {/* Poin Obrolan (Notion Bullet Style Textarea) */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="encounter-talking-points"
-                className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                <FileText className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                Poin Obrolan & Catatan Penting
-              </label>
-            </div>
-            <textarea
-              id="encounter-talking-points"
-              aria-label="Poin Obrolan & Catatan Penting"
-              rows={4}
-              value={talkingPoints}
-              onChange={(e) => setTalkingPoints(e.target.value)}
-              placeholder="• Bahas silaturahmi & update kabar terkini&#10;• Rekomendasi bacaan atau proyek bersama&#10;• Rencana pertemuan berikutnya..."
-              className="w-full text-xs text-slate-800 dark:text-white leading-relaxed bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-3 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-            />
-          </div>
-
-          {/* Fakta Baru / Topik Personal Tags */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-                Fakta Baru / Topik Personal
-              </label>
-            </div>
-
-            {/* Display Tags */}
-            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/70 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 min-h-[42px]">
-              {newFacts.map((fact) => (
-                <span
-                  key={fact}
-                  className="inline-flex items-center gap-1 bg-white dark:bg-white/10 border border-slate-200 dark:border-white/15 text-slate-800 dark:text-slate-200 px-2.5 py-1 rounded-full text-xs shadow-2xs font-medium"
-                >
-                  <span>{fact}</span>
-                  <button
-                    type="button"
-                    aria-label={`Hapus tag ${fact}`}
-                    onClick={() => handleRemoveFact(fact)}
-                    className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 ml-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-
-              {newFacts.length === 0 && (
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">Belum ada fakta baru.</span>
-              )}
-            </div>
-
-            {/* Add Tag Input */}
-            <div className="flex items-center gap-1.5 mt-1">
-              <input
-                type="text"
-                value={factInput}
-                onChange={(e) => setFactInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddFact();
-                  }
-                }}
-                placeholder="Tambah fakta baru (hobi, kabar keluarga, dsb)..."
-                className="flex-1 text-xs bg-slate-50/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-cyan-400"
-              />
-              <button
-                type="button"
-                onClick={handleAddFact}
-                className="px-3 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Tambah Fakta</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Toggle Switch: Reset Ritme / Cadence */}
-          <div className="bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-100 dark:border-emerald-500/20 p-3 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <RefreshCw className="w-4 h-4" />
-              </div>
-              <div>
-                <label
-                  htmlFor="reset-cadence-toggle"
-                  className="text-xs font-bold text-slate-800 dark:text-slate-200 block cursor-pointer"
-                >
-                  Reset ritme follow-up dari hari ini
-                </label>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Memperbarui tanggal terakhir sapa dan mengosongkan jadwal khusus
-                </span>
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-6 space-y-5">
+            <div className="flex items-center gap-3 p-3 rounded-[18px] bg-emerald-500/[0.08] border border-emerald-500/25">
+              <span className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold ${avatarTone(contact.name)}`}>{getInitials(contact.name)}</span>
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold truncate">{contact.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{contact.associations.join(', ') || t('Tanpa label')}</p>
               </div>
             </div>
 
-            {/* Checkbox switch */}
-            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <div>
+              <p className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{t("Bagaimana kalian menyapa?")}</p>
+              <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label={t("Format Interaksi")}>
+                {FORMAT_OPTIONS.map((opt) => {
+                  const on = selectedType === opt.type;
+                  return (
+                    <button
+                      key={opt.type}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setSelectedType(opt.type)}
+                      className={`press flex flex-col items-center gap-1.5 px-1 py-3 rounded-2xl text-[11.5px] font-semibold border ${
+                        on ? 'border-cyan-500 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300' : 'border-slate-200/70 dark:border-white/10 bg-white dark:bg-white/[0.05]'
+                      }`}
+                    >
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center ${opt.tone}`}>
+                        <opt.Icon className="w-4 h-4" />
+                      </span>
+                      <span className="leading-tight text-center">{t(opt.label)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={group}>
+              <label className="flex items-center gap-3 px-3.5 py-2.5">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-white bg-rose-500 shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </span>
+                <span className="flex-1 text-[15px]">{t("Tanggal")}</span>
+                <input
+                  type="date"
+                  aria-label={t("Hari & Tanggal")}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="px-3 py-1.5 rounded-full text-[13px] font-semibold bg-blue-500/15 text-blue-700 dark:text-blue-200 focus:outline-none"
+                />
+              </label>
+              <label className="flex items-center gap-3 px-3.5 py-2.5">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-white bg-amber-500 shrink-0">
+                  <MapPin className="w-4 h-4" />
+                </span>
+                <input
+                  aria-label={t("Lokasi Ketemu")}
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder={t("Lokasi (boleh kosong)")}
+                  className="flex-1 min-w-0 bg-transparent text-[15px] placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div className={group}>
+              <label className="block px-3.5 py-3">
+                <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                  <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  {t("Apa yang diobrolkan?")}
+                </span>
+                <textarea
+                  rows={3}
+                  aria-label={t("Poin Obrolan & Catatan Penting")}
+                  value={talkingPoints}
+                  onChange={(e) => setTalkingPoints(e.target.value)}
+                  placeholder={t("Kabar terbaru, cerita, atau rencana berikutnya")}
+                  className="w-full text-[14.5px] leading-relaxed bg-transparent resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
+                />
+              </label>
+              <div className="px-3.5 py-3">
+                <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300 mb-2">
+                  <Star className="w-3.5 h-3.5 text-slate-400" />
+                  {t("Fakta Penting baru")}
+                </span>
+                {newFacts.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {newFacts.map((fact) => (
+                      <span key={fact} className="inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full text-[12.5px] font-medium bg-blue-500/10 text-blue-800 dark:text-blue-200 border border-blue-500/25">
+                        {fact}
+                        <button type="button" aria-label={t('Hapus tag {name}', { name: fact })} onClick={() => handleRemoveFact(fact)} className="w-5 h-5 rounded-full flex items-center justify-center text-blue-500">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={factInput}
+                    onChange={(e) => setFactInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddFact();
+                      }
+                    }}
+                    placeholder={t("Tambah fakta baru (hobi, kabar keluarga, dsb)")}
+                    className="flex-1 min-w-0 px-3 py-1.5 rounded-full text-[13px] bg-slate-100 dark:bg-white/10 placeholder:text-slate-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    aria-label={t("Tambah Fakta")}
+                    onClick={handleAddFact}
+                    className="press inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[13px] font-semibold border border-dashed border-cyan-500/60 text-cyan-700 dark:text-cyan-300"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {t("Tambah")}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 px-3.5 py-3 rounded-[18px] bg-white dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/10">
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center text-white bg-emerald-500 shrink-0">
+                <Repeat className="w-4 h-4" />
+              </span>
+              <span className="flex-1 text-[14px]">{t("Hitung ulang ritme sapa dari tanggal ini")}</span>
               <input
-                id="reset-cadence-toggle"
                 type="checkbox"
+                aria-label={t("Reset ritme follow-up")}
                 checked={resetCadence}
                 onChange={(e) => setResetCadence(e.target.checked)}
-                className="sr-only peer"
+                className="w-5 h-5 accent-emerald-500"
               />
-              <div className="w-10 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" />
             </label>
-          </div>
 
-          {/* Bottom Action Buttons */}
-          <div className="pt-2 flex flex-col gap-2">
             <button
               type="submit"
+              aria-label={t("Simpan Catatan Interaksi")}
               disabled={isSubmitting}
-              className="w-full min-h-[46px] rounded-full bg-slate-900 dark:bg-blue-600 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm hover:bg-slate-800 dark:hover:bg-blue-500 active:scale-[0.99] transition-all disabled:opacity-50"
+              className="press w-full py-3.5 rounded-2xl text-[15.5px] font-bold text-white bg-blue-600 dark:bg-blue-500 shadow-[0_10px_22px_-10px_rgba(59,107,255,0.9)] disabled:opacity-60"
             >
-              <BookmarkCheck className="w-4 h-4 text-emerald-400" />
-              <span>Simpan Catatan Interaksi</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full min-h-[40px] rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 font-semibold text-xs flex items-center justify-center transition-colors"
-            >
-              Batal
+              {isSubmitting ? t('Menyimpan...') : t('Simpan')}
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      )}
+    </Sheet>
   );
 };

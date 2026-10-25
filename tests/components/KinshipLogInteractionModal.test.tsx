@@ -87,7 +87,7 @@ describe('KinshipLogInteractionModal', () => {
 
     // Select Telepon
     fireEvent.click(phonePill);
-    expect(phonePill.getAttribute('data-active')).toBe('true');
+    expect(phonePill.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('allows adding and removing personal context / facts tags', () => {
@@ -155,7 +155,7 @@ describe('KinshipLogInteractionModal', () => {
     fireEvent.click(waPill);
 
     // Fill date
-    const dateInput = screen.getByLabelText(/Tanggal|Hari & Tanggal/i);
+    const dateInput = screen.getByLabelText('Hari & Tanggal');
     fireEvent.change(dateInput, { target: { value: '2026-10-15' } });
 
     // Fill location
