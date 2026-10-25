@@ -1,13 +1,13 @@
 {
-  "tag_name": "v1.4.0",
-  "name": "Sapa-ai v1.4.0: Tampilan Baru yang Lebih Rapi",
-  "body": "## Sapa-ai v1.4.0: Tampilan Baru yang Lebih Rapi\n\n### Tampilan lebih rapi dan halus\n- Semua layar ditata ulang: judul besar, kartu dan daftar yang lebih ringkas.\n- Animasi halus bergaya iPhone: profil dan Draf AI naik dari bawah dan bisa ditarik turun untuk menutup, perpindahan tab lebih lembut, tombol terasa saat diketuk, dan ada animasi pembuka saat aplikasi dibuka.\n- Getaran halus saat mengetuk tombol penting.\n- Tombol mikrofon kini tepat di tengah.\n- Semua ikon kini ikon vektor yang tajam, tanpa emoji.\n\n### Radar Sapa\n- Kontak yang perlu disapa punya dua tombol bulat: centang untuk \"sudah disapa\" dan tombol hijau untuk menyapa.\n- Tombol hijau menawarkan pilihan: **Tulis dengan AI** (memakai bahan obrolan), **WhatsApp**, atau **WhatsApp Business**.\n- Cahaya lingkaran Denyut Sapa tidak terpotong lagi.\n\n### Kontak\n- Daftar lebih ringkas, satu layar muat lebih banyak orang.\n- **Geser kontak ke kanan** untuk memberi label.\n- Tombol label (Keluarga, Hoca, dan lainnya) langsung di atas daftar untuk menyaring.\n- **Tombol sinkron ulang** di samping tombol +: menambah kontak baru dari HP, dan menawarkan menghapus kontak yang sudah Anda hapus dari HP. Selalu ditanya dulu, dan catatan kontak yang sudah ada tidak pernah tertimpa.\n\n### Jadwal dan Pengaturan\n- Jadwal kini satu halaman: Hari ini, Minggu ini, dan Nanti. Tanpa tulisan \"WIB\", jam mengikuti HP Anda.\n- Pengaturan lebih sederhana: tema, jam pengingat harian, ritme bawaan untuk kontak baru, kelola label, **simpan dan pulihkan cadangan**.\n- Tombol Back di HP kini kembali ke layar sebelumnya, tidak langsung keluar dari aplikasi.\n\n### Penting: simpan cadangan\nBuka **Pengaturan → Simpan cadangan**, lalu simpan file-nya (misalnya kirim ke WhatsApp Anda sendiri atau simpan di Google Drive). Dengan file ini data Anda bisa dipulihkan jika ganti HP.\n\n### Download Android APK\nDownload file **`sapa-ai-v1.4.0.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.4.0",
-  "published_at": "2026-10-25T00:00:09Z",
+  "tag_name": "v1.5.0",
+  "name": "Sapa-ai v1.5.0: Bahasa Turki & Simpan ke Kontak HP",
+  "body": "## Sapa-ai v1.5.0: Bahasa Turki & Simpan ke Kontak HP\n\n### 🇹🇷 Tampilan Bahasa Turki\n- Seluruh aplikasi kini bisa berbahasa Turki: buka **Pengaturan → Bahasa**, pilih **Türkçe**.\n- Semua layar, tanggal, notifikasi, dan tutorial ikut berganti bahasa, dengan animasi sapaan singkat saat berganti.\n- Catat Suara kini merangkum kabar dalam bahasa yang Anda ucapkan.\n\n### Simpan juga ke kontak HP\n- Saat menambah kontak di Sapa, ada pilihan **\"Simpan juga ke kontak HP\"** (aktif dari awal). Nama dan nomornya otomatis masuk ke aplikasi Kontak bawaan HP.\n- Jika nomornya sudah ada di HP, Sapa tidak membuat kontak dobel.\n\n### Tiga layar lebih rapi\n- **Tambah/Edit Kontak**, **Catat Interaksi**, dan **Catat Suara** kini bergaya sama dengan profil: ikon di tiap bagian, pilihan berupa pil, dan naik dari bawah dengan animasi.\n- Catat Suara punya mikrofon yang berdenyut saat merekam, dan tanda **BARU** pada bagian yang akan berubah.\n\n### Perbaikan\n- Nomor Turki yang ditulis tanpa +90 (misalnya 0532…) kini dikenali sebagai nomor Turki.\n\n### Download Android APK\nDownload file **`sapa-ai-v1.5.0.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.5.0",
+  "published_at": "2026-10-25T07:05:15Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.4.0.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.4.0/sapa-ai-v1.4.0.apk"
+      "name": "sapa-ai-v1.5.0.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.5.0/sapa-ai-v1.5.0.apk"
     }
   ]
 }
