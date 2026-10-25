@@ -1,6 +1,6 @@
 import React from 'react';
 import { Img, staticFile } from 'remotion';
-import { BlurDef, Fill, INTER, expoIn, kf, linear, useF } from './lib';
+import { BlurDef, Fill, INTER, expoIn, expoOut, kf, linear, useF } from './lib';
 
 // Shot 10 (global f537–599, local 0–62): black end card, the Sapa logo and wordmark arrive
 // with zoom streaks, settle with a slow shrink, then collapse as the film ends.
@@ -43,6 +43,9 @@ export const S10End: React.FC = () => {
           <React.Fragment key={i}>{lockup({ scale: String(scale * (1 + i * 0.045)), opacity: (streaks * (24 - i)) / 120, filter: 'blur(4px)' })}</React.Fragment>
         ))}
       {lockup({ scale: String(scale), filter: smearX + endBlur > 0.05 ? 'url(#s10smear)' : undefined })}
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 640, height: 70, overflow: 'hidden', textAlign: 'center', opacity: f > 52 ? 1 - endBlur / 3.5 : 1 }}>
+        <div style={{ fontFamily: INTER, fontSize: 46, fontWeight: 500, color: '#A9B4C8', translate: `0px ${kf(f, [[12, 70], [26, 0]], expoOut)}px` }}>Jaga silaturahmi, tanpa lupa</div>
+      </div>
     </Fill>
   );
 };

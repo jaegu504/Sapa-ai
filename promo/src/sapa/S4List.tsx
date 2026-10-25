@@ -34,7 +34,7 @@ export const S4List: React.FC = () => {
       <Fill style={{ background: 'radial-gradient(ellipse 60% 60% at 70% 50%, #E3EFFC, transparent 70%)' }} />
       <BlurDef id="s4smear" x={smear * 0.12} y={smear} />
       <Fill style={{ filter: smear > 0.05 ? 'url(#s4smear)' : exit > 0.01 ? `blur(${exit * 10}px)` : undefined, scale: String(1 + exit * 0.06) }}>
-        <Headline f={f} text="Tahu siapa yang perlu disapa" start={8} end={72} />
+        <Headline f={f} text="Tahu siapa yang perlu disapa" start={8} end={72} sub="Yang paling lama, paling atas" />
         <Phone dy={scroll}>
           <div style={{ position: 'absolute', left: 28, top: 70, fontSize: 40, fontWeight: 800, letterSpacing: -1.5, color: C.ink }}>Radar Sapa</div>
           {/* Pulse card */}

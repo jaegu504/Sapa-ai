@@ -4,11 +4,16 @@ import { loadFont } from '@remotion/google-fonts/Inter';
 
 export const { fontFamily: INTER } = loadFont('normal', { weights: ['400', '500', '600', '700'], subsets: ['latin'] });
 
-// Storyboard timing is written in 30 fps "f" units; renders at any fps stay continuous (half frames at 60 fps).
+/** Per-shot time remap [[real frame, scene frame], ...]: slows the quiet middle of a shot so it can be read. */
+export const TimeMap = React.createContext<[number, number][] | null>(null);
+
+// Storyboard timing is written in 30 fps "f" units, then passed through the shot's TimeMap.
 export const useF = (): number => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  return (frame * 30) / fps;
+  const map = React.useContext(TimeMap);
+  const f = (frame * 30) / fps;
+  return map ? kf(f, map) : f;
 };
 
 export const W = 1920;
