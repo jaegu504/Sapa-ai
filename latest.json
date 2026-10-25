@@ -1,13 +1,13 @@
 {
-  "tag_name": "v1.5.0",
-  "name": "Sapa-ai v1.5.0: Bahasa Turki & Simpan ke Kontak HP",
-  "body": "## Sapa-ai v1.5.0: Bahasa Turki & Simpan ke Kontak HP\n\n### 🇹🇷 Tampilan Bahasa Turki\n- Seluruh aplikasi kini bisa berbahasa Turki: buka **Pengaturan → Bahasa**, pilih **Türkçe**.\n- Semua layar, tanggal, notifikasi, dan tutorial ikut berganti bahasa, dengan animasi sapaan singkat saat berganti.\n- Catat Suara kini merangkum kabar dalam bahasa yang Anda ucapkan.\n\n### Simpan juga ke kontak HP\n- Saat menambah kontak di Sapa, ada pilihan **\"Simpan juga ke kontak HP\"** (aktif dari awal). Nama dan nomornya otomatis masuk ke aplikasi Kontak bawaan HP.\n- Jika nomornya sudah ada di HP, Sapa tidak membuat kontak dobel.\n\n### Tiga layar lebih rapi\n- **Tambah/Edit Kontak**, **Catat Interaksi**, dan **Catat Suara** kini bergaya sama dengan profil: ikon di tiap bagian, pilihan berupa pil, dan naik dari bawah dengan animasi.\n- Catat Suara punya mikrofon yang berdenyut saat merekam, dan tanda **BARU** pada bagian yang akan berubah.\n\n### Perbaikan\n- Nomor Turki yang ditulis tanpa +90 (misalnya 0532…) kini dikenali sebagai nomor Turki.\n\n### Download Android APK\nDownload file **`sapa-ai-v1.5.0.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.5.0",
-  "published_at": "2026-10-25T07:05:15Z",
+  "tag_name": "v1.5.1",
+  "name": "Sapa-ai v1.5.1: Layar Impor Kontak Lebih Rapi",
+  "body": "## Sapa-ai v1.5.1: Layar Impor Kontak Lebih Rapi\n\n- Layar **Impor Kontak** kini bergaya sama dengan layar lain dan ikut berbahasa Turki.\n- Kontak HP diurutkan **A sampai Z** dengan huruf penanda, seperti di aplikasi Kontak bawaan.\n- Kontak yang **sudah ada di Sapa** diberi tanda \"Sudah di Sapa\" dan tidak bisa dipilih lagi, jadi tidak ada yang dobel.\n\n### Download Android APK\nDownload file **`sapa-ai-v1.5.1.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.5.1",
+  "published_at": "2026-10-25T07:18:58Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.5.0.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.5.0/sapa-ai-v1.5.0.apk"
+      "name": "sapa-ai-v1.5.1.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.5.1/sapa-ai-v1.5.1.apk"
     }
   ]
 }
