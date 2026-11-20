@@ -1,13 +1,13 @@
 {
-  "tag_name": "v1.5.1",
-  "name": "Sapa-ai v1.5.1: Layar Impor Kontak Lebih Rapi",
-  "body": "## Sapa-ai v1.5.1: Layar Impor Kontak Lebih Rapi\n\n- Layar **Impor Kontak** kini bergaya sama dengan layar lain dan ikut berbahasa Turki.\n- Kontak HP diurutkan **A sampai Z** dengan huruf penanda, seperti di aplikasi Kontak bawaan.\n- Kontak yang **sudah ada di Sapa** diberi tanda \"Sudah di Sapa\" dan tidak bisa dipilih lagi, jadi tidak ada yang dobel.\n\n### Download Android APK\nDownload file **`sapa-ai-v1.5.1.apk`** yang terlampir di bawah ini dan instal di atas versi lama. Data kontak Anda tetap aman.\n",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.5.1",
-  "published_at": "2026-10-25T07:18:58Z",
+  "tag_name": "v1.5.2",
+  "name": "Sapa v1.5.2",
+  "body": "## Sapa v1.5.2\n\n**Baru**\n- Radar Sapa: tombol **Lihat semua** sekarang membuka seluruh daftar \"Perlu disapa\" langsung di halaman awal, lengkap dengan tombol centang (sudah disapa) dan tombol Sapa di setiap baris. Tekan **Lebih sedikit** untuk melipatnya lagi.\n\nCara update: unduh `sapa-ai-v1.5.2.apk` di bawah lalu pasang di atas versi lama. Data tetap aman.",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.5.2",
+  "published_at": "2026-11-20T15:18:20Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.5.1.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.5.1/sapa-ai-v1.5.1.apk"
+      "name": "sapa-ai-v1.5.2.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.5.2/sapa-ai-v1.5.2.apk"
     }
   ]
 }
