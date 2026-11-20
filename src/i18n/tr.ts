@@ -486,4 +486,10 @@ export const TR: Record<string, string> = {
   "Kirim sapaan untuk {name}": "{name} için bir selam gönder",
   "3 hari lagi": "3 gün sonra",
   "Minggu depan": "Gelecek hafta",
+  "Belum Sempat? Tunda Saja": "Vaktiniz mi yok? Erteleyin",
+  "Tombol jam di daftar Perlu disapa menunda sapaan ke besok atau minggu depan. Ulang tahun dan tanggal penting lain muncul di bagian Hari penting. Tips: pasang widget Sapa di layar utama HP (tekan lama layar utama, pilih Widget) supaya tahu siapa yang perlu disapa tanpa membuka aplikasi.": "Selam verilecekler listesindeki saat düğmesi selamı yarına veya gelecek haftaya erteler. Doğum günleri ve diğer önemli tarihler Önemli günler bölümünde görünür. İpucu: Sapa widget'ını telefonun ana ekranına ekleyin (ana ekrana uzun basın, Widget'ı seçin), uygulamayı açmadan kime selam vereceğinizi görün.",
+  "Sapa Satu Label Sekaligus": "Bir etiketin tamamına selam verin",
+  "Pilih satu label, misalnya Hoca, lalu ketuk tombol hijau Sapa semua. Tulis satu pesan (bisa dibantu AI) dan kirim ke tiap orang satu per satu, cocok untuk hari raya. Nama tiap orang terisi otomatis.": "Bir etiket seçin, örneğin Hoca, sonra yeşil Tümüne selam ver düğmesine dokunun. Tek bir mesaj yazın (AI yardımıyla da olur) ve herkese tek tek gönderin; bayramlar için ideal. Her kişinin adı otomatik eklenir.",
+  "Tanggal Penting": "Önemli Tarihler",
+  "Ketuk Edit untuk mengisi ulang tahun, hari pernikahan, atau tanggal penting lain. Sapa mengingatkan Anda setiap tahun di hari itu.": "Doğum günü, evlilik yıldönümü veya başka önemli tarihleri eklemek için Düzenle'ye dokunun. Sapa her yıl o gün size hatırlatır.",
 };

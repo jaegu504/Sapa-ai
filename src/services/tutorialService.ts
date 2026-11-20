@@ -2,14 +2,17 @@ export type TourContext = 'shell' | 'dossier' | 'draft';
 
 export type TourStepId =
   | 'radar-tab'
+  | 'radar-tips'
   | 'contacts-tab'
   | 'add-contact'
   | 'swipe-label'
+  | 'group-sapa'
   | 'pick-contact'
   | 'field-met'
   | 'field-notes'
   | 'field-topic'
   | 'field-schedule'
+  | 'important-dates'
   | 'voice-note'
   | 'jadwal-tab'
   | 'draft-ai'
@@ -51,6 +54,15 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Di sini terlihat siapa yang sudah waktunya disapa. Tombol centang menandai sudah disapa, tombol hijau untuk menyapa lewat AI atau WhatsApp.',
   },
   {
+    id: 'radar-tips',
+    target: 'radar-pulse',
+    context: 'shell',
+    tab: 'radar',
+    advance: 'next',
+    title: 'Belum Sempat? Tunda Saja',
+    body: 'Tombol jam di daftar Perlu disapa menunda sapaan ke besok atau minggu depan. Ulang tahun dan tanggal penting lain muncul di bagian Hari penting. Tips: pasang widget Sapa di layar utama HP (tekan lama layar utama, pilih Widget) supaya tahu siapa yang perlu disapa tanpa membuka aplikasi.',
+  },
+  {
     id: 'contacts-tab',
     target: 'nav-contacts',
     context: 'shell',
@@ -76,6 +88,15 @@ export const TOUR_STEPS: TourStep[] = [
     advance: 'next',
     title: 'Geser untuk Memberi Label',
     body: 'Geser satu kontak ke kanan untuk memberi label seperti Keluarga atau Hoca. Label lalu bisa dipakai untuk menyaring daftar lewat tombol di atas.',
+  },
+  {
+    id: 'group-sapa',
+    target: 'contact-filters',
+    context: 'shell',
+    tab: 'contacts',
+    advance: 'next',
+    title: 'Sapa Satu Label Sekaligus',
+    body: 'Pilih satu label, misalnya Hoca, lalu ketuk tombol hijau Sapa semua. Tulis satu pesan (bisa dibantu AI) dan kirim ke tiap orang satu per satu, cocok untuk hari raya. Nama tiap orang terisi otomatis.',
   },
   {
     id: 'pick-contact',
@@ -118,6 +139,14 @@ export const TOUR_STEPS: TourStep[] = [
     advance: 'next',
     title: 'Jadwal & Ritme Sapa',
     body: 'Atur tanggal follow up khusus untuk mendapat alarm, dan Ritme Sapa (hari) supaya Sapa mengingatkan Anda secara berkala.',
+  },
+  {
+    id: 'important-dates',
+    target: 'dossier-edit',
+    context: 'dossier',
+    advance: 'next',
+    title: 'Tanggal Penting',
+    body: 'Ketuk Edit untuk mengisi ulang tahun, hari pernikahan, atau tanggal penting lain. Sapa mengingatkan Anda setiap tahun di hari itu.',
   },
   {
     id: 'voice-note',

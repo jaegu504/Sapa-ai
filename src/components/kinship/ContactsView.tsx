@@ -213,7 +213,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1 mb-3" aria-label={t("Filter kontak")}>
+      <div data-tour="contact-filters" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1 mb-3" aria-label={t("Filter kontak")}>
         {chip(t('Semua'), null, contacts.length)}
         {QUICK_FILTERS.map((f) => chip(t(f.label), f.filter))}
         {labels.map((l) => chip(l, { kind: 'label', label: l }))}

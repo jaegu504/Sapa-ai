@@ -207,7 +207,7 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
           {saveStatus === 'saving' ? t('Menyimpan...') : saveStatus === 'saved' ? t('Tersimpan') : ''}
         </span>
         {onEditContact ? (
-          <button type="button" onClick={() => onEditContact(contact)} aria-label={t("Edit Relasi")} className="press px-2 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
+          <button data-tour="dossier-edit" type="button" onClick={() => onEditContact(contact)} aria-label={t("Edit Relasi")} className="press px-2 py-1 text-[16px] text-blue-600 dark:text-cyan-400">
             {t("Edit")}
           </button>
         ) : (

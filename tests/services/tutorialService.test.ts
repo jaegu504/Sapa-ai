@@ -42,12 +42,12 @@ describe('tutorialService', () => {
   });
 
   it('nextStepId walks the step order and ends after whatsapp', () => {
-    expect(nextStepId('radar-tab')).toBe('contacts-tab');
+    expect(nextStepId('radar-tab')).toBe('radar-tips');
     expect(nextStepId('whatsapp')).toBeNull();
   });
 
-  it('TOUR_STEPS has 14 steps and field-topic body mentions Draf AI', () => {
-    expect(TOUR_STEPS).toHaveLength(14);
+  it('TOUR_STEPS has 17 steps and field-topic body mentions Draf AI', () => {
+    expect(TOUR_STEPS).toHaveLength(17);
     const topic = TOUR_STEPS.find((s) => s.id === 'field-topic');
     expect(topic?.body).toContain('Draf AI');
     expect(TOUR_STEPS.find((s) => s.id === 'pick-contact')?.hideNext).toBe(true);
