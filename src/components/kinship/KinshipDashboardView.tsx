@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { t } from '../../i18n';
 import { motion } from 'motion/react';
 import { Bell, Check, ChevronRight, MessageCircle, UserPlus } from 'lucide-react';
@@ -11,7 +11,7 @@ import { EmptyState } from '../ui/EmptyState';
 export interface KinshipDashboardViewProps {
   contacts: Contact[];
   onSelectContact: (contact: Contact) => void;
-  /** Bell and "Lihat semua": open the contacts list filtered to who needs a greeting. */
+  /** Bell: opens the contacts list filtered to who needs a greeting. */
   onOpenNotifications?: () => void;
   onSapa?: (contact: Contact) => void;
   onLogChat?: (contact: Contact) => void;
@@ -36,6 +36,7 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
   onAddContact,
   now = new Date(),
 }) => {
+  const [showAllDue, setShowAllDue] = useState(false);
   const { activeCount, dueCount, pausedCount, healthScore, dueContacts, upcoming } = useMemo(() => {
     let paused = 0;
     const withStatus = contacts.map((contact) => {
@@ -96,9 +97,14 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
           <section aria-label={t("Perlu disapa")} className="space-y-2">
             <div className="flex items-baseline justify-between px-1">
               <h2 className="text-[17px] font-bold">{t("Perlu disapa")}</h2>
-              {dueContacts.length > 0 && (
-                <button type="button" onClick={onOpenNotifications} className="text-sm font-semibold text-blue-600 dark:text-cyan-400">
-                  {t("Lihat semua")}
+              {dueContacts.length > DUE_PREVIEW && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllDue((v) => !v)}
+                  aria-expanded={showAllDue}
+                  className="text-sm font-semibold text-blue-600 dark:text-cyan-400"
+                >
+                  {showAllDue ? t('Lebih sedikit') : t('Lihat semua ({count})', { count: dueContacts.length })}
                 </button>
               )}
             </div>
@@ -112,7 +118,7 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
               />
             ) : (
               <div className="rounded-[22px] bg-white/85 dark:bg-[#1C1C1E]/80 border border-white/80 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/[0.07]">
-                {dueContacts.slice(0, DUE_PREVIEW).map(({ contact, status }, i) => (
+                {(showAllDue ? dueContacts : dueContacts.slice(0, DUE_PREVIEW)).map(({ contact, status }, i) => (
                   <motion.div
                     key={contact.id}
                     {...rowMotion(i)}

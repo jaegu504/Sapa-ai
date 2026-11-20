@@ -91,6 +91,18 @@ describe('KinshipDashboardView', () => {
     expect(onOpenNotifications).toHaveBeenCalledTimes(1);
   });
 
+  it('expands "Perlu disapa" in place to every overdue contact, keeping the check buttons', () => {
+    const many: Contact[] = Array.from({ length: 7 }, (_, i) => ({ ...mockContacts[0], id: `m${i}`, name: `Kontak ${i}` }));
+    render(<KinshipDashboardView contacts={many} onSelectContact={vi.fn()} onLogChat={vi.fn()} now={referenceDate} />);
+
+    expect(screen.queryAllByTestId(/^attention-card-/)).toHaveLength(5);
+    fireEvent.click(screen.getByRole('button', { name: 'Lihat semua (7)' }));
+    expect(screen.queryAllByTestId(/^attention-card-/)).toHaveLength(7);
+    expect(screen.getByRole('button', { name: /Tandai sudah sapa Kontak 6/ })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Lebih sedikit' }));
+    expect(screen.queryAllByTestId(/^attention-card-/)).toHaveLength(5);
+  });
+
   it('keeps the Denyut Sapa pills with active, due and paused counts', () => {
     render(<KinshipDashboardView contacts={mockContacts} onSelectContact={vi.fn()} now={referenceDate} />);
 

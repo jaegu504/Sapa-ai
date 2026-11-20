@@ -224,6 +224,8 @@ export const TR: Record<string, string> = {
   "Tambahkan orang-orang yang ingin Anda jaga silaturahminya.": "Bağınızı korumak istediğiniz kişileri ekleyin.",
   "Perlu disapa": "Selam bekleyenler",
   "Lihat semua": "Tümünü gör",
+  "Lihat semua ({count})": "Tümünü gör ({count})",
+  "Lebih sedikit": "Daha az",
   "Semua aman hari ini": "Bugün her şey yolunda",
   "Tidak ada yang perlu disapa sekarang.": "Şu an selam bekleyen kimse yok.",
   "Tandai sudah sapa {name}": "{name} ile görüşüldü olarak işaretle",
