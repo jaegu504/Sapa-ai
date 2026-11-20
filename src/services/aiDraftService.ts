@@ -714,3 +714,57 @@ export async function generateWhatsAppDraft(
     return fallbackDraft;
   }
 }
+
+/** Placeholder for the recipient's name in a group greeting; replaced per contact before sending. */
+export const NAME_PLACEHOLDER = '{nama}';
+
+export function groupGreetingFallback(occasion: string, language: SapaLanguage): string {
+  const o = occasion.trim();
+  return language === 'tr'
+    ? `Selamün aleyküm ${NAME_PLACEHOLDER},${o ? ` ${o}.` : ''} Nasılsınız? Allah hayırlı ve bereketli günler nasip etsin. Selamlar.`
+    : `Assalamu'alaikum ${NAME_PLACEHOLDER},${o ? ` ${o}.` : ''} Apa kabar? Semoga Allah selalu memberkahi hari-harimu. Salam hangat.`;
+}
+
+/**
+ * One greeting for a whole label (e.g. every "Hoca" before a holiday). A single AI call: the text
+ * carries {nama}, which the caller replaces per contact. Contact names never go to the AI.
+ */
+export async function generateGroupGreeting(
+  occasion: string,
+  language: SapaLanguage,
+  proxyUrl?: string
+): Promise<{ text: string; source: 'worker' | 'fallback' }> {
+  const fallback = groupGreetingFallback(occasion, language);
+  const prompt = [
+    `Tulis SATU pesan WhatsApp singkat (2-3 kalimat), hangat dan sopan, dalam bahasa ${language === 'tr' ? 'Turki' : 'Indonesia'}.`,
+    `Pesan ini dikirim satu per satu ke beberapa orang. Tulis ${NAME_PLACEHOLDER} persis di tempat nama penerima.`,
+    `Acara/keperluan: ${occasion.trim() || 'sekadar menyapa dan menanyakan kabar'}.`,
+    `Jangan pakai emoji berlebihan. Jangan menyebut nama pengirim.`,
+    `KEMBALIKAN HANYA JSON ARRAY murni seperti: [{"text": "pesan..."}]`,
+  ].join('\n');
+
+  const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+  const endpoint = proxyUrl || (!isTestEnv ? DEFAULT_WORKER_PROXY_URL : undefined);
+  if (endpoint) {
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, temperature: 0.8 }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const raw = data?.choices?.[0]?.message?.content || data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (typeof raw === 'string') {
+          const arr = JSON.parse(raw.replace(/```json/gi, '').replace(/```/g, '').trim());
+          const text = (typeof arr?.[0] === 'string' ? arr[0] : arr?.[0]?.text || '').trim();
+          // Without the placeholder the text still works, just without each person's name.
+          if (text) return { text, source: 'worker' };
+        }
+      }
+    } catch {
+      // fall through to the fallback text
+    }
+  }
+  return { text: fallback, source: 'fallback' };
+}

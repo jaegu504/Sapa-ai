@@ -5,6 +5,7 @@ export interface WhatsAppLauncherPluginType {
   openWhatsApp(options: { phone: string; text?: string; appType: 'regular' | 'business' }): Promise<void>;
   openAppSettings(): Promise<void>;
   recognizeSpeech(options?: { language?: string; prompt?: string }): Promise<{ text: string }>;
+  updateWidget(options: { data: string }): Promise<void>;
 }
 
 export const WhatsAppLauncher = registerPlugin<WhatsAppLauncherPluginType>('WhatsAppLauncher');

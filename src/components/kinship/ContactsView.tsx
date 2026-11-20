@@ -22,6 +22,8 @@ export interface ContactsViewProps {
   onAddContact: () => void;
   onResync: () => void;
   isSyncing?: boolean;
+  /** "Sapa semua": greet every contact in the selected label at once. */
+  onGroupSapa?: (label: string) => void;
   now?: Date;
 }
 
@@ -121,6 +123,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   onAddContact,
   onResync,
   isSyncing,
+  onGroupSapa,
   now,
 }) => {
   const labels = useMemo(() => getLabels(), [contacts]);
@@ -215,6 +218,17 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         {QUICK_FILTERS.map((f) => chip(t(f.label), f.filter))}
         {labels.map((l) => chip(l, { kind: 'label', label: l }))}
       </div>
+
+      {filter?.kind === 'label' && onGroupSapa && groups.total > 0 && !search.trim() && (
+        <button
+          type="button"
+          onClick={() => onGroupSapa(filter.label)}
+          className="press w-full mb-3 flex items-center justify-center gap-2 py-2.5 rounded-full text-[14px] font-semibold text-white bg-[#25D366] shadow-[0_8px_18px_-10px_rgba(37,211,102,0.9)]"
+        >
+          <MessageCircle className="w-4 h-4" />
+          {t('Sapa semua {label} ({n})', { label: filter.label, n: groups.total })}
+        </button>
+      )}
 
       <div data-tour="contact-list">
         {contacts.length === 0 ? (

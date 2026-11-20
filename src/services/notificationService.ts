@@ -3,6 +3,7 @@ import { t } from '../i18n';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Contact, DigestResult, AlarmItem } from '../types/crm';
 import { calculateContactStatus } from '../utils/status';
+import { nextOccurrence } from '../utils/importantDates';
 
 export type { DigestResult, AlarmItem };
 
@@ -490,6 +491,51 @@ export async function scheduleTargetedFollowUpAlarm(contact: Contact): Promise<b
     console.warn('[notificationService] Failed to schedule targeted alarm:', err);
     return true;
   }
+}
+
+/**
+ * One reminder per important date (birthday, anniversary...) at the digest time on its next
+ * occurrence. Re-run whenever contacts change: old date reminders are cancelled first.
+ */
+export async function scheduleImportantDateReminders(contacts: Contact[], now: Date = new Date()): Promise<number> {
+  const plugin = getLocalNotificationsPlugin();
+  if (!plugin || typeof plugin.schedule !== 'function') return 0;
+  let hour = 8;
+  let minute = 0;
+  try {
+    const saved = localStorage.getItem('kinship_digest_time');
+    if (saved && /^\d{2}:\d{2}$/.test(saved)) [hour, minute] = saved.split(':').map(Number);
+  } catch {
+    // Ignore localStorage failures
+  }
+  const notifications: any[] = [];
+  for (const contact of contacts) {
+    (contact.importantDates || []).forEach((d, i) => {
+      const occ = nextOccurrence(d.date, now);
+      if (!occ) return;
+      occ.setHours(hour, minute, 0, 0);
+      if (occ.getTime() <= now.getTime()) occ.setFullYear(occ.getFullYear() + 1);
+      notifications.push({
+        id: hashContactId(`${contact.id}#date${i}`),
+        title: t('{label} {name} hari ini', { label: d.label, name: contact.name }),
+        body: t('Kirim sapaan untuk {name}', { name: contact.name }),
+        channelId: CHANNEL_TARGETED_ALARMS,
+        schedule: { at: occ, allowWhileIdle: true },
+        extra: { type: 'important_date', contactId: contact.id },
+      });
+    });
+  }
+  try {
+    if (typeof plugin.getPending === 'function' && typeof plugin.cancel === 'function') {
+      const pending = await plugin.getPending();
+      const stale = (pending?.notifications || []).filter((n: any) => n?.extra?.type === 'important_date');
+      if (stale.length) await plugin.cancel({ notifications: stale.map((n: any) => ({ id: n.id })) });
+    }
+    if (notifications.length) await plugin.schedule({ notifications });
+  } catch (err) {
+    console.warn('[notificationService] Failed to schedule important date reminders:', err);
+  }
+  return notifications.length;
 }
 
 /**

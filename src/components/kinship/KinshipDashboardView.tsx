@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { t } from '../../i18n';
 import { motion } from 'motion/react';
-import { Bell, Check, ChevronRight, MessageCircle, UserPlus } from 'lucide-react';
+import { Bell, CalendarHeart, Check, ChevronRight, Clock, MessageCircle, ShieldCheck, UserPlus, X } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { calculateContactStatus } from '../../utils/status';
 import { avatarTone, dateParts, dueDate, dueLabel, getInitials } from '../../utils/display';
 import { KinshipPulseArc } from './KinshipPulseArc';
 import { EmptyState } from '../ui/EmptyState';
+import { Sheet, useSticky } from '../ui/Sheet';
+import { upcomingImportantDates } from '../../utils/importantDates';
 
 export interface KinshipDashboardViewProps {
   contacts: Contact[];
@@ -16,8 +18,20 @@ export interface KinshipDashboardViewProps {
   onSapa?: (contact: Contact) => void;
   onLogChat?: (contact: Contact) => void;
   onAddContact?: () => void;
+  /** "Nanti": move the contact's next greeting `days` days ahead without marking it done. */
+  onSnooze?: (contact: Contact, days: number) => void;
+  /** Shows the monthly backup reminder card. */
+  backupDue?: boolean;
+  onBackup?: () => void;
+  onDismissBackup?: () => void;
   now?: Date;
 }
+
+const SNOOZE_CHOICES = [
+  { days: 1, label: 'Besok' },
+  { days: 3, label: '3 hari lagi' },
+  { days: 7, label: 'Minggu depan' },
+];
 
 const DUE_PREVIEW = 5;
 
@@ -34,9 +48,16 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
   onSapa,
   onLogChat,
   onAddContact,
+  onSnooze,
+  backupDue,
+  onBackup,
+  onDismissBackup,
   now = new Date(),
 }) => {
   const [showAllDue, setShowAllDue] = useState(false);
+  const [snoozeTarget, setSnoozeTarget] = useState<Contact | null>(null);
+  const snoozeContact = useSticky(snoozeTarget);
+  const dateEvents = useMemo(() => upcomingImportantDates(contacts, now, 7), [contacts, now]);
   const { activeCount, dueCount, pausedCount, healthScore, dueContacts, upcoming } = useMemo(() => {
     let paused = 0;
     const withStatus = contacts.map((contact) => {
@@ -84,6 +105,26 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
         <KinshipPulseArc score={healthScore} activeCount={activeCount} dueCount={dueCount} pausedCount={pausedCount} />
       </section>
 
+      {backupDue && onBackup && (
+        <section aria-label={t('Cadangkan data')} className="flex items-center gap-3 p-3.5 rounded-[22px] bg-amber-500/10 border border-amber-500/25">
+          <span className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/15 text-amber-600 dark:text-amber-300 shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold">{t('Sudah sebulan belum dicadangkan')}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300">{t('Data Sapa hanya ada di HP ini. Simpan cadangannya.')}</p>
+            <button type="button" onClick={onBackup} className="press mt-2 px-3 py-1.5 rounded-full text-[13px] font-semibold bg-amber-500 text-white">
+              {t('Cadangkan sekarang')}
+            </button>
+          </div>
+          {onDismissBackup && (
+            <button type="button" aria-label={t('Ingatkan nanti')} onClick={onDismissBackup} className="press self-start w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </section>
+      )}
+
       {contacts.length === 0 ? (
         <EmptyState
           icon={<UserPlus className="w-7 h-7" />}
@@ -94,6 +135,46 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
         />
       ) : (
         <>
+          {dateEvents.length > 0 && (
+            <section aria-label={t('Hari penting')} className="space-y-2">
+              <h2 className="text-[17px] font-bold px-1">{t('Hari penting')}</h2>
+              <div className="rounded-[22px] bg-white/85 dark:bg-[#1C1C1E]/80 border border-white/80 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/[0.07]">
+                {dateEvents.map((ev, i) => (
+                  <motion.div
+                    key={`${ev.contact.id}-${ev.label}-${ev.date}`}
+                    {...rowMotion(i)}
+                    data-testid={`date-event-${ev.contact.id}`}
+                    onClick={() => onSelectContact(ev.contact)}
+                    className="flex items-center gap-3 px-3.5 py-3 cursor-pointer active:bg-slate-50 dark:active:bg-white/5"
+                  >
+                    <span className="w-10 h-10 rounded-full flex items-center justify-center bg-pink-500/10 text-pink-600 dark:text-pink-300 shrink-0">
+                      <CalendarHeart className="w-5 h-5" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-semibold truncate">{ev.contact.name}</p>
+                      <p className={`text-xs font-semibold truncate ${ev.inDays === 0 ? 'text-pink-600 dark:text-pink-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {ev.label} · {ev.inDays === 0 ? t('Hari ini') : ev.inDays === 1 ? t('Besok') : t('{n} hari lagi', { n: ev.inDays })}
+                      </p>
+                    </div>
+                    {onSapa && (
+                      <button
+                        type="button"
+                        aria-label={t('Sapa {name}', { name: ev.contact.name })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSapa(ev.contact);
+                        }}
+                        className="press w-9 h-9 rounded-full flex items-center justify-center bg-[#25D366] text-white shadow-[0_6px_14px_-6px_rgba(37,211,102,0.8)] shrink-0"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section aria-label={t("Perlu disapa")} className="space-y-2">
             <div className="flex items-baseline justify-between px-1">
               <h2 className="text-[17px] font-bold">{t("Perlu disapa")}</h2>
@@ -136,6 +217,19 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t('Topik:')} {contact.possibleFollowUpTopic}</p>
                       )}
                     </div>
+                    {onSnooze && (
+                      <button
+                        type="button"
+                        aria-label={t('Tunda {name}', { name: contact.name })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSnoozeTarget(contact);
+                        }}
+                        className="press w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-200 shrink-0"
+                      >
+                        <Clock className="w-4 h-4" />
+                      </button>
+                    )}
                     {onLogChat && (
                       <button
                         type="button"
@@ -203,6 +297,31 @@ export const KinshipDashboardView: React.FC<KinshipDashboardViewProps> = ({
           )}
         </>
       )}
+
+      <Sheet isOpen={Boolean(snoozeTarget)} onClose={() => setSnoozeTarget(null)} ariaLabel={t('Tunda sapaan')}>
+        <div className="px-5 pt-2 pb-6 space-y-3">
+          <div>
+            <h2 className="text-lg font-bold">{t('Sapa {name} nanti', { name: snoozeContact?.name ?? '' })}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('Belum dihitung sudah disapa. Muncul lagi di daftar pada hari yang dipilih.')}</p>
+          </div>
+          <div className="rounded-[18px] bg-white dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/[0.07]">
+            {SNOOZE_CHOICES.map((c) => (
+              <button
+                key={c.days}
+                type="button"
+                onClick={() => {
+                  if (snoozeContact) onSnooze?.(snoozeContact, c.days);
+                  setSnoozeTarget(null);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] font-semibold active:bg-slate-50 dark:active:bg-white/5"
+              >
+                <Clock className="w-4 h-4 text-slate-400" />
+                {t(c.label)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 };

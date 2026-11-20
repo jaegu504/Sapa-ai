@@ -4,4 +4,5 @@
     <string name="title_activity_main">Sapa</string>
     <string name="package_name">com.growsphere.crm</string>
     <string name="custom_url_scheme">com.growsphere.crm</string>
+    <string name="widget_description">Siapa yang perlu disapa hari ini</string>
 </resources>

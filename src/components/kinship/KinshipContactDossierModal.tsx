@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { t } from '../../i18n';
 import {
   Calendar,
+  CalendarHeart,
   Check,
   ChevronLeft,
   Clock,
@@ -363,6 +364,23 @@ const DossierContent: React.FC<Omit<KinshipContactDossierModalProps, 'isOpen' | 
               <p className="text-xs text-slate-400 dark:text-slate-500">{t("Belum ada. Hal yang menetap seperti \"punya anak\" atau \"punya toko\" muncul di sini.")}</p>
             )}
           </div>
+
+          {contact.importantDates && contact.importantDates.length > 0 && (
+            <div>
+              <FieldLabel icon={<CalendarHeart className="w-3.5 h-3.5 text-slate-400" />}>{t('Tanggal penting')}</FieldLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {contact.importantDates.map((d) => (
+                  <span
+                    key={`${d.label}-${d.date}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-medium bg-pink-500/10 text-pink-800 dark:text-pink-200 border border-pink-500/25"
+                  >
+                    {d.label}
+                    <span className="text-[10.5px] text-pink-500/80 dark:text-pink-300/70">{formatShortDate(d.date)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div data-tour="field-met">
             <FieldLabel icon={<Compass className="w-3.5 h-3.5 text-slate-400" />} htmlFor="dossier-met-context">

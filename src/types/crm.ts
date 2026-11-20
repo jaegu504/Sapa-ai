@@ -13,6 +13,7 @@ export interface Contact {
   lastUpdateNotes: string; // Pembaruan kabar terakhir
   possibleFollowUpTopic: string; // Bahan obrolan follow-up berikutnya
   facts?: ContactFact[]; // Fakta penting yang menetap (punya anak, punya toko, hobi...)
+  importantDates?: ImportantDate[]; // Tanggal penting yang berulang tiap tahun (ulang tahun, pernikahan...)
   source?: 'phone' | 'manual'; // 'phone' = came from (or matches) the phone's contact list; only those can be removed by a re-sync
   userId?: string; // Owner user ID (optional for local-first)
   createdAt: string; // ISO datetime
@@ -22,6 +23,11 @@ export interface Contact {
 export interface ContactFact {
   text: string;
   date: string; // YYYY-MM-DD when the fact was recorded
+}
+
+export interface ImportantDate {
+  label: string; // e.g. "Ulang tahun" (user data, not translated)
+  date: string; // YYYY-MM-DD; only month and day repeat every year
 }
 
 export interface InteractionLog {

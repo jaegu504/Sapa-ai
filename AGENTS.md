@@ -12,7 +12,7 @@ Capacitor; UI in **Indonesian and Turkish** (Pengaturan → Bahasa), AI drafts i
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.5.2 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.6.0 at time of writing).
 
 ## Stack
 
@@ -65,6 +65,17 @@ cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Content
   the phone re-sync, and only on native with the full list, always after a confirmation dialog. Imports never overwrite
   a contact's existing name, notes or schedule (labels are only added). Contacts from before v1.4.0 have no `source`
   until the next sync, so they are never removed.
+- `importantDates?: {label, date}[]` = Tanggal penting (birthday, anniversary). Only month and day repeat yearly
+  (`utils/importantDates`; 29 Feb falls on 28 Feb). Radar shows the next 7 days under "Hari penting"; each date gets
+  its own one-shot reminder (`scheduleImportantDateReminders`, `extra.type = 'important_date'`, re-planned on every change).
+- "Nanti" (snooze) on Radar just moves `nextSpecificFollowUp` forward (1, 3 or 7 days); no extra field.
+- Group greeting ("Sapa semua {label}" in Kontak when a label chip is on): one AI call writes a text with `{nama}`,
+  replaced per contact; names never go to the AI. Each send logs the greeting.
+- Backup reminder: a Radar card after 30 days without a backup (`isBackupDue`, needs at least 5 contacts; "x" hides
+  it for 7 days).
+- Android home-screen widget (`SapaWidgetProvider`): the app sends every contact's next due date through
+  `WhatsAppLauncher.updateWidget` (`widgetService.syncWidget`); the widget counts dates <= today itself and refreshes
+  every 3 hours, so it stays right without opening the app.
 - Backups: `backupService` (version 2 file with contacts, interactions, labels). On the phone, export goes through the
   share sheet (Filesystem cache + Share); restore merges by id. A backup/restore path must exist before any keystore change.
 - No Dexie schema change is needed for new non-indexed fields.

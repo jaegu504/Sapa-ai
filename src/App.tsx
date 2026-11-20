@@ -17,12 +17,15 @@ import { crmDb } from './db/crmDatabase';
 import type { Contact, InteractionLog, InteractionType } from './types/crm';
 import { deleteContacts, markChatCompleted, resyncPhoneContacts } from './services/contactService';
 import { getDeviceContactsWithStatus, saveToPhoneContacts } from './services/nativeContactsAdapter';
-import { exportBackup, restoreBackup } from './services/backupService';
+import { syncWidget } from './services/widgetService';
+import { exportBackup, isBackupDue, restoreBackup, snoozeBackupReminder } from './services/backupService';
 import { getDefaultCycleDays } from './services/settingsService';
 import { normalizePhoneNumber } from './utils/phone';
+import { formatShortDate } from './utils/display';
 import {
   initNotificationService,
   scheduleDailyMorningDigest,
+  scheduleImportantDateReminders,
   scheduleTargetedFollowUpAlarm,
   getUpcomingAlarms,
 } from './services/notificationService';
@@ -34,6 +37,7 @@ import { KinshipNotificationsView } from './components/kinship/KinshipNotificati
 import { KinshipPhonebookSyncView } from './components/kinship/KinshipPhonebookSyncView';
 import { ContactsView } from './components/kinship/ContactsView';
 import { SapaActionSheet } from './components/kinship/SapaActionSheet';
+import { GroupSapaSheet } from './components/kinship/GroupSapaSheet';
 import { LabelPickerSheet } from './components/kinship/LabelPickerSheet';
 import { ResyncDialog } from './components/kinship/ResyncDialog';
 import { SettingsView } from './components/settings/SettingsView';
@@ -178,10 +182,15 @@ export const App: React.FC = () => {
     initNotificationService().catch((err) => console.error('Failed to initialize notification service:', err));
   }, []);
 
+  const [backupDue, setBackupDue] = useState(false);
+  const [groupLabel, setGroupLabel] = useState<string | null>(null);
   useEffect(() => {
     if (contacts.length > 0) {
       scheduleDailyMorningDigest(contacts).catch((err) => console.error('Failed to schedule daily morning digest:', err));
     }
+    scheduleImportantDateReminders(contacts).catch(() => {});
+    syncWidget(contacts);
+    setBackupDue(isBackupDue(contacts.length));
   }, [contacts]);
 
   const upcomingAlarms = useMemo(() => getUpcomingAlarms(contacts, 48), [contacts]);
@@ -472,9 +481,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSnooze = async (contact: Contact, days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    await handleUpdateContact(contact.id, { nextSpecificFollowUp: `${date}T09:00` });
+    showToast(t('{name} ditunda sampai {date}', { name: contact.name, date: formatShortDate(date) }), 'info');
+  };
+
   const handleExportBackup = async () => {
     try {
       const count = await exportBackup();
+      setBackupDue(false);
       showToast(t('Cadangan dibuat ({n} kontak)', { n: count }), 'success');
     } catch (err) {
       console.error('Failed to export backup', err);
@@ -617,6 +635,13 @@ export const App: React.FC = () => {
                       onSapa={openSapa}
                       onLogChat={(c) => handleLogChat(c)}
                       onAddContact={handleOpenAddContact}
+                      onSnooze={handleSnooze}
+                      backupDue={backupDue}
+                      onBackup={handleExportBackup}
+                      onDismissBackup={() => {
+                        snoozeBackupReminder();
+                        setBackupDue(false);
+                      }}
                     />
                   )}
 
@@ -636,6 +661,7 @@ export const App: React.FC = () => {
                       onAddContact={handleOpenAddContact}
                       onResync={handleResync}
                       isSyncing={isResyncing}
+                      onGroupSapa={setGroupLabel}
                     />
                   )}
 
@@ -723,6 +749,8 @@ export const App: React.FC = () => {
               setDraftContact(c);
             }}
           />
+
+          <GroupSapaSheet label={groupLabel} contacts={contacts} onClose={() => setGroupLabel(null)} onSent={(c) => handleLogChat(c)} />
 
           <LabelPickerSheet contact={labelContact} onClose={() => setLabelContact(null)} onChange={handleUpdateContact} />
 

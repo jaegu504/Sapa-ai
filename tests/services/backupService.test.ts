@@ -47,3 +47,20 @@ describe('backupService', () => {
     expect(b.labels).toEqual(getLabels());
   });
 });
+
+describe('backup reminder', () => {
+  it('asks after 30 days without a backup, and not for a week after "nanti"', async () => {
+    const { isBackupDue, snoozeBackupReminder } = await import('../../src/services/backupService');
+    localStorage.clear();
+    const day = 86400000;
+    const t0 = Date.UTC(2026, 0, 1);
+    expect(isBackupDue(10, t0)).toBe(false); // first run starts the clock
+    expect(isBackupDue(10, t0 + 29 * day)).toBe(false);
+    expect(isBackupDue(3, t0 + 31 * day)).toBe(false); // too few contacts to bother
+    expect(isBackupDue(10, t0 + 31 * day)).toBe(true);
+    snoozeBackupReminder(t0 + 31 * day);
+    expect(isBackupDue(10, t0 + 35 * day)).toBe(false);
+    expect(isBackupDue(10, t0 + 39 * day)).toBe(true);
+  });
+});
+

@@ -18,6 +18,16 @@ import java.util.ArrayList;
 @CapacitorPlugin(name = "WhatsAppLauncher")
 public class WhatsAppLauncherPlugin extends Plugin {
 
+    /** Saves the due list for the home-screen widget and redraws it. */
+    @PluginMethod
+    public void updateWidget(PluginCall call) {
+        String data = call.getString("data", "{}");
+        getContext().getSharedPreferences(SapaWidgetProvider.PREFS, android.content.Context.MODE_PRIVATE)
+            .edit().putString(SapaWidgetProvider.KEY_DATA, data).apply();
+        SapaWidgetProvider.refreshAll(getContext());
+        call.resolve();
+    }
+
     // Uses the phone's own speech recognizer UI: free, no RECORD_AUDIO permission needed in Sapa.
     @PluginMethod
     public void recognizeSpeech(PluginCall call) {

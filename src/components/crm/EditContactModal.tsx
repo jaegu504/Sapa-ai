@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { t } from '../../i18n';
-import { AlertCircle, Check, Compass, Loader2, MessageSquare, Phone, Plus, Smartphone, Sparkles, Trash2, User } from 'lucide-react';
-import type { Contact } from '../../types/crm';
+import { AlertCircle, CalendarHeart, Check, Compass, Loader2, MessageSquare, Phone, Plus, Smartphone, Sparkles, Trash2, User, X } from 'lucide-react';
+import type { Contact, ImportantDate } from '../../types/crm';
 import { getDefaultCycleDays } from '../../services/settingsService';
 import { addLabel, getLabels, hasAssociation, saveLabels, toggleAssociation } from '../../services/labelService';
 import { getInitials } from '../../utils/display';
@@ -52,6 +52,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({ contact, isO
   const [metContext, setMetContext] = useState('');
   const [lastUpdateNotes, setLastUpdateNotes] = useState('');
   const [possibleFollowUpTopic, setPossibleFollowUpTopic] = useState('');
+  const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
   const [saveToPhone, setSaveToPhone] = useState(true);
   const [errors, setErrors] = useState<{ name?: string; phoneNumber?: string }>({});
   const [saving, setSaving] = useState(false);
@@ -70,6 +71,7 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({ contact, isO
     setMetContext(contact?.metContext || '');
     setLastUpdateNotes(contact?.lastUpdateNotes || '');
     setPossibleFollowUpTopic(contact?.possibleFollowUpTopic || '');
+    setImportantDates(contact?.importantDates ? contact.importantDates.map((d) => ({ ...d })) : []);
     setSaveToPhone(readSaveToPhone());
     setNewLabel(null);
     setErrors({});
@@ -95,6 +97,9 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({ contact, isO
         metContext: metContext.trim(),
         lastUpdateNotes: lastUpdateNotes.trim(),
         possibleFollowUpTopic: possibleFollowUpTopic.trim(),
+        importantDates: importantDates
+          .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date))
+          .map((d) => ({ label: d.label.trim() || t('Tanggal penting'), date: d.date })),
       };
       const toPhone = Boolean(canSaveToPhone && !isEditing && saveToPhone);
       if (canSaveToPhone && !isEditing) {
@@ -295,6 +300,49 @@ export const EditContactModal: React.FC<EditContactModalProps> = ({ contact, isO
                 {t("hari")}
               </span>
             </div>
+          </div>
+
+          <div>
+            <p className={sectionTitle}>{t('Tanggal penting')}</p>
+            <div className={group}>
+              {importantDates.map((d, i) => (
+                <div key={i} className="flex items-center gap-2 px-3.5 py-2.5">
+                  <CalendarHeart className="w-4 h-4 text-pink-500 shrink-0" />
+                  <input
+                    type="text"
+                    aria-label={t('Nama tanggal penting')}
+                    value={d.label}
+                    placeholder={t('Ulang tahun')}
+                    onChange={(e) => setImportantDates((list) => list.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                    className="flex-1 min-w-0 bg-transparent text-[15px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                  />
+                  <input
+                    type="date"
+                    aria-label={t('Tanggal')}
+                    value={d.date}
+                    onChange={(e) => setImportantDates((list) => list.map((x, j) => (j === i ? { ...x, date: e.target.value } : x)))}
+                    className="w-[8.5rem] px-2 py-1 rounded-lg text-[13px] bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    aria-label={t('Hapus tanggal')}
+                    onClick={() => setImportantDates((list) => list.filter((_, j) => j !== i))}
+                    className="press w-7 h-7 rounded-full flex items-center justify-center text-slate-400"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setImportantDates((list) => [...list, { label: list.length === 0 ? t('Ulang tahun') : '', date: '' }])}
+                className="w-full flex items-center gap-2 px-3.5 py-3 text-left text-[14px] font-semibold text-blue-600 dark:text-cyan-400"
+              >
+                <Plus className="w-4 h-4" />
+                {t('Tambah tanggal')}
+              </button>
+            </div>
+            <p className="px-3 mt-1.5 text-xs text-slate-500 dark:text-slate-400">{t('Sapa mengingatkan setiap tahun di hari itu.')}</p>
           </div>
 
           <div>

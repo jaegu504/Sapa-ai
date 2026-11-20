@@ -14,6 +14,43 @@ export interface BackupFile {
   labels?: string[];
 }
 
+const LAST_BACKUP_KEY = 'sapa_last_backup_at';
+const BACKUP_REMINDER_SNOOZE_KEY = 'sapa_backup_reminder_snooze_until';
+const DAY_MS = 86400000;
+
+const readTime = (key: string): number => {
+  try {
+    return Number(localStorage.getItem(key)) || 0;
+  } catch {
+    return 0;
+  }
+};
+const writeTime = (key: string, value: number) => {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch {
+    // Ignore localStorage failures
+  }
+};
+
+/** True when there is data worth saving and no backup was made in the last 30 days (and the card was not put off). */
+export function isBackupDue(contactCount: number, now: number = Date.now()): boolean {
+  if (contactCount < 5) return false;
+  if (now < readTime(BACKUP_REMINDER_SNOOZE_KEY)) return false;
+  const last = readTime(LAST_BACKUP_KEY);
+  // First run: count from now, so a new user is not asked on day one.
+  if (!last) {
+    writeTime(LAST_BACKUP_KEY, now);
+    return false;
+  }
+  return now - last >= 30 * DAY_MS;
+}
+
+/** "Ingatkan nanti": hide the backup card for a week. */
+export function snoozeBackupReminder(now: number = Date.now()): void {
+  writeTime(BACKUP_REMINDER_SNOOZE_KEY, now + 7 * DAY_MS);
+}
+
 export async function buildBackup(): Promise<BackupFile> {
   return {
     version: '2',
@@ -47,6 +84,7 @@ export async function exportBackup(): Promise<number> {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
+  writeTime(LAST_BACKUP_KEY, Date.now());
   return backup.contacts.length;
 }
 
