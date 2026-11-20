@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Mic } from 'lucide-react';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { TourSpotlight } from './components/tutorial/TourSpotlight';
@@ -67,6 +68,9 @@ function readStorage(key: string, fallback: string): string {
     return fallback;
   }
 }
+
+// The launch URL stays on the activity; read it only once per app start.
+let launchUrlHandled = false;
 
 export const App: React.FC = () => {
   // Navigation State: 'radar' | 'contacts' | 'notifications' | 'settings'
@@ -387,6 +391,32 @@ export const App: React.FC = () => {
       showToast(t('Gagal mencatat interaksi'), 'error');
     }
   };
+
+  // Taps on the home-screen widget arrive as sapa://contact/<id> (open profile) or sapa://done/<id> (mark greeted).
+  const [widgetAction, setWidgetAction] = useState<{ action: string; id: string } | null>(null);
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const parse = (url?: string) => {
+      const m = /^sapa:\/\/(contact|done)\/(.+)$/.exec(url || '');
+      if (m) setWidgetAction({ action: m[1], id: decodeURIComponent(m[2]) });
+    };
+    if (!launchUrlHandled) {
+      launchUrlHandled = true;
+      CapacitorApp.getLaunchUrl().then((r) => parse(r?.url)).catch(() => {});
+    }
+    const listener = CapacitorApp.addListener('appUrlOpen', (e) => parse(e.url));
+    return () => {
+      listener.then((h) => h.remove());
+    };
+  }, []);
+  useEffect(() => {
+    if (!widgetAction || loading) return;
+    const contact = contacts.find((c) => c.id === widgetAction.id);
+    setWidgetAction(null);
+    if (!contact) return;
+    if (widgetAction.action === 'done') handleLogChat(contact);
+    else setSelectedContact(contact);
+  }, [widgetAction, loading, contacts]);
 
   // Inline edits from the profile and other sheets. The profile shows its own "Tersimpan".
   const handleUpdateContact = async (contactId: string, updates: Partial<Contact>) => {

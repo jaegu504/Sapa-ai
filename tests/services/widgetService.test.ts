@@ -14,9 +14,11 @@ describe('buildWidgetData', () => {
       ],
       now
     );
-    expect(data.items).toEqual([
+    expect(data.items.map(({ n, d }) => ({ n, d }))).toEqual([
       { n: 'Lewat', d: '2026-11-15' },
       { n: 'Nanti', d: '2026-11-25' },
     ]);
+    expect(data.items[0]).toMatchObject({ id: 'a', p: '+62', t: '' });
+    expect(data.overdue).toBe('Lewat {n} hari');
   });
 });

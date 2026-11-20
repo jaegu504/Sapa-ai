@@ -12,7 +12,7 @@ Capacitor; UI in **Indonesian and Turkish** (Pengaturan → Bahasa), AI drafts i
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.6.1 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.6.2 at time of writing).
 
 ## Stack
 
@@ -73,9 +73,12 @@ cd android && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Content
   replaced per contact; names never go to the AI. Each send logs the greeting.
 - Backup reminder: a Radar card after 30 days without a backup (`isBackupDue`, needs at least 5 contacts; "x" hides
   it for 7 days).
-- Android home-screen widget (`SapaWidgetProvider`): the app sends every contact's next due date through
+- Android home-screen widget (`SapaWidgetProvider` + `SapaWidgetService` list + `WidgetActionActivity`): styled like
+  Radar's "Perlu disapa" card (light/dark colours in `values(-night)/widget_colors.xml`), scrollable, with a check and
+  a WhatsApp button per row. The app sends every contact's id, name, phone, topic and next due date through
   `WhatsAppLauncher.updateWidget` (`widgetService.syncWidget`); the widget counts dates <= today itself and refreshes
-  every 3 hours, so it stays right without opening the app.
+  every 3 hours. Taps: `sapa://wa/<phone>` opens the WhatsApp chat directly; `sapa://contact/<id>` and
+  `sapa://done/<id>` open Sapa, where App.tsx (appUrlOpen / getLaunchUrl) opens the profile or marks the contact greeted.
 - Backups: `backupService` (version 2 file with contacts, interactions, labels). On the phone, export goes through the
   share sheet (Filesystem cache + Share); restore merges by id. A backup/restore path must exist before any keystore change.
 - No Dexie schema change is needed for new non-indexed fields.
