@@ -1,13 +1,13 @@
 {
-  "tag_name": "v1.6.0",
-  "name": "Sapa v1.6.0",
-  "body": "## Sapa v1.6.0\n\n**Baru**\n- **Tunda sapaan:** tombol jam di daftar \"Perlu disapa\". Pilih Besok, 3 hari lagi, atau Minggu depan. Kontak tidak dihitung sudah disapa, dan muncul lagi di hari yang dipilih.\n- **Tanggal penting:** isi ulang tahun, hari pernikahan, dan tanggal lain di form kontak. Sapa mengingatkan setiap tahun di hari itu, dan halaman awal menampilkan \"Hari penting\" 7 hari ke depan.\n- **Sapa semua satu label:** di Kontak, pilih label (misalnya Hoca), lalu tekan \"Sapa semua\". Tulis satu pesan (bisa dibantu AI), lalu kirim ke tiap orang satu per satu. Nama tiap orang terisi otomatis.\n- **Pengingat cadangan:** kalau sebulan belum mencadangkan data, muncul kartu \"Cadangkan sekarang\" di halaman awal.\n- **Widget layar utama:** tekan lama layar utama HP, pilih Widget, lalu cari Sapa. Widget menampilkan berapa orang yang perlu disapa hari ini.\n\nCara update: unduh `sapa-ai-v1.6.0.apk` di bawah lalu pasang di atas versi lama. Data tetap aman.",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.6.0",
-  "published_at": "2026-11-20T15:31:00Z",
+  "tag_name": "v1.6.1",
+  "name": "Sapa v1.6.1",
+  "body": "## Sapa v1.6.1\n\n**Tutorial diperbarui**\n- Langkah baru tentang menunda sapaan, Hari penting, dan cara memasang widget Sapa di layar utama.\n- Langkah baru untuk \"Sapa semua\" satu label sekaligus.\n- Langkah baru untuk mengisi Tanggal penting lewat tombol Edit.\n\nTutorial bisa diulang dari Pengaturan.\n\nCara update: unduh `sapa-ai-v1.6.1.apk` di bawah lalu pasang di atas versi lama. Data tetap aman.",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.6.1",
+  "published_at": "2026-11-20T15:35:17Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.6.0.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.6.0/sapa-ai-v1.6.0.apk"
+      "name": "sapa-ai-v1.6.1.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.6.1/sapa-ai-v1.6.1.apk"
     }
   ]
 }
