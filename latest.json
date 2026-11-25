@@ -1,13 +1,13 @@
 {
-  "tag_name": "v1.6.2",
-  "name": "Sapa v1.6.2",
-  "body": "## Sapa v1.6.2\n\n**Widget baru**\n- Tampilannya sekarang seperti kartu \"Perlu disapa\" di halaman awal: inisial, nama, sudah berapa lama belum disapa, dan topik obrolan.\n- Daftarnya bisa di-scroll ke bawah sampai semua orang terlihat.\n- Tombol centang: menandai sudah disapa (Sapa terbuka sebentar lalu mencatatnya).\n- Tombol hijau: langsung membuka chat WhatsApp orang itu.\n- Ketuk nama untuk membuka profilnya di Sapa.\n- Mengikuti mode terang atau gelap HP.\n\nKalau widget lama sudah terpasang, hapus lalu pasang lagi supaya ukurannya pas.\n\nCara update: unduh `sapa-ai-v1.6.2.apk` di bawah lalu pasang di atas versi lama. Data tetap aman.",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.6.2",
-  "published_at": "2026-11-20T16:00:30Z",
+  "tag_name": "v1.7.0",
+  "name": "Sapa v1.7.0",
+  "body": "## Sapa v1.7.0\n\n**Persiapan pindah ke Sapa 2.0**\n- Sapa 2.0 nanti memakai kunci aplikasi baru (supaya lebih jarang diblokir Play Protect dan bisa didaftarkan resmi ke Google).\n- Karena kuncinya baru, Sapa 2.0 **tidak bisa langsung menimpa** versi lama: harus dipasang ulang.\n- Saat Sapa 2.0 keluar, jendela pembaruan akan menuntun langkahnya: 1) buat cadangan, 2) unduh versi baru, 3) hapus Sapa lama, 4) pasang yang baru lalu Pengaturan → Pulihkan cadangan.\n\n**Penting:** simpan file cadangan ke Google Drive atau kirim ke WhatsApp-mu sendiri. Kalau Sapa dihapus tanpa cadangan, semua kontak dan catatan hilang.\n\nMulai sekarang kamu juga bisa membuat cadangan kapan saja: Pengaturan → Simpan cadangan.",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.7.0",
+  "published_at": "2026-11-25T16:38:55Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.6.2.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.6.2/sapa-ai-v1.6.2.apk"
+      "name": "sapa-ai-v1.7.0.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.7.0/sapa-ai-v1.7.0.apk"
     }
   ]
 }
