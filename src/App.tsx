@@ -11,7 +11,7 @@ import { applyVoiceNote, VoiceNoteResult } from './services/voiceNoteService';
 import { ContactsFilter } from './utils/contactFilters';
 import { remapAssociations } from './services/labelService';
 import { AppUpdateModal } from './components/ui/AppUpdateModal';
-import { checkForAppUpdate, dismissUpdate, CURRENT_APP_VERSION, type UpdateCheckResult } from './services/updateService';
+import { checkForAppUpdate, dismissUpdate, needsReinstall, CURRENT_APP_VERSION, type UpdateCheckResult } from './services/updateService';
 import { RadarNavIcon, ContactsNavIcon, ScheduleNavIcon, SettingsNavIcon } from './components/ui/NavIcons';
 import { initTheme, setThemePreference, getThemePreference, applyTheme, type ThemePreference } from './services/themeService';
 import { crmDb } from './db/crmDatabase';
@@ -19,7 +19,7 @@ import type { Contact, InteractionLog, InteractionType } from './types/crm';
 import { deleteContacts, markChatCompleted, resyncPhoneContacts } from './services/contactService';
 import { getDeviceContactsWithStatus, saveToPhoneContacts } from './services/nativeContactsAdapter';
 import { syncWidget } from './services/widgetService';
-import { exportBackup, isBackupDue, restoreBackup, snoozeBackupReminder } from './services/backupService';
+import { exportBackup, hasMadeBackup, isBackupDue, restoreBackup, snoozeBackupReminder } from './services/backupService';
 import { getDefaultCycleDays } from './services/settingsService';
 import { normalizePhoneNumber } from './utils/phone';
 import { formatShortDate } from './utils/display';
@@ -290,7 +290,11 @@ export const App: React.FC = () => {
     if (logEncounterContact) return setLogEncounterContact(null), true;
     if (isEditModalOpen) return setIsEditModalOpen(false), setEditingContact(null), true;
     if (isLabelManagerOpen) return setIsLabelManagerOpen(false), true;
-    if (isUpdateModalOpen) return setIsUpdateModalOpen(false), true;
+    if (isUpdateModalOpen) {
+      // The new-key reinstall warning stays until a backup exists.
+      if (!(appUpdate && needsReinstall(appUpdate) && !hasMadeBackup())) setIsUpdateModalOpen(false);
+      return true;
+    }
     if (isSyncOpen) return setIsSyncOpen(false), true;
     if (selectedContact) return setSelectedContact(null), true;
     if (activeTab !== 'radar') return setActiveTab('radar'), true;

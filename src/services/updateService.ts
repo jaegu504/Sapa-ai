@@ -1,6 +1,6 @@
 import { scheduleAppUpdateNotification } from './notificationService';
 
-export const CURRENT_APP_VERSION = '1.7.0';
+export const CURRENT_APP_VERSION = '1.7.1';
 export const GITHUB_REPO = 'jaegu504/Sapa-ai';
 export const UPDATE_STORAGE_KEY = 'sapa_last_update_check';
 export const UPDATE_DISMISSED_KEY = 'sapa_dismissed_update_version';
@@ -138,10 +138,13 @@ export async function checkForAppUpdate(
     // Locate APK asset in release
     let apkUrl: string | undefined;
     if (Array.isArray(data.assets)) {
-      const apkAsset = data.assets.find(
+      const apks = data.assets.filter(
         (asset: any) =>
           typeof asset.name === 'string' && asset.name.toLowerCase().endsWith('.apk')
       );
+      // The "jembatan" (bridge) APK is listed first for old versions, which take the first .apk;
+      // this code always wants the real release APK.
+      const apkAsset = apks.find((asset: any) => !/jembatan/i.test(asset.name)) ?? apks[0];
       if (apkAsset?.browser_download_url) {
         apkUrl = apkAsset.browser_download_url;
       }

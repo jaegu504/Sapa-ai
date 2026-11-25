@@ -3,6 +3,7 @@ import { t } from '../../i18n';
 import { ArrowRight, Rocket, Download, X, Sparkles, ExternalLink, ShieldCheck, TriangleAlert } from 'lucide-react';
 import type { UpdateCheckResult } from '../../services/updateService';
 import { needsReinstall, openUpdateDownload } from '../../services/updateService';
+import { hasMadeBackup } from '../../services/backupService';
 
 export interface AppUpdateModalProps {
   isOpen: boolean;
@@ -20,7 +21,7 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   onDismissForever,
   onBackup,
 }) => {
-  const [backedUp, setBackedUp] = useState(false);
+  const [backedUp, setBackedUp] = useState(() => hasMadeBackup());
   if (!isOpen || !update || !update.hasUpdate) {
     return null;
   }
@@ -31,6 +32,8 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   };
 
   const reinstall = needsReinstall(update);
+  // Before the new-key reinstall, the warning cannot be closed until a backup exists.
+  const locked = reinstall && Boolean(onBackup) && !backedUp;
   const handleBackup = async () => {
     if (onBackup && (await onBackup())) setBackedUp(true);
   };
@@ -51,14 +54,14 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
     >
       <div className="animate-rise relative w-full max-w-md bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl border border-white/80 dark:border-white/15 rounded-[32px] p-6 shadow-2xl text-slate-900 dark:text-white space-y-5 animate-scale-up">
         {/* Close Button */}
-        <button
+        {!locked && <button
           type="button"
           onClick={handleDismiss}
           className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white bg-slate-100/60 dark:bg-white/10 hover:bg-slate-200/60 dark:hover:bg-white/20 transition-colors"
           aria-label={t("Tutup")}
         >
           <X className="w-4 h-4" />
-        </button>
+        </button>}
 
         {/* Header with Icon */}
         <div className="flex items-center gap-3.5 pr-8">
@@ -161,13 +164,13 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
               <span>{t("Lihat di GitHub")}</span>
             </button>
 
-            <button
+            {!locked && <button
               type="button"
               onClick={handleDismiss}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium transition-colors"
             >
               {t("Nanti Saja")}
-            </button>
+            </button>}
           </div>
         </div>
       </div>

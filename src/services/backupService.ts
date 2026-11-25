@@ -16,6 +16,7 @@ export interface BackupFile {
 
 const LAST_BACKUP_KEY = 'sapa_last_backup_at';
 const BACKUP_REMINDER_SNOOZE_KEY = 'sapa_backup_reminder_snooze_until';
+const MIGRATION_BACKUP_KEY = 'sapa_migration_backup_at'; // set only by a real backup (LAST_BACKUP_KEY is also set on first run)
 const DAY_MS = 86400000;
 
 const readTime = (key: string): number => {
@@ -44,6 +45,11 @@ export function isBackupDue(contactCount: number, now: number = Date.now()): boo
     return false;
   }
   return now - last >= 30 * DAY_MS;
+}
+
+/** True once the user has really saved a backup on this install (used by the new-key reinstall warning). */
+export function hasMadeBackup(): boolean {
+  return readTime(MIGRATION_BACKUP_KEY) > 0;
 }
 
 /** "Ingatkan nanti": hide the backup card for a week. */
@@ -85,6 +91,7 @@ export async function exportBackup(): Promise<number> {
     URL.revokeObjectURL(url);
   }
   writeTime(LAST_BACKUP_KEY, Date.now());
+  writeTime(MIGRATION_BACKUP_KEY, Date.now());
   return backup.contacts.length;
 }
 
