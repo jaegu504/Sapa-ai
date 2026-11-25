@@ -7,8 +7,8 @@ android {
         applicationId "com.growsphere.crm"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "1.6.2"
+        versionCode 17
+        versionName "1.7.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,9 +16,25 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // New release key (from v2.0.0). Path and passwords live in ~/.gradle/gradle.properties, never in this public repo.
+        sapaRelease {
+            if (project.hasProperty('SAPA_RELEASE_STORE_FILE')) {
+                storeFile file(SAPA_RELEASE_STORE_FILE)
+                storePassword SAPA_RELEASE_STORE_PASSWORD
+                keyAlias SAPA_RELEASE_KEY_ALIAS
+                keyPassword SAPA_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            // Versions before 2.0.0 stay on the debug key so they still update in place (they carry the migration guide).
+            def newKey = defaultConfig.versionName.tokenize('.')[0].toInteger() >= 2
+            if (newKey && !project.hasProperty('SAPA_RELEASE_STORE_FILE')) {
+                throw new GradleException('SAPA_RELEASE_STORE_FILE missing in ~/.gradle/gradle.properties')
+            }
+            signingConfig newKey ? signingConfigs.sapaRelease : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

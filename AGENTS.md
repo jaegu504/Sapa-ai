@@ -12,7 +12,7 @@ Capacitor; UI in **Indonesian and Turkish** (Pengaturan → Bahasa), AI drafts i
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.6.2 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.7.0 at time of writing).
 
 ## Stack
 
@@ -113,8 +113,12 @@ After a change is done and tests pass:
 
 ## Rules and gotchas
 
-- **Signing**: releases are signed with the debug keystore (`~/.android/debug.keystore`). Changing the key makes users
-  uninstall to upgrade, which **deletes their local data**. Never change it without a backup/migration plan agreed with the owner.
+- **Signing**: up to v1.x releases are signed with the debug keystore (`~/.android/debug.keystore`). From **v2.0.0** the
+  owner agreed to a new release key: `~/Documents/Sapa-signing/sapa-release.jks` (alias `sapa`), passwords in
+  `~/.gradle/gradle.properties` (`SAPA_RELEASE_*`); `build.gradle` picks it automatically when `versionName` >= 2.
+  New-key SHA-256: `408bb68e6b7233aa7342bc60846aa21f31bd8125b2057cce41be0901264d5153`. The key change forces users to
+  back up, uninstall, install and restore: v1.7.0 `AppUpdateModal` shows that guide when the latest release is >= 2.0.0
+  (`needsReinstall`). Never lose or commit the key: without it Sapa can never be updated again.
 - Tutorial: anchors are `data-tour="..."` attributes on real elements; steps live in `TOUR_STEPS`
   (`tutorialService.ts`). Adding/removing a step changes the step-count test. New user-facing features should get a step.
 - localStorage access is always wrapped in try/catch.

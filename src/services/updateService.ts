@@ -1,6 +1,6 @@
 import { scheduleAppUpdateNotification } from './notificationService';
 
-export const CURRENT_APP_VERSION = '1.6.2';
+export const CURRENT_APP_VERSION = '1.7.0';
 export const GITHUB_REPO = 'jaegu504/Sapa-ai';
 export const UPDATE_STORAGE_KEY = 'sapa_last_update_check';
 export const UPDATE_DISMISSED_KEY = 'sapa_dismissed_update_version';
@@ -188,6 +188,17 @@ export async function checkForAppUpdate(
     console.warn('[updateService] Failed to check for app updates:', err);
     throw err;
   }
+}
+
+// From this version on, the APK is signed with the new release key. Android refuses to install it
+// over an older (debug-signed) Sapa, so users must back up, uninstall, install and restore.
+export const SIGNING_KEY_CHANGE_VERSION = '2.0.0';
+
+export function needsReinstall(update: Pick<UpdateCheckResult, 'currentVersion' | 'latestVersion'>): boolean {
+  return (
+    compareVersions(update.latestVersion, SIGNING_KEY_CHANGE_VERSION) >= 0 &&
+    compareVersions(update.currentVersion, SIGNING_KEY_CHANGE_VERSION) < 0
+  );
 }
 
 /**

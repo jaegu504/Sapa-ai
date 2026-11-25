@@ -492,4 +492,13 @@ export const TR: Record<string, string> = {
   "Pilih satu label, misalnya Hoca, lalu ketuk tombol hijau Sapa semua. Tulis satu pesan (bisa dibantu AI) dan kirim ke tiap orang satu per satu, cocok untuk hari raya. Nama tiap orang terisi otomatis.": "Bir etiket seçin, örneğin Hoca, sonra yeşil Tümüne selam ver düğmesine dokunun. Tek bir mesaj yazın (AI yardımıyla da olur) ve herkese tek tek gönderin; bayramlar için ideal. Her kişinin adı otomatik eklenir.",
   "Tanggal Penting": "Önemli Tarihler",
   "Ketuk Edit untuk mengisi ulang tahun, hari pernikahan, atau tanggal penting lain. Sapa mengingatkan Anda setiap tahun di hari itu.": "Doğum günü, evlilik yıldönümü veya başka önemli tarihleri eklemek için Düzenle'ye dokunun. Sapa her yıl o gün size hatırlatır.",
+  "Versi ini harus dipasang ulang": "Bu sürüm yeniden yüklenmeli",
+  "Sapa sekarang memakai kunci aplikasi baru, jadi HP tidak bisa memperbarui langsung. Kalau Sapa dihapus tanpa cadangan, semua kontak dan catatanmu hilang.": "Sapa artık yeni bir uygulama anahtarı kullanıyor, bu yüzden telefon doğrudan güncelleyemez. Sapa yedeksiz silinirse tüm kişileriniz ve notlarınız kaybolur.",
+  "Buat cadangan, lalu simpan ke Google Drive atau kirim ke WhatsApp-mu sendiri.": "Bir yedek oluşturun, sonra Google Drive'a kaydedin veya kendinize WhatsApp'tan gönderin.",
+  "Unduh Sapa versi baru.": "Sapa'nın yeni sürümünü indirin.",
+  "Hapus (uninstall) Sapa yang lama.": "Eski Sapa'yı kaldırın.",
+  "Pasang Sapa yang baru, lalu buka Pengaturan → Pulihkan cadangan.": "Yeni Sapa'yı yükleyin, sonra Ayarlar → Yedeği geri yükle'yi açın.",
+  "Cadangan tersimpan": "Yedek kaydedildi",
+  "1. Buat cadangan dulu": "1. Önce yedek oluşturun",
+  "2. Unduh Sapa versi baru": "2. Sapa'nın yeni sürümünü indirin",
 };

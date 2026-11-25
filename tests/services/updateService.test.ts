@@ -218,3 +218,12 @@ describe('updateService', () => {
     });
   });
 });
+
+describe('needsReinstall (signing key change)', () => {
+  it('is true only when crossing from an old-key version to the new-key version', async () => {
+    const { needsReinstall } = await import('../../src/services/updateService');
+    expect(needsReinstall({ currentVersion: '1.7.0', latestVersion: '2.0.0' })).toBe(true);
+    expect(needsReinstall({ currentVersion: '1.7.0', latestVersion: '1.7.1' })).toBe(false);
+    expect(needsReinstall({ currentVersion: '2.0.0', latestVersion: '2.1.0' })).toBe(false);
+  });
+});

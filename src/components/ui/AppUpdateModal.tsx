@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { t } from '../../i18n';
-import { ArrowRight, Rocket, Download, X, Sparkles, ExternalLink } from 'lucide-react';
+import { ArrowRight, Rocket, Download, X, Sparkles, ExternalLink, ShieldCheck, TriangleAlert } from 'lucide-react';
 import type { UpdateCheckResult } from '../../services/updateService';
-import { openUpdateDownload } from '../../services/updateService';
+import { needsReinstall, openUpdateDownload } from '../../services/updateService';
 
 export interface AppUpdateModalProps {
   isOpen: boolean;
   update: UpdateCheckResult | null;
   onClose: () => void;
   onDismissForever?: (version: string) => void;
+  /** Saves a backup; resolves true when it worked. Needed for the reinstall (new signing key) flow. */
+  onBackup?: () => Promise<boolean>;
 }
 
 export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
@@ -16,7 +18,9 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   update,
   onClose,
   onDismissForever,
+  onBackup,
 }) => {
+  const [backedUp, setBackedUp] = useState(false);
   if (!isOpen || !update || !update.hasUpdate) {
     return null;
   }
@@ -24,6 +28,11 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
   const handleDownload = () => {
     openUpdateDownload(update.apkUrl || update.releaseUrl);
     onClose();
+  };
+
+  const reinstall = needsReinstall(update);
+  const handleBackup = async () => {
+    if (onBackup && (await onBackup())) setBackedUp(true);
   };
 
   const handleDismiss = () => {
@@ -88,8 +97,24 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
           </div>
         </div>
 
+        {reinstall && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-100 space-y-2 leading-relaxed">
+            <div className="flex items-center gap-1.5 font-bold">
+              <TriangleAlert className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>{t("Versi ini harus dipasang ulang")}</span>
+            </div>
+            <p>{t("Sapa sekarang memakai kunci aplikasi baru, jadi HP tidak bisa memperbarui langsung. Kalau Sapa dihapus tanpa cadangan, semua kontak dan catatanmu hilang.")}</p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>{t("Buat cadangan, lalu simpan ke Google Drive atau kirim ke WhatsApp-mu sendiri.")}</li>
+              <li>{t("Unduh Sapa versi baru.")}</li>
+              <li>{t("Hapus (uninstall) Sapa yang lama.")}</li>
+              <li>{t("Pasang Sapa yang baru, lalu buka Pengaturan → Pulihkan cadangan.")}</li>
+            </ol>
+          </div>
+        )}
+
         {/* Release Notes Preview */}
-        {update.releaseNotes && (
+        {!reinstall && update.releaseNotes && (
           <div className="space-y-1.5">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
               {t("Catatan Pembaruan:")}
@@ -102,13 +127,28 @@ export const AppUpdateModal: React.FC<AppUpdateModalProps> = ({
 
         {/* Actions */}
         <div className="space-y-2 pt-1">
+          {reinstall && onBackup && (
+            <button
+              type="button"
+              onClick={handleBackup}
+              className={`w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-full font-bold text-sm active:scale-[0.98] transition-all ${
+                backedUp
+                  ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>{backedUp ? t("Cadangan tersimpan") : t("1. Buat cadangan dulu")}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleDownload}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all"
+            disabled={reinstall && Boolean(onBackup) && !backedUp}
+            className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all disabled:opacity-40 disabled:shadow-none disabled:active:scale-100"
           >
             <Download className="w-4 h-4" />
-            <span>{t("Unduh & Perbarui Sekarang (APK)")}</span>
+            <span>{reinstall ? t("2. Unduh Sapa versi baru") : t("Unduh & Perbarui Sekarang (APK)")}</span>
           </button>
 
           <div className="flex items-center justify-between pt-1 text-xs">

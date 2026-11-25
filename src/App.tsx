@@ -524,9 +524,11 @@ export const App: React.FC = () => {
       const count = await exportBackup();
       setBackupDue(false);
       showToast(t('Cadangan dibuat ({n} kontak)', { n: count }), 'success');
+      return true;
     } catch (err) {
       console.error('Failed to export backup', err);
       showToast(t('Gagal membuat cadangan'), 'error');
+      return false;
     }
   };
 
@@ -868,6 +870,7 @@ export const App: React.FC = () => {
             update={appUpdate}
             onClose={() => setIsUpdateModalOpen(false)}
             onDismissForever={(ver) => dismissUpdate(ver)}
+            onBackup={handleExportBackup}
           />
 
           <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={hideToast} />
