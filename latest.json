@@ -1,13 +1,17 @@
 {
-  "tag_name": "v1.7.0",
-  "name": "Sapa v1.7.0",
-  "body": "## Sapa v1.7.0\n\n**Persiapan pindah ke Sapa 2.0**\n- Sapa 2.0 nanti memakai kunci aplikasi baru (supaya lebih jarang diblokir Play Protect dan bisa didaftarkan resmi ke Google).\n- Karena kuncinya baru, Sapa 2.0 **tidak bisa langsung menimpa** versi lama: harus dipasang ulang.\n- Saat Sapa 2.0 keluar, jendela pembaruan akan menuntun langkahnya: 1) buat cadangan, 2) unduh versi baru, 3) hapus Sapa lama, 4) pasang yang baru lalu Pengaturan → Pulihkan cadangan.\n\n**Penting:** simpan file cadangan ke Google Drive atau kirim ke WhatsApp-mu sendiri. Kalau Sapa dihapus tanpa cadangan, semua kontak dan catatan hilang.\n\nMulai sekarang kamu juga bisa membuat cadangan kapan saja: Pengaturan → Simpan cadangan.",
-  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v1.7.0",
-  "published_at": "2026-11-25T16:38:55Z",
+  "tag_name": "v2.0.0",
+  "name": "Sapa v2.0.0",
+  "body": "## Sapa 2.0 — kunci aplikasi baru\n\nSapa sekarang memakai kunci aplikasi resmi milik Sapa sendiri, supaya ke depannya lebih jarang diblokir Play Protect.\n\n**Karena kuncinya baru, Sapa 2.0 harus dipasang ulang. Ikuti urutan ini supaya data tidak hilang:**\n1. Ketuk \"Unduh & Perbarui\" di jendela ini. Kamu akan mendapat versi jembatan (v1.7.1) yang bisa langsung menimpa Sapa lama.\n2. Buka Sapa, lalu ketuk \"Buat cadangan dulu\". Simpan file cadangan ke Google Drive atau kirim ke WhatsApp-mu sendiri.\n3. Unduh Sapa 2.0, hapus (uninstall) Sapa yang lama, lalu pasang Sapa 2.0.\n4. Di Sapa 2.0 buka Pengaturan → Pulihkan cadangan, lalu pilih file cadangan tadi.\n\nKalau Sapa dihapus tanpa cadangan, semua kontak dan catatan hilang.",
+  "html_url": "https://github.com/jaegu504/Sapa-ai/releases/tag/v2.0.0",
+  "published_at": "2026-11-25T16:48:28Z",
   "assets": [
     {
-      "name": "sapa-ai-v1.7.0.apk",
-      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v1.7.0/sapa-ai-v1.7.0.apk"
+      "name": "sapa-ai-v1.7.1-jembatan.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v2.0.0/sapa-ai-v1.7.1-jembatan.apk"
+    },
+    {
+      "name": "sapa-ai-v2.0.0.apk",
+      "browser_download_url": "https://github.com/jaegu504/Sapa-ai/releases/download/v2.0.0/sapa-ai-v2.0.0.apk"
     }
   ]
 }
