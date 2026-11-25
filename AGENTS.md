@@ -12,7 +12,7 @@ Capacitor; UI in **Indonesian and Turkish** (Pengaturan → Bahasa), AI drafts i
 - Repo: `github.com/jaegu504/Sapa-ai` (**public** — never commit secrets).
 - Android app id: `com.growsphere.crm`, display name "Sapa".
 - Users: the owner shares the APK directly with ~100–200 friends (not on Play Store).
-- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v1.7.1 at time of writing).
+- Current version: see `CURRENT_APP_VERSION` in `src/services/updateService.ts` (v2.0.0 at time of writing).
 
 ## Stack
 
@@ -103,12 +103,14 @@ After a change is done and tests pass:
    (`CURRENT_APP_VERSION`), `android/app/build.gradle` (`versionCode` +1, `versionName`).
 2. `npx vitest run`, build web, `npx cap sync android`, `assembleRelease`.
 3. Verify the APK: `aapt2 dump badging` shows the new version; `apksigner verify --print-certs` SHA-256 must be
-   `22ffc94829f77abb8707e7bcc5360b7c643c674f25f8e01474e5feb5bc8e9648`.
+   `408bb68e6b7233aa7342bc60846aa21f31bd8125b2057cce41be0901264d5153` (new key, v2.0.0+; v1.x used `22ffc948…e9648`).
 4. Commit, tag `vX.Y.Z`, push `main` + tag.
 5. Create the GitHub Release (Indonesian notes) and upload `sapa-ai-vX.Y.Z.apk`. No `gh` CLI here: use the GitHub API
    with the token from `git credential fill`.
 6. Rewrite repo-root `latest.json` from the release (tag_name, name, body, html_url, published_at,
-   assets[{name, browser_download_url}]) and push it. The app reads it from raw.githubusercontent.com first because the
+   assets[{name, browser_download_url}]) and push it. Keep `sapa-ai-v1.7.1-jembatan.apk` (old-key bridge) as the
+   FIRST asset in every release and in latest.json: versions before 1.7.1 install the first .apk, and the bridge then
+   walks them through backup + reinstall. 1.7.1+ skip assets named "jembatan". The app reads it from raw.githubusercontent.com first because the
    unauthenticated releases API (60 checks/hour per IP) runs out on shared WiFi/carrier IPs.
 
 ## Rules and gotchas
